@@ -17,6 +17,7 @@ import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
+import android.text.style.ImageSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.util.Linkify;
@@ -393,6 +394,24 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return startsWithQuote;
 	}
 
+
+	private boolean handleTextEmotes(TextView view, SpannableStringBuilder body) {
+		String re = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
+		Pattern pattern = Pattern.compile(re);
+		Matcher matcher = pattern.matcher(body.toString());
+		while (matcher.find()) {
+			String name = body.toString().substring(matcher.start(), matcher.end());
+			Bitmap bitmap = activity.emoticonService().tryGetEmote(name);
+			if (bitmap != null) {
+				ImageSpan span = new ImageSpan(getContext(), bitmap);
+				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+			} else {
+				new EmoteWorkerTask(new WeakReference<TextView>(view), matcher.start(), matcher.end()).execute(name);
+			}
+		}
+		return true;
+	}
+
 	private void displayTextMessage(final ViewHolder viewHolder, final Message message, boolean darkBackground, int type) {
 		if (viewHolder.download_button != null) {
 			viewHolder.download_button.setVisibility(View.GONE);
@@ -464,6 +483,9 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			Linkify.addLinks(body, XMPP_PATTERN, "xmpp");
 			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
+
+			handleTextEmotes(viewHolder.messageBody, body);
+
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(body);
 			viewHolder.messageBody.setTextIsSelectable(true);
@@ -976,6 +998,48 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		protected TextView encryption;
 		public Button load_more_messages;
 		public ImageView edit_indicator;
+	}
+
+	class EmoteWorkerTask extends AsyncTask<String, Void, Bitmap> {
+		private final WeakReference<TextView> textView;
+		private final int start;
+		private final int end;
+		private String emoteName;
+
+		EmoteWorkerTask(WeakReference<TextView> textView, int start, int end) {
+			this.textView = textView;
+			this.start = start;
+			this.end = end;
+		}
+
+
+		@Override
+		protected Bitmap doInBackground(String... params) {
+			this.emoteName = params[0];
+			return activity.emoticonService().getEmote(this.emoteName);
+		}
+
+		/*
+		@Override
+		protected void onPostExecute(Bitmap bitmap) {
+			super.onPostExecute(bitmap);
+
+			if (bitmap == null) {
+				Log.w("emote injector", "emote " + this.emoteName + " not found");
+				return;
+			}
+			Log.i("emote injector", "injecting emote " + this.emoteName);
+			TextView view = this.textView.get();
+			if (view == null) return;
+			CharSequence seq = view.getText();
+			if (seq instanceof Spannable) {
+				Spannable spannable = ((Spannable) seq);
+				ImageSpan span = new ImageSpan(getContext(), bitmap);
+				Log.i("emote injector", "applying emote \"" + this.emoteName + "\" to indxes [" + this.start + "," + this.end + "] if \"" + seq.toString() + "\"" );
+//				spannable.setSpan(span, this.start, this.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+			}
+		}
+		//*/
 	}
 
 	class BitmapWorkerTask extends AsyncTask<Message, Void, Bitmap> {

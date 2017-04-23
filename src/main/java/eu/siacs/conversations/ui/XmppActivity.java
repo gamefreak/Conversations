@@ -66,6 +66,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Contact;
 import eu.siacs.conversations.entities.Conversation;
@@ -1118,6 +1119,10 @@ public abstract class XmppActivity extends Activity {
 
 	public AvatarService avatarService() {
 		return xmppConnectionService.getAvatarService();
+	}
+
+	public EmoticonService emoticonService() {
+		return xmppConnectionService.getEmoticonService();
 	}
 
 	class BitmapWorkerTask extends AsyncTask<Message, Void, Bitmap> {

@@ -15,6 +15,7 @@ import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Bundle;
@@ -45,6 +46,7 @@ import org.openintents.openpgp.IOpenPgpService2;
 import org.openintents.openpgp.util.OpenPgpApi;
 import org.openintents.openpgp.util.OpenPgpServiceConnection;
 
+import java.io.File;
 import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.math.BigInteger;
@@ -75,6 +77,8 @@ import eu.siacs.conversations.crypto.PgpEngine;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
 import eu.siacs.conversations.crypto.axolotl.XmppAxolotlMessage;
+import eu.siacs.conversations.emotes.DownloadPackTask;
+import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Blockable;
 import eu.siacs.conversations.entities.Bookmark;
@@ -229,6 +233,7 @@ public class XmppConnectionService extends Service {
 	private HttpConnectionManager mHttpConnectionManager = new HttpConnectionManager(
 			this);
 	private AvatarService mAvatarService = new AvatarService(this);
+	private EmoticonService emoticonService = new EmoticonService(this);
 	private MessageArchiveService mMessageArchiveService = new MessageArchiveService(this);
 	private PushManagementService mPushManagementService = new PushManagementService(this);
 	private OnConversationUpdate mOnConversationUpdate = null;
@@ -434,6 +439,26 @@ public class XmppConnectionService extends Service {
 
 	public AvatarService getAvatarService() {
 		return this.mAvatarService;
+	}
+
+	public EmoticonService getEmoticonService() {
+		return this.emoticonService;
+	}
+
+	public void installEmotePack() {
+		final File emoteFile = new File(getCacheDir(), DownloadPackTask.PONYPACK_FILENAME);
+		AsyncTask<String, Void, Boolean> dl = new DownloadPackTask() {
+			@Override
+			protected void onPostExecute(Boolean success) {
+				super.onPostExecute(success);
+				if (success) {
+					Log.i(Config.LOGTAG, "Successfully retrieved emote pack file");
+					getEmoticonService().loadPack(emoteFile);
+				}
+			}
+		};
+
+		dl.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, emoteFile.toString());
 	}
 
 	public void attachLocationToConversation(final Conversation conversation,
@@ -1042,6 +1067,8 @@ public class XmppConnectionService extends Service {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 			registerReceiver(this.mEventReceiver,new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 		}
+
+		installEmotePack();
 	}
 
 	@Override
