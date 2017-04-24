@@ -2,6 +2,8 @@ package eu.siacs.conversations.emotes;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.LruCache;
@@ -27,7 +29,7 @@ public class EmoticonService {
 	private Map<String, String> emotes;
 	private File file = null;
 	private String currentPack = null;
-	private LruCache<String, Bitmap> images;
+	private LruCache<String, Drawable> images;
 
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
@@ -47,38 +49,44 @@ public class EmoticonService {
 		return this.emotes.containsKey(name);
 	}
 
-	public Bitmap getEmote(String name) {
+	public Drawable getEmote(String name) {
 		Log.v("emote service", "emote " + name + " requested");
 		String imageName = this.emotes.get(name);
 
 		if (imageName == null) return null;
 		Log.v("emote service", "translated emote " + name + " -> " + imageName);
-		Bitmap image = this.images.get(imageName);
+		Drawable image = this.images.get(imageName);
 		if (image == null) image = loadImage(imageName);
 		return image;
 	}
 
-	public Bitmap tryGetEmote(String name) {
+	public Drawable tryGetEmote(String name) {
 		Log.v("emote service", "emote " + name + " requested");
 		String imageName = this.emotes.get(name);
 
 		if (imageName == null) return null;
 		Log.v("emote service", "translated emote " + name + " -> " + imageName);
-		Bitmap image = this.images.get(imageName);
+		Drawable image = this.images.get(imageName);
 //		if (image == null) image = loadImage(imageName);
 		return image;
 	}
 
-	private Bitmap loadImage(String imageName) {
+	private Drawable loadImage(String imageName) {
 		Log.i("emote service", "loading image " + imageName);
 		try (ZipFile zipFile = new ZipFile(this.file);
 			InputStream stream = zipFile.getInputStream(zipFile.getEntry(imageName))) {
 			BitmapFactory.Options options =  new BitmapFactory.Options();
-			options.inDensity = 144;
+			options.inDensity = 40 * 3;
+
 			Bitmap image = BitmapFactory.decodeStream(stream, null, options);
-//			image.setDensity(72);
-			this.images.put(imageName, image);
-			return image;
+			BitmapDrawable drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+			drawable.setFilterBitmap(false);
+			int width = drawable.getIntrinsicWidth();
+			int height = drawable.getIntrinsicHeight();
+			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
+
+			this.images.put(imageName, drawable);
+			return drawable;
 		} catch (IOException e) {
 			Log.e("emote service", "failed to load image " + imageName, e);
 			return null;

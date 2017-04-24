@@ -404,9 +404,9 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		while (matcher.find()) {
 			String name = body.toString().substring(matcher.start(), matcher.end());
 			if (!activity.emoticonService().isEmote(name)) continue;
-			Bitmap bitmap = activity.emoticonService().tryGetEmote(name);
-			if (bitmap != null) {
-				ImageSpan span = new ImageSpan(getContext(), bitmap);
+			Drawable drawable = activity.emoticonService().tryGetEmote(name);
+			if (drawable != null) {
+				ImageSpan span = new ImageSpan(drawable);
 				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
@@ -1006,26 +1006,25 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		public ImageView edit_indicator;
 	}
 
-	class EmoteLoaderTask extends AsyncTask<String, Void, Bitmap[]> {
+	class EmoteLoaderTask extends AsyncTask<String, Void, Drawable[]> {
 		private final WeakReference<ArrayAdapter<?>> targetAdapter;
 
 		EmoteLoaderTask(ArrayAdapter<?> targetAdapter) {
 			this.targetAdapter = new WeakReference<ArrayAdapter<?>>(targetAdapter);
 		}
 
-
 		@Override
-		protected Bitmap[] doInBackground(String... emotes) {
-			Bitmap[] bitmaps = new Bitmap[emotes.length];
+		protected Drawable[] doInBackground(String... emotes) {
+			Drawable[] drawables = new Drawable[emotes.length];
 			for (int i = 0; i < emotes.length; i++) {
-				bitmaps[i] = activity.emoticonService().getEmote(emotes[i]);
+				drawables[i] = activity.emoticonService().getEmote(emotes[i]);
 			}
-			return bitmaps;
+			return drawables;
 		}
 
 		@Override
-		protected void onPostExecute(Bitmap[] bitmaps) {
-			super.onPostExecute(bitmaps);
+		protected void onPostExecute(Drawable[] drawables) {
+			super.onPostExecute(drawables);
 			ArrayAdapter<?> adapter = this.targetAdapter.get();
 			if(adapter != null) adapter.notifyDataSetChanged();
 		}
