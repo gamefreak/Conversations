@@ -38,6 +38,7 @@ import android.widget.Toast;
 
 import java.lang.ref.WeakReference;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.RejectedExecutionException;
@@ -395,19 +396,24 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	}
 
 
-	private boolean handleTextEmotes(TextView view, SpannableStringBuilder body) {
+	private boolean handleTextEmotes(SpannableStringBuilder body) {
 		String re = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
 		Pattern pattern = Pattern.compile(re);
 		Matcher matcher = pattern.matcher(body.toString());
+		List<String> neededEmotes = new ArrayList<>();
 		while (matcher.find()) {
 			String name = body.toString().substring(matcher.start(), matcher.end());
+			if (!activity.emoticonService().isEmote(name)) continue;
 			Bitmap bitmap = activity.emoticonService().tryGetEmote(name);
 			if (bitmap != null) {
 				ImageSpan span = new ImageSpan(getContext(), bitmap);
 				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-			} else {
-				new EmoteWorkerTask(new WeakReference<TextView>(view), matcher.start(), matcher.end()).execute(name);
+			} else if (!neededEmotes.contains(name)) {
+				neededEmotes.add(name);
 			}
+		}
+		if (!neededEmotes.isEmpty()) {
+			new EmoteLoaderTask(this).execute(neededEmotes.toArray(new String[0]));
 		}
 		return true;
 	}
@@ -484,7 +490,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
 
-			handleTextEmotes(viewHolder.messageBody, body);
+			handleTextEmotes(body);
 
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(body);
@@ -1000,46 +1006,29 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		public ImageView edit_indicator;
 	}
 
-	class EmoteWorkerTask extends AsyncTask<String, Void, Bitmap> {
-		private final WeakReference<TextView> textView;
-		private final int start;
-		private final int end;
-		private String emoteName;
+	class EmoteLoaderTask extends AsyncTask<String, Void, Bitmap[]> {
+		private final WeakReference<ArrayAdapter<?>> targetAdapter;
 
-		EmoteWorkerTask(WeakReference<TextView> textView, int start, int end) {
-			this.textView = textView;
-			this.start = start;
-			this.end = end;
+		EmoteLoaderTask(ArrayAdapter<?> targetAdapter) {
+			this.targetAdapter = new WeakReference<ArrayAdapter<?>>(targetAdapter);
 		}
 
 
 		@Override
-		protected Bitmap doInBackground(String... params) {
-			this.emoteName = params[0];
-			return activity.emoticonService().getEmote(this.emoteName);
+		protected Bitmap[] doInBackground(String... emotes) {
+			Bitmap[] bitmaps = new Bitmap[emotes.length];
+			for (int i = 0; i < emotes.length; i++) {
+				bitmaps[i] = activity.emoticonService().getEmote(emotes[i]);
+			}
+			return bitmaps;
 		}
 
-		/*
 		@Override
-		protected void onPostExecute(Bitmap bitmap) {
-			super.onPostExecute(bitmap);
-
-			if (bitmap == null) {
-				Log.w("emote injector", "emote " + this.emoteName + " not found");
-				return;
-			}
-			Log.i("emote injector", "injecting emote " + this.emoteName);
-			TextView view = this.textView.get();
-			if (view == null) return;
-			CharSequence seq = view.getText();
-			if (seq instanceof Spannable) {
-				Spannable spannable = ((Spannable) seq);
-				ImageSpan span = new ImageSpan(getContext(), bitmap);
-				Log.i("emote injector", "applying emote \"" + this.emoteName + "\" to indxes [" + this.start + "," + this.end + "] if \"" + seq.toString() + "\"" );
-//				spannable.setSpan(span, this.start, this.end, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
-			}
+		protected void onPostExecute(Bitmap[] bitmaps) {
+			super.onPostExecute(bitmaps);
+			ArrayAdapter<?> adapter = this.targetAdapter.get();
+			if(adapter != null) adapter.notifyDataSetChanged();
 		}
-		//*/
 	}
 
 	class BitmapWorkerTask extends AsyncTask<Message, Void, Bitmap> {
