@@ -19,7 +19,7 @@ public class DownloadPackTask extends AsyncTask<String, Void, Boolean> {
 	public static final String PONYPACK_FILENAME = "ponypack.zip";
 
 	private boolean downloadPack(URL url, File destination) {
-		Log.i("EMOTE_DL", "Beginning download of emote pack from " + url.toString());
+		Log.i("emote downloader", "Beginning download of emote pack from " + url.toString());
 		try  {
 			URLConnection con = url.openConnection();
 			con.connect();
@@ -34,17 +34,17 @@ public class DownloadPackTask extends AsyncTask<String, Void, Boolean> {
 				int bytesRead = stream.read(buffer);
 				reads++;
 				if (bytesRead <= 0) break;
-				if (reads % 16 == 0) {
-					Log.v(Config.LOGTAG, "emote downloader: " + (reads * BUFFER_SIZE + bytesRead) + " bytes recieved");
+				if (reads % 256 == 0) {
+					Log.v("emote downloader", String.format("emote downloader: %,d bytes recieved", (reads * BUFFER_SIZE + bytesRead)));
 				}
 				outStream.write(buffer, 0, bytesRead);
 			} while (true);
 			outStream.close();
 			stream.close();
-			Log.i(Config.LOGTAG, "emote downloader: download complete");
+			Log.i("emote downloader", "download complete");
 			return true;
 		} catch (IOException e) {
-			Log.e(Config.LOGTAG, "emote downloader: emote download from " + url.toString() + " failed.", e);
+			Log.e("emote downloader", "emote download from " + url.toString() + " failed.", e);
 		}
 		return false;
 	}

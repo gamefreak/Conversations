@@ -77,8 +77,8 @@ import eu.siacs.conversations.crypto.PgpEngine;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
 import eu.siacs.conversations.crypto.axolotl.XmppAxolotlMessage;
-import eu.siacs.conversations.emotes.DownloadPackTask;
 import eu.siacs.conversations.emotes.EmoticonService;
+import eu.siacs.conversations.emotes.LoadPackTask;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Blockable;
 import eu.siacs.conversations.entities.Bookmark;
@@ -445,20 +445,11 @@ public class XmppConnectionService extends Service {
 		return this.emoticonService;
 	}
 
-	public void installEmotePack() {
-		final File emoteFile = new File(getCacheDir(), DownloadPackTask.PONYPACK_FILENAME);
-		AsyncTask<String, Void, Boolean> dl = new DownloadPackTask() {
-			@Override
-			protected void onPostExecute(Boolean success) {
-				super.onPostExecute(success);
-				if (success) {
-					Log.i(Config.LOGTAG, "Successfully retrieved emote pack file");
-					getEmoticonService().loadPack(emoteFile);
-				}
-			}
-		};
 
-		dl.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, emoteFile.toString());
+	public void setupEmotes() {
+		String pack = getPreferences().getString("active_emote_pack", "");
+		LoadPackTask task =  new LoadPackTask(getEmoticonService());
+		task.execute(pack);
 	}
 
 	public void attachLocationToConversation(final Conversation conversation,
@@ -1068,7 +1059,7 @@ public class XmppConnectionService extends Service {
 			registerReceiver(this.mEventReceiver,new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 		}
 
-		installEmotePack();
+		setupEmotes();
 	}
 
 	@Override

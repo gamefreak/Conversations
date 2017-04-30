@@ -17,6 +17,16 @@
             android:summary="@string/pref_xmpp_resource_summary"
             android:title="@string/pref_xmpp_resource"/>
     </PreferenceCategory>
+    <PreferenceCategory android:title="Emoticons">
+        <Preference android:key="download_ponymotes"
+                    android:summary="@string/pref_download_ponymotes_summary"
+                    android:title="@string/pref_download_ponymotes" />
+        <eu.siacs.conversations.emotes.PackListPreference
+            android:key="active_emote_pack"
+            android:title="@string/pref_select_pack"
+            android:summary="@string/pref_select_pack_summary"
+            />
+    </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_privacy">
         <CheckBoxPreference
             android:defaultValue="true"

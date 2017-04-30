@@ -94,7 +94,21 @@ public class EmoticonService {
 	}
 
 	public void loadPack(File file) {
-		loadPackJson(file);
+		if (file == null) {
+			synchronized (this.emotes) {
+				this.currentPack = null;
+				this.file = null;
+				this.emotes.clear();
+				this.images.evictAll();
+				Log.i("emote service", "emote active emotes cleared");
+			}
+		} else {
+			loadPackJson(file);
+		}
+	}
+
+	public File getPackDirectory() {
+		return new File(xmppConnectionService.getFilesDir(), "emoticons");
 	}
 
 	private void loadPackJson(File file) {

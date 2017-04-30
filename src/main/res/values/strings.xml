@@ -745,4 +745,8 @@
 	<string name="block_stranger">Block stranger</string>
 	<string name="block_entire_domain">Block entire domain</string>
 	<string name="online_right_now">online right now</string>
+	<string name="pref_download_ponymotes">Download Ponymotes</string>
+	<string name="pref_download_ponymotes_summary">Download the latest version of the Ponysquad emote pack.</string>
+	<string name="pref_select_pack">Select emote pack</string>
+	<string name="pref_select_pack_summary">Select emote pack to use.</string>
 </resources>

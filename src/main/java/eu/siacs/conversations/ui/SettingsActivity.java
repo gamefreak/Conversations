@@ -30,6 +30,7 @@ import java.util.Locale;
 import de.duenndns.ssl.MemorizingTrustManager;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.emotes.DownloadPackTask;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.ExportLogsService;
 import eu.siacs.conversations.xmpp.XmppConnection;
@@ -97,6 +98,45 @@ public class SettingsActivity extends XmppActivity implements
 
 		boolean removeLocation = new Intent("eu.siacs.conversations.location.request").resolveActivity(getPackageManager()) == null;
 		boolean removeVoice = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION).resolveActivity(getPackageManager()) == null;
+
+		final ListPreference activeEmotePackPreference = (ListPreference)mSettingsFragment.findPreference("active_emote_pack");
+		activeEmotePackPreference.setEntries(new String[]{"None"});
+		activeEmotePackPreference.setDefaultValue("");
+		activeEmotePackPreference.setEntryValues(new String[]{""});
+
+
+		final Preference downloadPonymotesPreference = mSettingsFragment.findPreference("download_ponymotes");
+		if (downloadPonymotesPreference != null) {
+			downloadPonymotesPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+				@Override
+				public boolean onPreferenceClick(Preference preference) {
+					File dir = emoticonService().getPackDirectory();
+					if (!dir.exists()) dir.mkdir();
+
+					final File packFile = new File(dir, DownloadPackTask.PONYPACK_FILENAME);
+					activeEmotePackPreference.setValue(null);
+					new DownloadPackTask() {
+						@Override
+						protected void onPreExecute() {
+							super.onPreExecute();
+							if (packFile.exists()) {
+								Log.i("preferences", "deleting existing emote pack");
+								packFile.delete();
+							}
+						}
+
+						@Override
+						protected void onPostExecute(Boolean success) {
+							super.onPostExecute(success);
+							if (success) {
+								activeEmotePackPreference.setValue(packFile.getAbsolutePath());
+							}
+						}
+					}.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, packFile.getAbsolutePath());
+					return false;
+				}
+			});
+		}
 
 		ListPreference quickAction = (ListPreference) mSettingsFragment.findPreference("quick_action");
 		if (quickAction != null && (removeLocation || removeVoice)) {
@@ -375,6 +415,8 @@ public class SettingsActivity extends XmppActivity implements
 			reconnectAccounts();
 		} else if (name.equals(AUTOMATIC_MESSAGE_DELETION)) {
 			xmppConnectionService.expireOldMessages(true);
+		} else if (name.equals("active_emote_pack")) {
+			xmppConnectionService.setupEmotes();
 		}
 
 	}
