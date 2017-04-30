@@ -411,6 +411,10 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
 			}
+			if (drawable == null) {
+				ImageSpan span = new ImageSpan(activity.emoticonService().makePlaceholder(name));
+				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+			}
 		}
 		if (!neededEmotes.isEmpty()) {
 			new EmoteLoaderTask(this).execute(neededEmotes.toArray(new String[0]));

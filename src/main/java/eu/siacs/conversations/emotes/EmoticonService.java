@@ -2,23 +2,24 @@ package eu.siacs.conversations.emotes;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Paint;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.ShapeDrawable;
+import android.graphics.drawable.shapes.RectShape;
+import android.util.DisplayMetrics;
 import android.util.JsonReader;
 import android.util.Log;
 import android.util.LruCache;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
@@ -26,7 +27,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
-	private Map<String, String> emotes;
+	private Map<String, Emote> emotes;
 	private File file = null;
 	private String currentPack = null;
 	private LruCache<String, Drawable> images;
@@ -51,38 +52,59 @@ public class EmoticonService {
 
 	public Drawable getEmote(String name) {
 		Log.v("emote service", "emote " + name + " requested");
-		String imageName = this.emotes.get(name);
+		Emote emote = this.emotes.get(name);
 
-		if (imageName == null) return null;
-		Log.v("emote service", "translated emote " + name + " -> " + imageName);
-		Drawable image = this.images.get(imageName);
-		if (image == null) image = loadImage(imageName);
+		if (emote == null) return null;
+		Log.v("emote service", "translated emote " + name + " -> " + emote.getImageName());
+		Drawable image = this.images.get(emote.getImageName());
+		if (image == null) image = loadImage(emote);
 		return image;
+	}
+
+	public Drawable makePlaceholder(String name) {
+		return this.makePlaceholder(this.emotes.get(name));
+	}
+	public Drawable makePlaceholder(Emote emote) {
+		RectShape shape = new RectShape();
+		DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
+		ShapeDrawable sd = new ShapeDrawable(shape);
+		sd.getPaint().setColor(0xff0000ff);
+		sd.getPaint().setStyle(Paint.Style.FILL);
+		sd.setBounds(
+				0,
+				0,
+				(int)(emote.getWidth() * Math.ceil(metrics.density)),
+				(int)(emote.getHeight() * Math.ceil(metrics.density))
+		);
+//		Log.i("emote loader", String.format("make placeholder %s %dx%d -> %dx%d", emote.getImageName(), emote.getWidth(), emote.getHeight(), sd.getBounds().width(), sd.getBounds().height()));
+		return sd;
 	}
 
 	public Drawable tryGetEmote(String name) {
 		Log.v("emote service", "emote " + name + " requested");
-		String imageName = this.emotes.get(name);
+		Emote emote = this.emotes.get(name);
 
-		if (imageName == null) return null;
+		if (emote == null) return null;
+		String imageName = emote.getImageName();
 		Log.v("emote service", "translated emote " + name + " -> " + imageName);
 		Drawable image = this.images.get(imageName);
 //		if (image == null) image = loadImage(imageName);
 		return image;
 	}
 
-	private Drawable loadImage(String imageName) {
+	private Drawable loadImage(Emote emote) {
+		String imageName = emote.getImageName();
 		Log.i("emote service", "loading image " + imageName);
 		try (ZipFile zipFile = new ZipFile(this.file);
 			InputStream stream = zipFile.getInputStream(zipFile.getEntry(imageName))) {
-			BitmapFactory.Options options =  new BitmapFactory.Options();
-			options.inDensity = 40 * 3;
+			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
 
-			Bitmap image = BitmapFactory.decodeStream(stream, null, options);
+			Bitmap image = BitmapFactory.decodeStream(stream);
 			BitmapDrawable drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
 			drawable.setFilterBitmap(false);
-			int width = drawable.getIntrinsicWidth();
-			int height = drawable.getIntrinsicHeight();
+			int width = (int)(image.getWidth() * Math.ceil(metrics.density));
+			int height = (int)(image.getHeight() * Math.ceil(metrics.density));
+			Log.i("emote loader", String.format("translated %dx%d -> %dx%d @ %g", image.getWidth(), image.getHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
 			this.images.put(imageName, drawable);
@@ -118,7 +140,7 @@ public class EmoticonService {
 			 Reader readerx = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
 			 JsonReader reader = new JsonReader(readerx);
 		) {
-			Map<String, String> newEmotes = new HashMap<>(2000);
+			Map<String, Emote> newEmotes = new HashMap<>(2000);
 			reader.beginObject();
 			while (reader.hasNext()) {
 				String key = reader.nextName();
@@ -128,7 +150,15 @@ public class EmoticonService {
 					while (reader.hasNext()) {
 						String name = reader.nextName();
 						String imageName = reader.nextString();
-						newEmotes.put(name, imageName);
+
+						try (InputStream imageStream = zipFile.getInputStream(zipFile.getEntry(imageName))) {
+							BitmapFactory.Options options = new BitmapFactory.Options();
+							options.inJustDecodeBounds = true;
+							BitmapFactory.decodeStream(imageStream, null, options);
+							int width = options.outWidth;
+							int height = options.outHeight;
+							newEmotes.put(name, new Emote(imageName, width, height));
+						}
 					}
 					reader.endObject();
 				}
@@ -141,59 +171,6 @@ public class EmoticonService {
 				this.emotes.putAll(newEmotes);
 				this.images.evictAll();
 				Log.i("emote service", "emote data load complete (found " + this.emotes.size() + " emotes)");
-			}
-		} catch (ZipException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-	}
-
-	private void loadPackPidgin(File file) {
-		try (ZipFile zipFile = new ZipFile(file)) {
-			int count = 25;
-
-			Enumeration<? extends ZipEntry> entries = zipFile.entries();
-			while (entries.hasMoreElements()) {
-				ZipEntry entry = entries.nextElement();
-				System.out.println(entry);
-				if (count-- <= 0) break;;
-			}
-		} catch (ZipException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-		try (ZipFile zipFile = new ZipFile(file);
-			 InputStream inputStream = zipFile.getInputStream(zipFile.getEntry("theme"));
-			 Reader readerx = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
-			 BufferedReader reader = new BufferedReader(readerx)
-		) {
-			String line = null;
-			boolean seenCategory = false;
-			Map<String, String> newEmotes = new HashMap<>(2000);
-			while ((line = reader.readLine()) != null) {
-				if (line.trim().isEmpty()) continue;
-				if (line.matches("^\\[[^\\]]*\\]")) {
-					seenCategory = true;
-					continue;
-				}
-				if (seenCategory) {
-					String parts[] = line.trim().split("\\s+");
-					int start = "!".equals(parts[0]) ? 1 : 0;
-					String emote = parts[start + 0];
-					for (int i = start + 1; i < parts.length; i++) {
-
-						newEmotes.put(parts[i], emote);
-					}
-				}
-			}
-			synchronized (this.emotes) {
-				this.currentPack = file.getName();
-				this.file = file;
-				this.emotes.clear();
-				this.emotes.putAll(newEmotes);
-				this.images.evictAll();
 			}
 		} catch (ZipException e) {
 			e.printStackTrace();
