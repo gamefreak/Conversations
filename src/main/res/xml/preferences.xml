@@ -297,8 +297,9 @@
         </PreferenceScreen>
 
         <CheckBoxPreference
-            android:defaultValue="false"
+            android:defaultValue="true"
             android:key="never_send"
+            android:enabled="false"
             android:summary="@string/pref_never_send_crash_summary"
             android:title="@string/pref_never_send_crash"/>
     </PreferenceCategory>
