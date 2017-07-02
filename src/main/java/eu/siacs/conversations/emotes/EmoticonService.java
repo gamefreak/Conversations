@@ -18,7 +18,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
@@ -96,7 +98,7 @@ public class EmoticonService {
 		String imageName = emote.getImageName();
 		Log.i("emote service", "loading image " + imageName);
 		try (ZipFile zipFile = new ZipFile(this.file);
-			InputStream stream = zipFile.getInputStream(zipFile.getEntry(imageName))) {
+			InputStream stream = zipFile.getInputStream(zipFile.getEntry("emotes/" + imageName))) {
 			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
 
 			Bitmap image = BitmapFactory.decodeStream(stream);
@@ -136,7 +138,7 @@ public class EmoticonService {
 	private void loadPackJson(File file) {
 		Log.i("emote service", "begin parsing emote json");
 		try (ZipFile zipFile = new ZipFile(file);
-			 InputStream inputStream = zipFile.getInputStream(zipFile.getEntry("emoticons.json"));
+			 InputStream inputStream = zipFile.getInputStream(zipFile.getEntry("emotes/emoticons.json"));
 			 Reader readerx = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
 			 JsonReader reader = new JsonReader(readerx);
 		) {
@@ -148,19 +150,35 @@ public class EmoticonService {
 				if ("emotes".equals(key)) {
 					reader.beginObject();
 					while (reader.hasNext()) {
-						String name = reader.nextName();
-						String imageName = reader.nextString();
+						String imageName = reader.nextName();
+						reader.beginObject();
+						int width = 0, height = 0;
+						List<String> aliases = new ArrayList<>();
+						while (reader.hasNext()) {
+							String key2 = reader.nextName();
+							if ("width".equals(key2)) width = reader.nextInt();
+							else if ("height".equals(key2)) height = reader.nextInt();
+							else if ("aliases".equals(key2)) {
+								reader.beginArray();
+								while (reader.hasNext()) {
+									aliases.add(reader.nextString());
+								}
+								reader.endArray();
+							} else {
+								reader.skipValue();
+							}
 
-						try (InputStream imageStream = zipFile.getInputStream(zipFile.getEntry(imageName))) {
-							BitmapFactory.Options options = new BitmapFactory.Options();
-							options.inJustDecodeBounds = true;
-							BitmapFactory.decodeStream(imageStream, null, options);
-							int width = options.outWidth;
-							int height = options.outHeight;
-							newEmotes.put(name, new Emote(imageName, width, height));
+						}
+						reader.endObject();
+
+						Emote emote = new Emote(imageName, width, height);
+						for (String name : aliases) {
+							newEmotes.put(name, emote);
 						}
 					}
 					reader.endObject();
+				} else {
+					reader.skipValue();
 				}
 			}
 			reader.endObject();
@@ -172,9 +190,11 @@ public class EmoticonService {
 				this.images.evictAll();
 				Log.i("emote service", "emote data load complete (found " + this.emotes.size() + " emotes)");
 			}
-		} catch (ZipException e) {
+		} catch (ZipException  e) {
 			e.printStackTrace();
 		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (NullPointerException e) {
 			e.printStackTrace();
 		}
 	}
