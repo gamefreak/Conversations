@@ -7,6 +7,7 @@ import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Typeface;
+import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
@@ -22,6 +23,7 @@ import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,6 +31,8 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -67,6 +71,7 @@ import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.Patterns;
 import eu.siacs.conversations.utils.UIHelper;
+import pl.droidsonroids.gif.GifDrawable;
 
 public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextView.CopyHandler {
 
@@ -395,8 +400,59 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return startsWithQuote;
 	}
 
+static int frame = 0;
+	private void mayHaveAddedGif(final Drawable drawable, final ViewHolder viewHolder) {
 
-	private boolean handleTextEmotes(SpannableStringBuilder body) {
+		if (viewHolder.contains_animations) return;
+		if (drawable instanceof GifDrawable || drawable instanceof AnimationDrawable) {
+			viewHolder.contains_animations = true;
+//			viewHolder.messageBody.animate()
+//					.
+//					.start();
+//			viewHolder.messageBody.setAnimation(AnimationUtils.);
+			viewHolder.messageBody.postDelayed(new Runnable() {
+				@Override
+				public void run() {
+					if (drawable instanceof AnimationDrawable) {
+						AnimationDrawable ad = (AnimationDrawable)drawable;
+						frame++;
+						int drawFrame = ((int)(frame/3)) % ad.getNumberOfFrames();
+						ad.selectDrawable(drawFrame);
+						Log.d("ASDAFDIKAJFIUJASHF", "DRAFRAME" + drawFrame);
+//						activity.
+					}
+//					GifDrawable gd = (GifDrawable)drawable;
+//
+//					Log.v("GIF", "drawable: " + ((GifDrawable)drawable).isPlaying() + "/" + gd.getCurrentFrameIndex() + "/" + gd.getCurrentLoop());
+
+//					drawable.
+
+//					Log.v("GIF", "drawable: " + );
+					viewHolder.messageBody.setVisibility(View.INVISIBLE);
+					viewHolder.message_box.invalidate();
+					activity.findViewById(R.id.messages_view).postInvalidate();
+					viewHolder.message_box.postInvalidate();
+					viewHolder.messageBody.invalidate();
+
+					activity.runOnUiThread(new Runnable() {
+						@Override
+						public void run() {
+							viewHolder.message_box.invalidate();
+							viewHolder.message_box.postInvalidate();
+							viewHolder.messageBody.invalidate();
+							viewHolder.messageBody.postInvalidate();
+
+
+						}
+					});
+//					viewHolder.messageBody.postInvalidate();
+					viewHolder.messageBody.postDelayed(this, (long)16);
+				}
+			}, 16);
+
+		}
+	}
+	private boolean handleTextEmotes(SpannableStringBuilder body, ViewHolder viewHolder) {
 		String re = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
 		Pattern pattern = Pattern.compile(re);
 		Matcher matcher = pattern.matcher(body.toString());
@@ -408,6 +464,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			if (drawable != null) {
 				ImageSpan span = new ImageSpan(drawable);
 				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+				mayHaveAddedGif(drawable, viewHolder);
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
 			}
@@ -494,7 +551,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
 
-			handleTextEmotes(body);
+			handleTextEmotes(body, viewHolder);
 
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(body);
@@ -995,7 +1052,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	}
 
 	private static class ViewHolder {
-
+		protected boolean contains_animations = false;
 		protected LinearLayout message_box;
 		protected Button download_button;
 		protected ImageView image;

@@ -3,6 +3,7 @@ package eu.siacs.conversations.emotes;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
+import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
@@ -22,10 +23,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import eu.siacs.conversations.services.XmppConnectionService;
+import pl.droidsonroids.gif.GifDrawable;
 
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
@@ -37,7 +40,7 @@ public class EmoticonService {
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
 		this.emotes = new HashMap<>(4000);
-		this.images = new LruCache<>(128);
+		this.images = new LruCache<>(256);
 	}
 
 	public boolean hasPack() {
@@ -93,20 +96,48 @@ public class EmoticonService {
 //		if (image == null) image = loadImage(imageName);
 		return image;
 	}
+	private AnimationDrawable generateColorAnimation() {
+		AnimationDrawable animationDrawable = new AnimationDrawable();
 
+		for (int i = 0; i < 16; i++) {
+			ShapeDrawable shape = new ShapeDrawable(new RectShape());
+			shape.getPaint().setColor(0xff000000 | (0xff << i));
+			shape.setIntrinsicWidth(72);
+			shape.setIntrinsicHeight(72);
+			animationDrawable.addFrame(shape, 100);
+		}
+
+		animationDrawable.setBounds(0, 0, 72, 72);
+		animationDrawable.setOneShot(false);
+		return animationDrawable;
+	}
 	private Drawable loadImage(Emote emote) {
 		String imageName = emote.getImageName();
 		Log.i("emote service", "loading image " + imageName);
+		String emotePath = "emotes/" + imageName;
 		try (ZipFile zipFile = new ZipFile(this.file);
-			InputStream stream = zipFile.getInputStream(zipFile.getEntry("emotes/" + imageName))) {
+			InputStream stream = zipFile.getInputStream(zipFile.getEntry(emotePath))) {
 			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
 
-			Bitmap image = BitmapFactory.decodeStream(stream);
-			BitmapDrawable drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+			ZipEntry entry = zipFile.getEntry(emotePath);
+			Drawable drawable = null;
+
+			if (emotePath.endsWith(".gif")) {
+				byte[] buffer = new byte[(int)entry.getSize()];
+				int bytesRead = 0;
+				while (bytesRead < buffer.length) {
+					bytesRead += stream.read(buffer, bytesRead, buffer.length - bytesRead);
+				}
+//				drawable = new GifDrawable(buffer);
+				drawable = generateColorAnimation();
+			} else {
+				Bitmap image = BitmapFactory.decodeStream(stream);
+				drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+			}
 			drawable.setFilterBitmap(false);
-			int width = (int)(image.getWidth() * Math.ceil(metrics.density));
-			int height = (int)(image.getHeight() * Math.ceil(metrics.density));
-			Log.i("emote loader", String.format("translated %dx%d -> %dx%d @ %g", image.getWidth(), image.getHeight(), width, height, metrics.density));
+			int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
+			int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
+			Log.i("emote loader", String.format("translated %dx%d -> %dx%d @ %g", drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
 			this.images.put(imageName, drawable);
