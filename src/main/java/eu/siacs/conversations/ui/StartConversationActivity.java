@@ -90,9 +90,9 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
     private ViewPager mViewPager;
     private ListPagerAdapter mListPagerAdapter;
     private List<ListItem> contacts = new ArrayList<>();
-    private ArrayAdapter<ListItem> mContactsAdapter;
+    private ListItemAdapter mContactsAdapter;
     private List<ListItem> conferences = new ArrayList<>();
-    private ArrayAdapter<ListItem> mConferenceAdapter;
+    private ListItemAdapter mConferenceAdapter;
     private List<String> mActivatedAccounts = new ArrayList<>();
     private List<String> mKnownHosts;
     private List<String> mKnownConferenceHosts;
@@ -289,6 +289,8 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
         } else {
             askForContactsPermissions();
         }
+        mConferenceAdapter.refreshSettings();
+        mContactsAdapter.refreshSettings();
     }
 
     @Override
@@ -359,7 +361,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
         }
         Conversation conversation = xmppConnectionService.findOrCreateConversation(bookmark.getAccount(), jid, true, true, true);
         conversation.setBookmark(bookmark);
-        if (!bookmark.autojoin() && getPreferences().getBoolean("autojoin", true)) {
+        if (!bookmark.autojoin() && getPreferences().getBoolean("autojoin", getResources().getBoolean(R.bool.autojoin))) {
             bookmark.setAutojoin(true);
             xmppConnectionService.pushBookmarks(bookmark.getAccount());
         }
@@ -505,7 +507,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
                                 jid.setError(getString(R.string.bookmark_already_exists));
                             } else {
                                 final Bookmark bookmark = new Bookmark(account, conferenceJid.toBareJid());
-                                bookmark.setAutojoin(getPreferences().getBoolean("autojoin", true));
+                                bookmark.setAutojoin(getPreferences().getBoolean("autojoin", getResources().getBoolean(R.bool.autojoin)));
                                 String nick = conferenceJid.getResourcepart();
                                 if (nick != null && !nick.isEmpty()) {
                                     bookmark.setNick(nick);
@@ -832,7 +834,9 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
             case Intent.ACTION_VIEW:
                 Uri uri = intent.getData();
                 if (uri != null) {
-                    return new Invite(intent.getData(),false).invite();
+                    Invite invite = new Invite(intent.getData(),false);
+                    invite.account = intent.getStringExtra("account");
+                    return invite.invite();
                 } else {
                     return false;
                 }
@@ -871,7 +875,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
             finish();
             return true;
         }
-        List<Contact> contacts = xmppConnectionService.findContacts(invite.getJid());
+        List<Contact> contacts = xmppConnectionService.findContacts(invite.getJid(),invite.account);
         if (invite.isMuc()) {
             Conversation muc = xmppConnectionService.findFirstMuc(invite.getJid());
             if (muc != null) {
@@ -893,6 +897,9 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
                     if(xmppConnectionService.verifyFingerprints(contact, invite.getFingerprints())) {
                         Toast.makeText(this,R.string.verified_fingerprints,Toast.LENGTH_SHORT).show();
                     }
+                }
+                if (invite.account != null) {
+                    xmppConnectionService.getShortcutService().report(contact);
                 }
                 switchToConversation(contact, invite.getBody());
             }
@@ -1182,6 +1189,8 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
         public Invite(Uri uri, boolean safeSource) {
             super(uri,safeSource);
         }
+
+        public String account;
 
         boolean invite() {
             if (getJid() != null) {

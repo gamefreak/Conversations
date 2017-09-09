@@ -5,10 +5,10 @@ import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
 
-import org.whispersystems.libaxolotl.IdentityKey;
-import org.whispersystems.libaxolotl.ecc.Curve;
-import org.whispersystems.libaxolotl.ecc.ECPublicKey;
-import org.whispersystems.libaxolotl.state.PreKeyBundle;
+import org.whispersystems.libsignal.IdentityKey;
+import org.whispersystems.libsignal.ecc.Curve;
+import org.whispersystems.libsignal.ecc.ECPublicKey;
+import org.whispersystems.libsignal.state.PreKeyBundle;
 
 import java.io.ByteArrayInputStream;
 import java.security.cert.CertificateException;
@@ -59,16 +59,14 @@ public class IqParser extends AbstractParser implements OnIqPacketReceived {
 					contact.setServerName(name);
 					contact.parseGroupsFromElement(item);
 				}
-				if (subscription != null) {
-					if (subscription.equals("remove")) {
-						contact.resetOption(Contact.Options.IN_ROSTER);
-						contact.resetOption(Contact.Options.DIRTY_DELETE);
-						contact.resetOption(Contact.Options.PREEMPTIVE_GRANT);
-					} else {
-						contact.setOption(Contact.Options.IN_ROSTER);
-						contact.resetOption(Contact.Options.DIRTY_PUSH);
-						contact.parseSubscriptionFromElement(item);
-					}
+				if ("remove".equals(subscription)) {
+					contact.resetOption(Contact.Options.IN_ROSTER);
+					contact.resetOption(Contact.Options.DIRTY_DELETE);
+					contact.resetOption(Contact.Options.PREEMPTIVE_GRANT);
+				} else {
+					contact.setOption(Contact.Options.IN_ROSTER);
+					contact.resetOption(Contact.Options.DIRTY_PUSH);
+					contact.parseSubscriptionFromElement(item);
 				}
 				boolean both = contact.getOption(Contact.Options.TO) && contact.getOption(Contact.Options.FROM);
 				if ((both != bothPre) && both) {
@@ -83,6 +81,7 @@ public class IqParser extends AbstractParser implements OnIqPacketReceived {
 		}
 		mXmppConnectionService.updateConversationUi();
 		mXmppConnectionService.updateRosterUi();
+		mXmppConnectionService.getShortcutService().refresh();
 	}
 
 	public String avatarData(final IqPacket packet) {

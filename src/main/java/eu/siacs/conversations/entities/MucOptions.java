@@ -3,6 +3,7 @@ package eu.siacs.conversations.entities;
 import android.annotation.SuppressLint;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -19,6 +20,8 @@ import eu.siacs.conversations.xmpp.pep.Avatar;
 
 @SuppressLint("DefaultLocale")
 public class MucOptions {
+
+	private static List<String> LOCALPART_BLACKLIST = Arrays.asList("xmpp","jabber");
 
 	private boolean mAutoPushConfiguration = true;
 
@@ -242,7 +245,13 @@ public class MucOptions {
 		}
 
 		public long getPgpKeyId() {
-			return this.pgpKeyId;
+			if (this.pgpKeyId != 0) {
+				return this.pgpKeyId;
+			} else if (realJid != null) {
+				return getAccount().getRoster().getContact(realJid).getPgpKeyId();
+			} else {
+				return 0;
+			}
 		}
 
 		public Contact getContact() {
@@ -444,13 +453,16 @@ public class MucOptions {
 		return user;
 	}
 
-	public void updateUser(User user) {
+	//returns true if real jid was new;
+	public boolean updateUser(User user) {
 		User old;
+		boolean realJidFound = false;
 		if (user.fullJid == null && user.realJid != null) {
 			old = findUserByRealJid(user.realJid);
+			realJidFound = old != null;
 			if (old != null) {
 				if (old.fullJid != null) {
-					return; //don't add. user already exists
+					return false; //don't add. user already exists
 				} else {
 					synchronized (users) {
 						users.remove(old);
@@ -459,6 +471,7 @@ public class MucOptions {
 			}
 		} else if (user.realJid != null) {
 			old = findUserByRealJid(user.realJid);
+			realJidFound = old != null;
 			synchronized (users) {
 				if (old != null && old.fullJid == null) {
 					users.remove(old);
@@ -475,8 +488,10 @@ public class MucOptions {
 					&& user.getAffiliation().outranks(Affiliation.OUTCAST)
 					&& !fullJidIsSelf){
 				this.users.add(user);
+				return !realJidFound && user.realJid != null;
 			}
 		}
+		return false;
 	}
 
 	public User findUserByFullJid(Jid jid) {
@@ -582,7 +597,7 @@ public class MucOptions {
 		}
 	}
 
-	public String getProposedNick() {
+	private String getProposedNick() {
 		if (conversation.getBookmark() != null
 				&& conversation.getBookmark().getNick() != null
 				&& !conversation.getBookmark().getNick().trim().isEmpty()) {
@@ -590,7 +605,14 @@ public class MucOptions {
 		} else if (!conversation.getJid().isBareJid()) {
 			return conversation.getJid().getResourcepart();
 		} else {
-			return account.getUsername();
+			Jid jid = account.getJid();
+			if (LOCALPART_BLACKLIST.contains(jid.getLocalpart())) {
+				final String domain = jid.getDomainpart();
+				final int index = domain.lastIndexOf('.');
+				return index > 1 ? domain.substring(0,index) : domain;
+			} else {
+				return jid.getLocalpart();
+			}
 		}
 	}
 
@@ -644,8 +666,14 @@ public class MucOptions {
 				Contact contact = user.getContact();
 				if (contact != null && !contact.getDisplayName().isEmpty()) {
 					builder.append(contact.getDisplayName().split("\\s+")[0]);
-				} else if (user.getName() != null){
-					builder.append(user.getName());
+				} else {
+					final String name = user.getName();
+					final Jid jid = user.getRealJid();
+					if (name != null){
+						builder.append(name.split("\\s+")[0]);
+					} else if (jid != null) {
+						builder.append(jid.getLocalpart());
+					}
 				}
 			}
 			return builder.toString();

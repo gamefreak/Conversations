@@ -28,12 +28,6 @@ import eu.siacs.conversations.xmpp.jid.Jid;
 
 public class UIHelper {
 
-	private static String BLACK_HEART_SUIT = "\u2665";
-	private static String HEAVY_BLACK_HEART_SUIT = "\u2764";
-	private static String WHITE_HEART_SUIT = "\u2661";
-
-	public static final List<String> HEARTS = Arrays.asList(BLACK_HEART_SUIT,HEAVY_BLACK_HEART_SUIT,WHITE_HEART_SUIT);
-
 	private static final List<String> LOCATION_QUESTIONS = Arrays.asList(
 			"where are you", //en
 			"where are you now", //en
@@ -98,6 +92,24 @@ public class UIHelper {
 
 	private static boolean today(Date date) {
 		return sameDay(date,new Date(System.currentTimeMillis()));
+	}
+
+	public static boolean today(long date) {
+		return sameDay(date,System.currentTimeMillis());
+	}
+
+	public static boolean yesterday(long date) {
+		Calendar cal1 = Calendar.getInstance();
+		Calendar cal2 = Calendar.getInstance();
+		cal1.add(Calendar.DAY_OF_YEAR,-1);
+		cal2.setTime(new Date(date));
+		return cal1.get(Calendar.YEAR) == cal2.get(Calendar.YEAR)
+				&& cal1.get(Calendar.DAY_OF_YEAR) == cal2
+				.get(Calendar.DAY_OF_YEAR);
+	}
+
+	public static boolean sameDay(long a, long b) {
+		return sameDay(new Date(a),new Date(b));
 	}
 
 	private static boolean sameDay(Date a, Date b) {
@@ -190,7 +202,7 @@ public class UIHelper {
 			if (body.startsWith(Message.ME_COMMAND)) {
 				return new Pair<>(body.replaceAll("^" + Message.ME_COMMAND,
 						UIHelper.getMessageDisplayName(message) + " "), false);
-			} else if (GeoHelper.isGeoUri(message.getBody())) {
+			} else if (message.isGeoUri()) {
 				if (message.getStatus() == Message.STATUS_RECEIVED) {
 					return new Pair<>(context.getString(R.string.received_location), true);
 				} else {

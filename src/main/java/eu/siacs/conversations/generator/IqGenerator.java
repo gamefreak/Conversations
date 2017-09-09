@@ -5,10 +5,10 @@ import android.os.Bundle;
 import android.util.Base64;
 import android.util.Log;
 
-import org.whispersystems.libaxolotl.IdentityKey;
-import org.whispersystems.libaxolotl.ecc.ECPublicKey;
-import org.whispersystems.libaxolotl.state.PreKeyRecord;
-import org.whispersystems.libaxolotl.state.SignedPreKeyRecord;
+import org.whispersystems.libsignal.IdentityKey;
+import org.whispersystems.libsignal.ecc.ECPublicKey;
+import org.whispersystems.libsignal.state.PreKeyRecord;
+import org.whispersystems.libsignal.state.SignedPreKeyRecord;
 
 import java.nio.ByteBuffer;
 import java.security.cert.CertificateEncodingException;
@@ -91,14 +91,22 @@ public class IqGenerator extends AbstractGenerator {
 		return packet;
 	}
 
-	protected IqPacket publish(final String node, final Element item) {
+	protected IqPacket publish(final String node, final Element item, final Bundle options) {
 		final IqPacket packet = new IqPacket(IqPacket.TYPE.SET);
 		final Element pubsub = packet.addChild("pubsub",
 				"http://jabber.org/protocol/pubsub");
 		final Element publish = pubsub.addChild("publish");
 		publish.setAttribute("node", node);
 		publish.addChild(item);
+		if (options != null) {
+			final Element publishOptions = pubsub.addChild("publish-options");
+			publishOptions.addChild(Data.create(Namespace.PUBSUB_PUBLISH_OPTIONS, options));
+		}
 		return packet;
+	}
+
+	protected IqPacket publish(final String node, final Element item) {
+		return publish(node,item,null);
 	}
 
 	protected IqPacket retrieve(String node, Element item) {
@@ -184,7 +192,7 @@ public class IqGenerator extends AbstractGenerator {
 		return packet;
 	}
 
-	public IqPacket publishDeviceIds(final Set<Integer> ids) {
+	public IqPacket publishDeviceIds(final Set<Integer> ids, final Bundle publishOptions) {
 		final Element item = new Element("item");
 		final Element list = item.addChild("list", AxolotlService.PEP_PREFIX);
 		for(Integer id:ids) {
@@ -192,11 +200,11 @@ public class IqGenerator extends AbstractGenerator {
 			device.setAttribute("id", id);
 			list.addChild(device);
 		}
-		return publish(AxolotlService.PEP_DEVICE_LIST, item);
+		return publish(AxolotlService.PEP_DEVICE_LIST, item, publishOptions);
 	}
 
 	public IqPacket publishBundles(final SignedPreKeyRecord signedPreKeyRecord, final IdentityKey identityKey,
-	                               final Set<PreKeyRecord> preKeyRecords, final int deviceId) {
+								   final Set<PreKeyRecord> preKeyRecords, final int deviceId, Bundle publishOptions) {
 		final Element item = new Element("item");
 		final Element bundle = item.addChild("bundle", AxolotlService.PEP_PREFIX);
 		final Element signedPreKeyPublic = bundle.addChild("signedPreKeyPublic");
@@ -215,7 +223,7 @@ public class IqGenerator extends AbstractGenerator {
 			prekey.setContent(Base64.encodeToString(preKeyRecord.getKeyPair().getPublicKey().serialize(), Base64.DEFAULT));
 		}
 
-		return publish(AxolotlService.PEP_BUNDLES+":"+deviceId, item);
+		return publish(AxolotlService.PEP_BUNDLES+":"+deviceId, item, publishOptions);
 	}
 
 	public IqPacket publishVerification(byte[] signature, X509Certificate[] certificates, final int deviceId) {
@@ -246,7 +254,9 @@ public class IqGenerator extends AbstractGenerator {
 		} else if (mam.getWith()!=null) {
 			data.put("with", mam.getWith().toString());
 		}
-		data.put("start", getTimestamp(mam.getStart()));
+		if (mam.getStart() != 0) {
+			data.put("start", getTimestamp(mam.getStart()));
+		}
 		data.put("end", getTimestamp(mam.getEnd()));
 		data.submit();
 		query.addChild(data);

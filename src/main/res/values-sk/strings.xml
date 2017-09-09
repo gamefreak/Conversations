@@ -132,7 +132,6 @@
   <string name="account_status_regis_conflict">Užívateľské meno už existuje</string>
   <string name="account_status_regis_success">Registrácia ukončená</string>
   <string name="account_status_regis_not_sup">Server nepodporuje registráciu</string>
-  <string name="account_status_security_error">Bezpečnostná chyba</string>
   <string name="account_status_incompatible_server">Nekompatibilný server</string>
   <string name="encryption_choice_unencrypted">Nezašifrovaný</string>
   <string name="encryption_choice_otr">OTR</string>
@@ -145,7 +144,6 @@
   <string name="mgmt_account_publish_pgp">Zverejniť OpenPGP kľúč</string>
   <string name="mgmt_account_enable">Povoliť účet</string>
   <string name="mgmt_account_are_you_sure">Ste si istý?</string>
-  <string name="mgmt_account_delete_confirm_text">Ak vymažete svoj účet, stratí sa celá história konverzácií</string>
   <string name="attach_record_voice">Nahrať hlas</string>
   <string name="account_settings_jabber_id">Jabber ID</string>
   <string name="account_settings_password">Heslo</string>
@@ -192,7 +190,6 @@
   <string name="otr_fingerprint">OTR identifikátor</string>
   <string name="omemo_fingerprint">OMEMO identifikátor</string>
   <string name="omemo_fingerprint_selected_message">OMEMO identifkátor správy</string>
-  <string name="this_device_omemo_fingerprint">Vlastný OMEMO identifikátor</string>
   <string name="other_devices">Ostatné zariadenia</string>
   <string name="trust_omemo_fingerprints">Dôverovať OMEMO identifikátoru</string>
   <string name="done">Dokončený</string>
@@ -279,7 +276,6 @@
   <string name="not_connected_try_again">Nie ste pripojený. Skúste to neskôr</string>
   <string name="check_x_filesize">Overiť %s veľkosť</string>
   <string name="message_options">Možnosti správy</string>
-  <string name="copy_text">Skopírovať text</string>
   <string name="copy_original_url">Skopírovať originálny URL</string>
   <string name="send_again">Poslať znova</string>
   <string name="file_url">URL súbor</string>
@@ -436,7 +432,6 @@
   <string name="username">Užívateľské meno</string>
   <string name="username_hint">Užívateľské meno</string>
   <string name="invalid_username">Toto nie je platné užívateľské meno</string>
-  <string name="pref_xa_on_silent_mode">Nedostupný v tichom režime</string>
   <string name="action_add_account_with_certificate">Pridať účet s certifikátom</string>
   <string name="unable_to_parse_certificate">Neschopný analyzovať certifikát</string>
   <string name="captcha_required">Potrebný CAPTCHA</string>

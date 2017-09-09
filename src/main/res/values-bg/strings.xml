@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Приключване на този разговор след това</string>
   <string name="choose_presence">Изберете устройство</string>
   <string name="send_unencrypted_message">Изпр. на нешифр. съобщение</string>
+  <string name="send_message">Изпращане на съобщение</string>
   <string name="send_message_to_x">Изпращане на съобщение до %s</string>
   <string name="send_otr_message">Изпр. на съобщение, шифр. чрез OTP</string>
   <string name="send_omemo_message">Изпр. на съобщение, шифр. чрез OMEMO</string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">Потребителското име е заето</string>
   <string name="account_status_regis_success">Регистрацията е завършена</string>
   <string name="account_status_regis_not_sup">Сървърът не поддържа регистриране</string>
-  <string name="account_status_security_error">Грешка в сигурността</string>
+  <string name="account_status_tls_error">Договарянето чрез TLS беше неуспешно</string>
   <string name="account_status_policy_violation">Нарушение на политиката</string>
   <string name="account_status_incompatible_server">Несъвместим сървър</string>
   <string name="account_status_stream_error">Поточна грешка</string>
@@ -169,11 +170,13 @@
   <string name="mgmt_account_disable">Временно деактивиране</string>
   <string name="mgmt_account_publish_avatar">Публикуване на аватар</string>
   <string name="mgmt_account_publish_pgp">Публикуване на публичния OpenPGP ключ</string>
+  <string name="unpublish_pgp">Премахване на публичния OpenPGP ключ</string>
+  <string name="unpublish_pgp_message">Наистина ли искате да премахнете своя публичен OpenPGP ключ от известяването си за присъствие?\nКонтактите Ви вече няма да могат да Ви изпращат съобщение, шифровани чрез OpenPGP.</string>
   <string name="openpgp_has_been_published">Публичният OpenPGP ключ беше публикуван.</string>
   <string name="republish_pgp_keys">Запомнете, че трябва да публикувате повторно своите публични OpenPGP ключове!</string>
   <string name="mgmt_account_enable">Активиране на профила</string>
   <string name="mgmt_account_are_you_sure">Сигурни ли сте?</string>
-  <string name="mgmt_account_delete_confirm_text">Ако изтриете профила, цялата история на разговорите Ви ще бъде изтрита.</string>
+  <string name="mgmt_account_delete_confirm_text">Ако изтриете профила си, ще загубите цялата история на разговорите си</string>
   <string name="attach_record_voice">Запис на глас</string>
   <string name="account_settings_jabber_id">Jabber идентификатор</string>
   <string name="block_jabber_id">Блокиране на Jabber идентификатор</string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">Отпечатък v\\OMEMO</string>
   <string name="omemo_fingerprint_selected_message">Отпечатък OMEMO на съобщението</string>
   <string name="omemo_fingerprint_x509_selected_message">Отпечатък v\\OMEMO на съобщението</string>
-  <string name="this_device_omemo_fingerprint">Собствен отпечатък OMEMO</string>
   <string name="other_devices">Други устройства</string>
   <string name="trust_omemo_fingerprints">Доверяване на отпечатъци OMEMO</string>
   <string name="fetching_keys">Изтегляне на ключове…</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">Проверете размера на %s</string>
   <string name="check_x_filesize_on_host">Проверете размера на %1$s на %2$s</string>
   <string name="message_options">Настройки за съобщенята</string>
-  <string name="copy_text">Копиране на текста</string>
   <string name="select_text">Избиране на текста</string>
   <string name="quote">Цитат</string>
   <string name="copy_original_url">Копиране на оригиналния адрес</string>
@@ -399,6 +400,7 @@
   <string name="clear_other_devices">Премахване на устройствата</string>
   <string name="clear_other_devices_desc">Сигурни ли сте, че искате да премахнете всички останали устройства от обявлението OMEMO? Следващия път, когато устройствата Ви се свържат, те ще обявят себе си отново, но може да не получат съобщенията, изпратени междувременно.</string>
   <string name="error_no_keys_to_trust_server_error">Няма ключове, които могат да бъдат използвани за този контакт.\nИзтеглянето на нови ключове от сървъра беше неуспешно. Възможно е да има проблем със сървъра на контактите Ви.</string>
+  <string name="error_no_keys_to_trust_presence">Няма ключове, които могат да бъдат използвани за този контакт.\nУверете се, че и двамата имате абонамент за присъствието.</string>
   <string name="error_no_keys_to_trust">Няма ключове, които могат да бъдат използвани за този контакт. Ако сте изчистили някои от ключовете му, то той трябва да създаде нови.</string>
   <string name="error_trustkeys_title">Грешка</string>
   <string name="fetching_history_from_server">Получаване на историята от сървъра</string>
@@ -524,10 +526,10 @@
   <string name="pref_presence_settings">Присъствие</string>
   <string name="pref_away_when_screen_off">Отсъстващ, когато екранът е изключен</string>
   <string name="pref_away_when_screen_off_summary">Преминава в състояние „отсъстващ“ когато екранът бъде изключен</string>
-  <string name="pref_xa_on_silent_mode">Недостъпен, в тих режим</string>
-  <string name="pref_xa_on_silent_mode_summary">Преминава в състояние „недостъпен“ когато устройството е в тих режим</string>
+  <string name="pref_dnd_on_silent_mode">„Отпочиващ“ в тих режим</string>
+  <string name="pref_dnd_on_silent_mode_summary">Преминава в състояние „отсъстващ“, когато устройството е в тих режим</string>
   <string name="pref_treat_vibrate_as_silent">Тих режим при режим на вибриране</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Преминава в състояние „недостъпен“ когато устройството е в режим на вибриране.</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">Преминава в състояние „отсъстващ“, когато устройството е в режим на вибриране.</string>
   <string name="pref_show_connection_options">Разширени настройки за връзката</string>
   <string name="pref_show_connection_options_summary">Показване на настройките за сървър и порт при установка на профил</string>
   <string name="hostname_example">xmpp.example.com</string>
@@ -576,7 +578,7 @@
   <string name="certicate_info_not_available">(Няма)</string>
   <string name="certificate_not_found">Няма намерен сертификат</string>
   <string name="notify_on_all_messages">Известяване за всички съобщения</string>
-  <string name="notify_only_when_highlighted">Известяване само на осветените</string>
+  <string name="notify_only_when_highlighted">Известяване само при споменаване</string>
   <string name="notify_never">Известията са изключени</string>
   <string name="notify_paused">Известията са спрени временно</string>
   <string name="pref_picture_compression">Компресиране на снимките</string>
@@ -711,4 +713,18 @@
   <string name="block_stranger">Блокиране на непознатия</string>
   <string name="block_entire_domain">Блокиране на целия домейн</string>
   <string name="online_right_now">на линия в момента</string>
+  <string name="retry_decryption">Повторен опит за дешифроване</string>
+  <string name="session_failure">Грешка в сесията</string>
+  <string name="sasl_downgrade">Механизмът на SASL е понижен</string>
+  <string name="account_status_regis_web">Сървърът изисква регистриране чрез уеб сайт</string>
+  <string name="open_website">Отваряне на уеб сайта</string>
+  <string name="application_found_to_open_website">Няма намерено приложение за отваряне на уеб сайта</string>
+  <string name="pref_headsup_notifications">Изскачащи известия</string>
+  <string name="pref_headsup_notifications_summary">Показване на изскачащи известия</string>
+  <string name="today">Днес</string>
+  <string name="yesterday">Вчера</string>
+  <string name="pref_validate_hostname">Проверка на името на сървъра чрез DNSSEC</string>
+  <string name="pref_validate_hostname_summary">Сървърните сертификати, които съдържат проверено име на сървъра, се смятат за потвърдени</string>
+  <string name="network_is_unreachable">Мрежата е недостъпна</string>
+  <string name="certificate_does_not_contain_jid">Сертификатът не съдържа Jabber идентификатор</string>
 </resources>

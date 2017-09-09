@@ -156,7 +156,6 @@
   <string name="account_status_regis_conflict">Kullanıcı adı kullanılıyor</string>
   <string name="account_status_regis_success">Hesap oluşturuldu</string>
   <string name="account_status_regis_not_sup">Sunucu hesap oluşturma işlemini desteklemiyor</string>
-  <string name="account_status_security_error">Güvenlik hatası</string>
   <string name="account_status_policy_violation">Politika ihlali</string>
   <string name="account_status_incompatible_server">Sunucu uyuşmazlığı</string>
   <string name="account_status_stream_error">Akış hatası</string>
@@ -173,7 +172,6 @@
   <string name="republish_pgp_keys">OpenPGP genel anahtarınızı yeniden yayımlamayı unutmayın!</string>
   <string name="mgmt_account_enable">Hesabı etkinleştir</string>
   <string name="mgmt_account_are_you_sure">Emin misiniz?</string>
-  <string name="mgmt_account_delete_confirm_text">Hesabınızı silerseniz tüm konuşma geçmişiniz silinecek</string>
   <string name="attach_record_voice">Ses kaydet</string>
   <string name="account_settings_jabber_id">Jabber ID</string>
   <string name="block_jabber_id">Jabber ID engelle</string>
@@ -227,7 +225,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO parmak izi</string>
   <string name="omemo_fingerprint_selected_message">İletinin OMEMO parmak izi</string>
   <string name="omemo_fingerprint_x509_selected_message">v\\İletinin OMEMO parmak izi</string>
-  <string name="this_device_omemo_fingerprint">OMEMO parmak iziniz</string>
   <string name="other_devices">Diğer aygıtlar</string>
   <string name="trust_omemo_fingerprints">OMEMO parmak izlerine güven</string>
   <string name="fetching_keys">Anahtarları alıyor…</string>
@@ -331,7 +328,6 @@
   <string name="check_x_filesize">%s boyutunu denetle</string>
   <string name="check_x_filesize_on_host">%2$s üzerindeki %1$s boyutunu denetle</string>
   <string name="message_options">İleti seçenekleri</string>
-  <string name="copy_text">Metni kopyala</string>
   <string name="select_text">Metni seç</string>
   <string name="quote">Alıntı</string>
   <string name="copy_original_url">Orijinal URL\'i kopyala</string>
@@ -522,10 +518,7 @@
   <string name="pref_presence_settings">Durum</string>
   <string name="pref_away_when_screen_off">Ekran kapandığında uzakta</string>
   <string name="pref_away_when_screen_off_summary">Ekran kapandığında çevrim içi durum bildiriminizi uzakta olarak değiştirir</string>
-  <string name="pref_xa_on_silent_mode">Sessiz kipteyken erişilemez</string>
-  <string name="pref_xa_on_silent_mode_summary">Telefonunuz sessizdeyken, durum bildiriminizi müsait değil olarak değiştirir</string>
   <string name="pref_treat_vibrate_as_silent">Titreşim kipini sessiz kip olarak değerlendir</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Aygıtınız titreşim kipindeyken durum bildiriminizi uygun değil olarak değiştirir</string>
   <string name="pref_show_connection_options">Genişletilmiş bağlantı seçenekleri</string>
   <string name="pref_show_connection_options_summary">Hesap oluştururken sunucu adıyla bağlantı noktası seçeneğini göster</string>
   <string name="hostname_example">xmpp.ornek.com</string>
@@ -573,7 +566,6 @@
   <string name="certicate_info_not_available">(mevcut değil)</string>
   <string name="certificate_not_found">Sertifika bulunamadı</string>
   <string name="notify_on_all_messages">Tüm iletilerde uyar</string>
-  <string name="notify_only_when_highlighted">Yalnızca vurguluysa uyar</string>
   <string name="notify_never">Uyarılar devre dışı</string>
   <string name="notify_paused">Uyarılar geçici olarak durduruldu</string>
   <string name="pref_picture_compression">Resimleri sıkıştır</string>

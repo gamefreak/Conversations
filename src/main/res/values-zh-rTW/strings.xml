@@ -80,6 +80,7 @@
   <string name="also_end_conversation">結束此會話以後</string>
   <string name="choose_presence">選擇設備</string>
   <string name="send_unencrypted_message">發送未加密的資訊</string>
+  <string name="send_message">送訊息</string>
   <string name="send_message_to_x">發信息給 %s</string>
   <string name="send_otr_message">發送 OTR 加密資訊</string>
   <string name="send_omemo_message">發送 OMEMO 加密資訊</string>
@@ -156,7 +157,6 @@
   <string name="account_status_regis_conflict"> 用戶名已存在</string>
   <string name="account_status_regis_success">註冊完成</string>
   <string name="account_status_regis_not_sup">伺服器不支援註冊</string>
-  <string name="account_status_security_error">安全錯誤</string>
   <string name="account_status_policy_violation">違反政策</string>
   <string name="account_status_incompatible_server">伺服器不相容</string>
   <string name="account_status_stream_error">流錯誤</string>
@@ -169,11 +169,13 @@
   <string name="mgmt_account_disable">暫時不可用</string>
   <string name="mgmt_account_publish_avatar">發佈頭像</string>
   <string name="mgmt_account_publish_pgp">發佈 OpenPGP 公開金鑰</string>
+  <string name="unpublish_pgp">移除 OpenPGP 公開金鑰</string>
+  <string name="unpublish_pgp_message">確定要移除上線狀態中的 OpenPGP 公開金鑰嗎？\n這樣一來，你的聯絡人就無法傳送以 OpenPGP 加密的訊息給你了。</string>
   <string name="openpgp_has_been_published">OpenPGP 公開金鑰已發佈</string>
   <string name="republish_pgp_keys">記得重新發佈OpenPGP公開金鑰</string>
   <string name="mgmt_account_enable">啟用帳戶</string>
   <string name="mgmt_account_are_you_sure">確定?</string>
-  <string name="mgmt_account_delete_confirm_text">如果刪除使用者，所有會話資訊將會丟失</string>
+  <string name="mgmt_account_delete_confirm_text">刪除帳號會導致聊天紀錄全部不見</string>
   <string name="attach_record_voice">錄音</string>
   <string name="account_settings_jabber_id">Jabber ID</string>
   <string name="block_jabber_id">封鎖 Jabber 識別碼</string>
@@ -227,7 +229,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO 指紋</string>
   <string name="omemo_fingerprint_selected_message">消息的 OMEMO 指紋</string>
   <string name="omemo_fingerprint_x509_selected_message">消息的 OMEMO 指紋</string>
-  <string name="this_device_omemo_fingerprint">自己的 OMEMO 指紋</string>
   <string name="other_devices">其他設備</string>
   <string name="trust_omemo_fingerprints">信任的 OMEMO 指紋</string>
   <string name="fetching_keys">獲取金鑰中</string>
@@ -275,7 +276,7 @@
   <string name="connect">連接</string>
   <string name="account_already_exists">該帳號已存在</string>
   <string name="next">下一步</string>
-  <string name="server_info_session_established">當前會話已建立</string>
+  <string name="server_info_session_established">已建立了目前的通訊對話</string>
   <string name="additional_information">其他資訊</string>
   <string name="skip">忽略</string>
   <string name="disable_notifications">關閉通知</string>
@@ -331,7 +332,6 @@
   <string name="check_x_filesize">檢查 %s 大小</string>
   <string name="check_x_filesize_on_host">在 %2$s 上檢查 %1$s 的大小</string>
   <string name="message_options">消息選項</string>
-  <string name="copy_text">拷貝文本</string>
   <string name="select_text">選擇文本</string>
   <string name="quote">引用</string>
   <string name="copy_original_url">拷貝原始URL</string>
@@ -360,7 +360,7 @@
   <string name="finish">完成</string>
   <string name="verified">驗證通過！</string>
   <string name="smp_requested">連絡人請求 SMP 驗證</string>
-  <string name="no_otr_session_found">沒有找到 OTR 會話</string>
+  <string name="no_otr_session_found">找不到有效的 OTR 通訊對話！</string>
   <string name="conversations_foreground_service">Conversations</string>
   <string name="pref_keep_foreground_service">保持前臺服務</string>
   <string name="pref_keep_foreground_service_summary">防止作業系統中斷你的連接</string>
@@ -522,10 +522,7 @@
   <string name="pref_presence_settings">存在</string>
   <string name="pref_away_when_screen_off">關閉螢幕時離開</string>
   <string name="pref_away_when_screen_off_summary">當螢幕關閉時將標記您的資源為離開狀態</string>
-  <string name="pref_xa_on_silent_mode">靜音模式時不可用</string>
-  <string name="pref_xa_on_silent_mode_summary">當設備進入靜音模式時把資源標識改為不可用</string>
   <string name="pref_treat_vibrate_as_silent">靜音模式開啟振動</string>
-  <string name="pref_treat_vibrate_as_silent_summary">當設備進入振動模式時把資源標識改為不可用</string>
   <string name="pref_show_connection_options">高級連接設置</string>
   <string name="pref_show_connection_options_summary">註冊帳戶時顯示主機名稱和埠</string>
   <string name="hostname_example">xmpp.example.com</string>
@@ -573,7 +570,6 @@
   <string name="certicate_info_not_available">(不可用）</string>
   <string name="certificate_not_found">未發現證書</string>
   <string name="notify_on_all_messages">為所有資訊顯示通知</string>
-  <string name="notify_only_when_highlighted">僅當高亮時顯示通知</string>
   <string name="notify_never">關閉通知</string>
   <string name="notify_paused">暫停通知</string>
   <string name="pref_picture_compression">壓縮圖片</string>
@@ -710,4 +706,6 @@
   <string name="block_stranger">封鎖陌生人</string>
   <string name="block_entire_domain">封鎖整個網域</string>
   <string name="online_right_now">剛剛上線了</string>
+  <string name="retry_decryption">再試解密ㄧ次</string>
+  <string name="session_failure">通訊對話錯誤</string>
 </resources>

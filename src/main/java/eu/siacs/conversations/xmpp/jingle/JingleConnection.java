@@ -1,5 +1,6 @@
 package eu.siacs.conversations.xmpp.jingle;
 
+import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
 
@@ -7,6 +8,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +31,7 @@ import eu.siacs.conversations.parser.IqParser;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.services.AbstractConnectionManager;
 import eu.siacs.conversations.services.XmppConnectionService;
+import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xmpp.OnIqPacketReceived;
 import eu.siacs.conversations.xmpp.jid.Jid;
@@ -42,6 +45,7 @@ public class JingleConnection implements Transferable {
 	private JingleConnectionManager mJingleConnectionManager;
 	private XmppConnectionService mXmppConnectionService;
 
+	private static final int JINGLE_STATUS_OFFERED = -1;
 	protected static final int JINGLE_STATUS_INITIATED = 0;
 	protected static final int JINGLE_STATUS_ACCEPTED = 1;
 	protected static final int JINGLE_STATUS_FINISHED = 4;
@@ -52,7 +56,7 @@ public class JingleConnection implements Transferable {
 
 	private int ibbBlockSize = 8192;
 
-	private int mJingleStatus = -1;
+	private int mJingleStatus = JINGLE_STATUS_OFFERED;
 	private int mStatus = Transferable.STATUS_UNKNOWN;
 	private Message message;
 	private String sessionId;
@@ -92,12 +96,24 @@ public class JingleConnection implements Transferable {
 			}
 		}
 	};
+	private byte[] expectedHash = new byte[0];
 
-	final OnFileTransmissionStatusChanged onFileTransmissionSatusChanged = new OnFileTransmissionStatusChanged() {
+	private boolean responding() {
+		return responder.equals(account.getJid());
+	}
+
+	private boolean initiating() {
+		return initiator.equals(account.getJid());
+	}
+
+	final OnFileTransmissionStatusChanged onFileTransmissionStatusChanged = new OnFileTransmissionStatusChanged() {
 
 		@Override
 		public void onFileTransmitted(DownloadableFile file) {
-			if (responder.equals(account.getJid())) {
+			if (responding()) {
+				if (expectedHash.length > 0 && !Arrays.equals(expectedHash,file.getSha1Sum())) {
+					Log.d(Config.LOGTAG,account.getJid().toBareJid()+": hashes did not match");
+				}
 				sendSuccess();
 				mXmppConnectionService.getFileBackend().updateFileParams(message);
 				mXmppConnectionService.databaseBackend.createMessage(message);
@@ -111,6 +127,9 @@ public class JingleConnection implements Transferable {
 					}
 				}
 			} else {
+				if (ftVersion == Content.Version.FT_5) { //older Conversations will break when receiving a session-info
+					sendHash();
+				}
 				if (message.getEncryption() == Message.ENCRYPTION_PGP) {
 					account.getPgpDecryptionService().decrypt(message, false);
 				}
@@ -118,7 +137,7 @@ public class JingleConnection implements Transferable {
 					file.delete();
 				}
 			}
-			Log.d(Config.LOGTAG,"successfully transmitted file:" + file.getAbsolutePath()+" ("+file.getSha1Sum()+")");
+			Log.d(Config.LOGTAG,"successfully transmitted file:" + file.getAbsolutePath()+" ("+ CryptoHelper.bytesToHex(file.getSha1Sum())+")");
 			if (message.getEncryption() != Message.ENCRYPTION_PGP) {
 				mXmppConnectionService.getFileBackend().updateMediaScanner(file);
 			}
@@ -145,9 +164,9 @@ public class JingleConnection implements Transferable {
 		public void success() {
 			if (initiator.equals(account.getJid())) {
 				Log.d(Config.LOGTAG, "we were initiating. sending file");
-				transport.send(file, onFileTransmissionSatusChanged);
+				transport.send(file, onFileTransmissionStatusChanged);
 			} else {
-				transport.receive(file, onFileTransmissionSatusChanged);
+				transport.receive(file, onFileTransmissionStatusChanged);
 				Log.d(Config.LOGTAG, "we were responding. receiving file");
 			}
 		}
@@ -193,6 +212,18 @@ public class JingleConnection implements Transferable {
 			}
 		} else if (packet.isAction("session-accept")) {
 			returnResult = receiveAccept(packet);
+		} else if (packet.isAction("session-info")) {
+			returnResult = true;
+			Element checksum = packet.getChecksum();
+			Element file = checksum == null ? null : checksum.findChild("file");
+			Element hash = file == null ? null : file.findChild("hash","urn:xmpp:hashes:2");
+			if (hash != null && "sha-1".equalsIgnoreCase(hash.getAttribute("algo"))) {
+				try {
+					this.expectedHash = Base64.decode(hash.getContent(), Base64.DEFAULT);
+				} catch (Exception e) {
+					this.expectedHash = new byte[0];
+				}
+			}
 		} else if (packet.isAction("transport-info")) {
 			returnResult = receiveTransportInfo(packet);
 		} else if (packet.isAction("transport-replace")) {
@@ -302,7 +333,9 @@ public class JingleConnection implements Transferable {
 			ServiceDiscoveryResult result = presence != null ? presence.getServiceDiscoveryResult() : null;
 			if (result != null) {
 				List<String> features = result.getFeatures();
-				if (features.contains(Content.Version.FT_4.getNamespace())) {
+				if (features.contains(Content.Version.FT_5.getNamespace())) {
+					this.ftVersion = Content.Version.FT_5;
+				} else if (features.contains(Content.Version.FT_4.getNamespace())) {
 					this.ftVersion = Content.Version.FT_4;
 				}
 			}
@@ -427,11 +460,8 @@ public class JingleConnection implements Transferable {
 					}
 				}
 				this.mFileOutputStream = AbstractConnectionManager.createOutputStream(this.file,message.getEncryption() == Message.ENCRYPTION_AXOLOTL);
-				if (message.getEncryption() == Message.ENCRYPTION_OTR && Config.REPORT_WRONG_FILESIZE_IN_OTR_JINGLE) {
-					this.file.setExpectedSize((size / 16 + 1) * 16);
-				} else {
-					this.file.setExpectedSize(size);
-				}
+				this.file.setExpectedSize(size);
+				message.resetFileParams();
 				Log.d(Config.LOGTAG, "receiving file: expecting size of " + this.file.getExpectedSize());
 			} else {
 				this.sendCancel();
@@ -476,6 +506,7 @@ public class JingleConnection implements Transferable {
 				cancel();
 				return;
 			}
+			message.resetFileParams();
 			this.mFileInputStream = pair.first;
 			content.setTransportId(this.transportId);
 			content.socks5transport().setChildren(getCandidatesAsElements());
@@ -486,8 +517,12 @@ public class JingleConnection implements Transferable {
 				public void onIqPacketReceived(Account account, IqPacket packet) {
 					if (packet.getType() == IqPacket.TYPE.RESULT) {
 						Log.d(Config.LOGTAG,account.getJid().toBareJid()+": other party received offer");
-						mJingleStatus = JINGLE_STATUS_INITIATED;
-						mXmppConnectionService.markMessage(message, Message.STATUS_OFFERED);
+						if (mJingleStatus == JINGLE_STATUS_OFFERED) {
+							mJingleStatus = JINGLE_STATUS_INITIATED;
+							mXmppConnectionService.markMessage(message, Message.STATUS_OFFERED);
+						} else {
+							Log.d(Config.LOGTAG,"received ack for offer when status was "+mJingleStatus);
+						}
 					} else {
 						fail(IqParser.extractErrorMessage(packet));
 					}
@@ -495,6 +530,12 @@ public class JingleConnection implements Transferable {
 			});
 
 		}
+	}
+
+	private void sendHash() {
+		JinglePacket packet = this.bootstrapPacket("session-info");
+		packet.addChecksum(file.getSha1Sum(),ftVersion.getNamespace());
+		this.sendJinglePacket(packet);
 	}
 
 	private List<Element> getCandidatesAsElements() {
@@ -609,8 +650,7 @@ public class JingleConnection implements Transferable {
 			} else if (content.socks5transport().hasChild("candidate-error")) {
 				Log.d(Config.LOGTAG, "received candidate error");
 				this.receivedCandidate = true;
-				if ((mJingleStatus == JINGLE_STATUS_ACCEPTED)
-						&& (this.sentCandidate)) {
+				if (mJingleStatus == JINGLE_STATUS_ACCEPTED && this.sentCandidate) {
 					this.connect();
 				}
 				return true;
@@ -626,12 +666,10 @@ public class JingleConnection implements Transferable {
 					}
 					candidate.flagAsUsedByCounterpart();
 					this.receivedCandidate = true;
-					if ((mJingleStatus == JINGLE_STATUS_ACCEPTED)
-							&& (this.sentCandidate)) {
+					if (mJingleStatus == JINGLE_STATUS_ACCEPTED && this.sentCandidate) {
 						this.connect();
 					} else {
-						Log.d(Config.LOGTAG,
-								"ignoring because file is already in transmission or we haven't sent our candidate yet");
+						Log.d(Config.LOGTAG, "ignoring because file is already in transmission or we haven't sent our candidate yet status="+mJingleStatus+" sentCandidate="+Boolean.toString(sentCandidate));
 					}
 					return true;
 				} else {
@@ -651,7 +689,7 @@ public class JingleConnection implements Transferable {
 		if (connection == null) {
 			Log.d(Config.LOGTAG, "could not find suitable candidate");
 			this.disconnectSocks5Connections();
-			if (this.initiator.equals(account.getJid())) {
+			if (initiating()) {
 				this.sendFallbackToIbb();
 			}
 		} else {
@@ -695,12 +733,12 @@ public class JingleConnection implements Transferable {
 									+ " was a proxy. waiting for other party to activate");
 				}
 			} else {
-				if (initiator.equals(account.getJid())) {
+				if (initiating()) {
 					Log.d(Config.LOGTAG, "we were initiating. sending file");
-					connection.send(file, onFileTransmissionSatusChanged);
+					connection.send(file, onFileTransmissionStatusChanged);
 				} else {
 					Log.d(Config.LOGTAG, "we were responding. receiving file");
-					connection.receive(file, onFileTransmissionSatusChanged);
+					connection.receive(file, onFileTransmissionStatusChanged);
 				}
 			}
 		}
@@ -725,7 +763,7 @@ public class JingleConnection implements Transferable {
 					} else if (connection.getCandidate().getPriority() == currentConnection
 							.getCandidate().getPriority()) {
 						// Log.d(Config.LOGTAG,"found two candidates with same priority");
-						if (initiator.equals(account.getJid())) {
+						if (initiating()) {
 							if (currentConnection.getCandidate().isOurs()) {
 								connection = currentConnection;
 							}
@@ -775,7 +813,7 @@ public class JingleConnection implements Transferable {
 
 		@Override
 		public void established() {
-			JingleConnection.this.transport.send(file, onFileTransmissionSatusChanged);
+			JingleConnection.this.transport.send(file, onFileTransmissionStatusChanged);
 		}
 	};
 
@@ -799,7 +837,7 @@ public class JingleConnection implements Transferable {
 		answer.setContent(content);
 
 
-		if (initiator.equals(account.getJid())) {
+		if (initiating()) {
 			this.sendJinglePacket(answer, new OnIqPacketReceived() {
 				@Override
 				public void onIqPacketReceived(Account account, IqPacket packet) {
@@ -810,7 +848,7 @@ public class JingleConnection implements Transferable {
 				}
 			});
 		} else {
-			this.transport.receive(file, onFileTransmissionSatusChanged);
+			this.transport.receive(file, onFileTransmissionStatusChanged);
 			this.sendJinglePacket(answer);
 		}
 		return true;
@@ -829,10 +867,10 @@ public class JingleConnection implements Transferable {
 			this.transport = new JingleInbandTransport(this, this.transportId, this.ibbBlockSize);
 
 			//might be receive instead if we are not initiating
-			if (initiator.equals(account.getJid())) {
+			if (initiating()) {
 				this.transport.connect(onIbbTransportConnected);
 			} else {
-				this.transport.receive(file,onFileTransmissionSatusChanged);
+				this.transport.receive(file, onFileTransmissionStatusChanged);
 			}
 			return true;
 		} else {
@@ -841,14 +879,18 @@ public class JingleConnection implements Transferable {
 	}
 
 	private void receiveSuccess() {
-		this.mJingleStatus = JINGLE_STATUS_FINISHED;
-		this.mXmppConnectionService.markMessage(this.message,Message.STATUS_SEND_RECEIVED);
-		this.disconnectSocks5Connections();
-		if (this.transport != null && this.transport instanceof JingleInbandTransport) {
-			this.transport.disconnect();
+		if (initiating()) {
+			this.mJingleStatus = JINGLE_STATUS_FINISHED;
+			this.mXmppConnectionService.markMessage(this.message, Message.STATUS_SEND_RECEIVED);
+			this.disconnectSocks5Connections();
+			if (this.transport != null && this.transport instanceof JingleInbandTransport) {
+				this.transport.disconnect();
+			}
+			this.message.setTransferable(null);
+			this.mJingleConnectionManager.finishConnection(this);
+		} else {
+			Log.d(Config.LOGTAG,account.getJid().toBareJid()+": received session-terminate/success while responding");
 		}
-		this.message.setTransferable(null);
-		this.mJingleConnectionManager.finishConnection(this);
 	}
 
 	public void cancel() {
@@ -858,7 +900,7 @@ public class JingleConnection implements Transferable {
 		}
 		this.sendCancel();
 		this.mJingleConnectionManager.finishConnection(this);
-		if (this.responder.equals(account.getJid())) {
+		if (responding()) {
 			this.message.setTransferable(new TransferablePlaceholder(Transferable.STATUS_FAILED));
 			if (this.file!=null) {
 				file.delete();
@@ -884,7 +926,7 @@ public class JingleConnection implements Transferable {
 		FileBackend.close(mFileInputStream);
 		FileBackend.close(mFileOutputStream);
 		if (this.message != null) {
-			if (this.responder.equals(account.getJid())) {
+			if (responding()) {
 				this.message.setTransferable(new TransferablePlaceholder(Transferable.STATUS_FAILED));
 				if (this.file!=null) {
 					file.delete();
@@ -967,8 +1009,7 @@ public class JingleConnection implements Transferable {
 		JinglePacket packet = bootstrapPacket("transport-info");
 		Content content = new Content(this.contentCreator, this.contentName);
 		content.setTransportId(this.transportId);
-		content.socks5transport().addChild("candidate-used")
-				.setAttribute("cid", cid);
+		content.socks5transport().addChild("candidate-used").setAttribute("cid", cid);
 		packet.setContent(content);
 		this.sentCandidate = true;
 		if ((receivedCandidate) && (mJingleStatus == JINGLE_STATUS_ACCEPTED)) {
@@ -984,18 +1025,10 @@ public class JingleConnection implements Transferable {
 		content.socks5transport().addChild("candidate-error");
 		packet.setContent(content);
 		this.sentCandidate = true;
-		if ((receivedCandidate) && (mJingleStatus == JINGLE_STATUS_ACCEPTED)) {
+		if (receivedCandidate && mJingleStatus == JINGLE_STATUS_ACCEPTED) {
 			connect();
 		}
 		this.sendJinglePacket(packet);
-	}
-
-	public Jid getInitiator() {
-		return this.initiator;
-	}
-
-	public Jid getResponder() {
-		return this.responder;
 	}
 
 	public int getJingleStatus() {
@@ -1049,9 +1082,9 @@ public class JingleConnection implements Transferable {
 	}
 
 	interface OnProxyActivated {
-		public void success();
+		void success();
 
-		public void failed();
+		void failed();
 	}
 
 	public boolean hasTransportId(String sid) {

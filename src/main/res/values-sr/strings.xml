@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Окончај ову преписку након тога</string>
   <string name="choose_presence">Изаберите уређај</string>
   <string name="send_unencrypted_message">Пошаљи нешифровану поруку</string>
+  <string name="send_message">Пошаљи поруку</string>
   <string name="send_message_to_x">Пошаљи поруку за %s</string>
   <string name="send_otr_message">Пошаљи ОТР шифровану поруку</string>
   <string name="send_omemo_message">Пошаљи ОМЕМО шифровану поруку</string>
@@ -156,7 +157,6 @@
   <string name="account_status_regis_conflict">Корисничко име је већ у употреби</string>
   <string name="account_status_regis_success">Регистрација завршена</string>
   <string name="account_status_regis_not_sup">Сервер не подржава регистрацију</string>
-  <string name="account_status_security_error">Безбедносна грешка</string>
   <string name="account_status_policy_violation">Нарушавање полисе</string>
   <string name="account_status_incompatible_server">Некомпатибилан сервер</string>
   <string name="account_status_stream_error">Грешка тока</string>
@@ -173,7 +173,6 @@
   <string name="republish_pgp_keys">Не заборавите да поново објавите ваше ОпенПГП јавне кључеве!</string>
   <string name="mgmt_account_enable">Укључи налог</string>
   <string name="mgmt_account_are_you_sure">Да ли сте сигурни?</string>
-  <string name="mgmt_account_delete_confirm_text">Ако обришете ваш налог изгубићете сав историјат преписке</string>
   <string name="attach_record_voice">Сними глас</string>
   <string name="account_settings_jabber_id">Џабер ИД</string>
   <string name="block_jabber_id">Блокирај Џабер ИД</string>
@@ -227,7 +226,6 @@
   <string name="omemo_fingerprint_x509">v\\ОМЕМО отисак</string>
   <string name="omemo_fingerprint_selected_message">ОМЕМО отисак поруке</string>
   <string name="omemo_fingerprint_x509_selected_message">v\\ОМЕМО отисак поруке</string>
-  <string name="this_device_omemo_fingerprint">Сопствени ОМЕМО отисак</string>
   <string name="other_devices">Остали уређаји</string>
   <string name="trust_omemo_fingerprints">Поуздај се у ОМЕМО отиске</string>
   <string name="fetching_keys">Добављам кључеве…</string>
@@ -331,7 +329,6 @@
   <string name="check_x_filesize">Провери величину %s</string>
   <string name="check_x_filesize_on_host">Провери величину %1$s na %2$s</string>
   <string name="message_options">Опције поруке</string>
-  <string name="copy_text">Копирај текст</string>
   <string name="select_text">Изабери текст</string>
   <string name="quote">Цитирај</string>
   <string name="copy_original_url">Копирај изворни УРЛ</string>
@@ -526,10 +523,7 @@
   <string name="pref_presence_settings">Присутност</string>
   <string name="pref_away_when_screen_off">Одсутан кад је екран искључен</string>
   <string name="pref_away_when_screen_off_summary">Означавање вашег ресурса одсутним кад је екран искључен</string>
-  <string name="pref_xa_on_silent_mode">Недоступан у нечујном режиму</string>
-  <string name="pref_xa_on_silent_mode_summary">Означавање вашег ресурса недоступним кад је уређај у нечујном режиму</string>
   <string name="pref_treat_vibrate_as_silent">Вибрација је нечујни режим</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Означавање вашег ресурса недоступним кад је уређај у режиму вибрирања</string>
   <string name="pref_show_connection_options">Проширене поставке повезивања</string>
   <string name="pref_show_connection_options_summary">Приказ домаћина и порта у поставкама налога</string>
   <string name="hostname_example">xmpp.primer.com</string>
@@ -579,7 +573,6 @@
   <string name="certicate_info_not_available">(није доступно)</string>
   <string name="certificate_not_found">Сертификат није нађен</string>
   <string name="notify_on_all_messages">Обавештења за све поруке</string>
-  <string name="notify_only_when_highlighted">Обавештења само за означене поруке</string>
   <string name="notify_never">Обавештења искључена</string>
   <string name="notify_paused">Обавештења паузирана</string>
   <string name="pref_picture_compression">Компресуј слике</string>
@@ -705,4 +698,9 @@
   <string name="pref_notifications_from_strangers">Обавештења од непознатих</string>
   <string name="pref_notifications_from_strangers_summary">Обавештења за поруке од непознатих.</string>
   <string name="received_message_from_stranger">Примљена порука од незнанца</string>
+  <string name="block_stranger">Блокирај странца</string>
+  <string name="block_entire_domain">Блокирај читав домен</string>
+  <string name="online_right_now">на вези сада</string>
+  <string name="retry_decryption">Покушај дешифровање поново</string>
+  <string name="session_failure">Неуспех сесије</string>
 </resources>

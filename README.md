@@ -1,8 +1,31 @@
-# Conversations
+<h1 align="center">Conversations</h1>
 
-Conversations: the very last word in instant messaging
+<p align="center">Conversations: the very last word in instant messaging</p>
 
-[![Google Play](https://conversations.im/images/en-play-badge.png)](https://play.google.com/store/apps/details?id=eu.siacs.conversations&referrer=utm_source%3Dgithub) [![Amazon App Store](https://images-na.ssl-images-amazon.com/images/G/01/AmazonMobileApps/amazon-apps-store-us-black.png)](http://www.amazon.com/dp/B00WD35AAC/)
+<p align="center">
+    <a href="https://conversations.im/j/conversations@conference.siacs.eu">
+        <img src="https://camo.githubusercontent.com/a839cc0a3d4dac7ec82237381b165dd144365b6d/68747470733a2f2f74696e7975726c2e636f6d2f6a6f696e7468656d7563"
+             alt="chat on our conference room">
+    </a>
+    <a href="https://travis-ci.org/siacs/Conversations">
+        <img src="https://travis-ci.org/siacs/Conversations.svg?branch=development"
+             alt="build status">
+    </a>
+    <a href="https://bountysource.com/teams/siacs">
+        <img src="https://api.bountysource.com/badge/tracker?tracker_id=519483" alt="Bountysource">
+    </a>
+</p>
+
+<p align="center">
+    <a href="https://play.google.com/store/apps/details?id=eu.siacs.conversations&amp;referrer=utm_source%3Dgithub">
+       <img src="https://conversations.im/images/en-play-badge.png"
+            alt="Google Play">
+            </a>
+    <a href="http://www.amazon.com/dp/B00WD35AAC/">
+        <img src="https://images-na.ssl-images-amazon.com/images/G/01/AmazonMobileApps/amazon-apps-store-us-black.png"
+             alt="Amazon App Store">
+    </a>
+</p>
 
 ![screenshots](https://raw.githubusercontent.com/siacs/Conversations/master/screenshots.png)
 
@@ -250,7 +273,7 @@ other clients.
 #### How do I backup / move Conversations to a new device?
 On the one hand Conversations supports Message Archive Management to keep a server side history of your messages so when migrating to a new device that device can display your entire history. However that does not work if you enable OMEMO due to its forward secrecy. (Read [The State of Mobile XMPP in 2016](https://gultsch.de/xmpp_2016.html) especially the section on encryption.)
 
-If you migrate to a new device and would still like to keep your history please use a third party backup tool like [oandbackup](https://github.com/jensstein/oandbackup) or ```adb backup``` from your computer.  It is important that your deactivate your account before backup and activate it only after a successful restore. Otherwise OMEMO might not work afterwards. 
+If you migrate to a new device and would still like to keep your history please use a third party backup tool like [oandbackup](https://github.com/jensstein/oandbackup) (needs root access on the device) or ```adb backup``` (no root access needed) from your computer.  It is important that you deactivate your account before backup and activate it only after a successful restore, otherwise OMEMO might not work afterwards. Also, remember that you can **only** transfer the backup to either the same version of Android or to a newer one (eg. 5.1.1 -> 5.1.1 or 5.1.1 -> 6.0.1).
 
 #### Conversations is missing a certain feature
 

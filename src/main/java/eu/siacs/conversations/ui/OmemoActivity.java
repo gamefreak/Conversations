@@ -60,7 +60,7 @@ public abstract class OmemoActivity extends XmppActivity {
                 if (!status.isActive() || status.isVerified()) {
                     verifyScan.setVisible(false);
                 }
-                distrust.setVisible(status.isVerified());
+                distrust.setVisible(status.isVerified() || (!status.isActive() && status.isTrusted()));
             }
             this.mSelectedAccount = (Account) account;
             this.mSelectedFingerprint = (String) fingerprint;
@@ -113,7 +113,7 @@ public abstract class OmemoActivity extends XmppActivity {
         final String fingerprint = session.getFingerprint();
         addFingerprintRowWithListeners(keys,
                 session.getAccount(),
-                session.getFingerprint(),
+                fingerprint,
                 highlight,
                 session.getTrust(),
                 true,

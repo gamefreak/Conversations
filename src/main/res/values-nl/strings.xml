@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Dit gesprek na afloop beëindigen</string>
   <string name="choose_presence">Apparaat kiezen</string>
   <string name="send_unencrypted_message">Verstuur onversleuteld bericht</string>
+  <string name="send_message">Verstuur bericht</string>
   <string name="send_message_to_x">Bericht sturen naar %s</string>
   <string name="send_otr_message">Verstuur OTR-versleuteld bericht</string>
   <string name="send_omemo_message">Verstuur OMEMO-versleuteld bericht</string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">Gebruikersnaam is al in gebruik</string>
   <string name="account_status_regis_success">Registratie voltooid</string>
   <string name="account_status_regis_not_sup">Server ondersteunt geen registratie</string>
-  <string name="account_status_security_error">Fout bij beveiliging</string>
+  <string name="account_status_tls_error">TLS-onderhandeling mislukt</string>
   <string name="account_status_policy_violation">Beleidsschending</string>
   <string name="account_status_incompatible_server">Incompatibele server</string>
   <string name="account_status_stream_error">Fout bij stream</string>
@@ -169,6 +170,8 @@
   <string name="mgmt_account_disable">Tijdelijk uitschakelen</string>
   <string name="mgmt_account_publish_avatar">Avatar publiceren</string>
   <string name="mgmt_account_publish_pgp">OpenPGP-publieke sleutel publiceren</string>
+  <string name="unpublish_pgp">OpenPGP-publieke sleutel verwijderen</string>
+  <string name="unpublish_pgp_message">Weet je zeker dat je je OpenPGP-publieke sleutel uit je aanwezigheidsaankondiging wil verwijderen?\nJe contacten zullen je geen OpenPGP-versleutelde berichten meer kunnen sturen.</string>
   <string name="openpgp_has_been_published">OpenPGP-publieke sleutel is gepubliceerd.</string>
   <string name="republish_pgp_keys">Vergeet niet je OpenPGP-publieke sleutels opnieuw te publiceren!</string>
   <string name="mgmt_account_enable">Account inschakelen</string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO-vingerafdruk</string>
   <string name="omemo_fingerprint_selected_message">OMEMO-vingerafdruk van bericht</string>
   <string name="omemo_fingerprint_x509_selected_message">v\\OMEMO-vingerafdruk van bericht</string>
-  <string name="this_device_omemo_fingerprint">Eigen OMEMO-vingerafdruk</string>
   <string name="other_devices">Andere apparaten</string>
   <string name="trust_omemo_fingerprints">Vertrouw OMEMO-vingerafdrukken</string>
   <string name="fetching_keys">Sleutels ophalen…</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">Bestandsgrootte van %s controleren</string>
   <string name="check_x_filesize_on_host">Bestandsgrootte van %1$s op %2$s controleren</string>
   <string name="message_options">Berichtopties</string>
-  <string name="copy_text">Tekst kopiëren</string>
   <string name="select_text">Tekst selecteren</string>
   <string name="quote">Citeren</string>
   <string name="copy_original_url">Oorspronkelijke URL kopiëren</string>
@@ -399,6 +400,7 @@
   <string name="clear_other_devices">Apparaten wissen</string>
   <string name="clear_other_devices_desc">Weet je zeker dat je alle andere apparaten uit de OMEMO-aankondiging wilt weglaten? De volgende keer dat je apparaten verbinding maken zullen ze zich opnieuw aankondigen, maar zullen ze misschien niet de berichten ontvangen die in de tussentijd zijn verzonden.</string>
   <string name="error_no_keys_to_trust_server_error">Er zijn geen bruikbare sleutels beschikbaar voor dit contact.\nHet ophalen van nieuwe sleutels van de server is mislukt. Misschien is er iets mis met de server van je contact.</string>
+  <string name="error_no_keys_to_trust_presence">Er zijn geen bruikbare sleutels beschikbaar voor dit contact.\nZorg dat je allebei op elkaars aanwezigheidsupdates bent geabonneerd.</string>
   <string name="error_no_keys_to_trust">Er zijn geen bruikbare sleutels beschikbaar voor dit contact. Als je zijn/haar sleutels hebt verwijderd dient hij/zij nieuwe aan te maken.</string>
   <string name="error_trustkeys_title">Fout</string>
   <string name="fetching_history_from_server">Geschiedenis van server halen</string>
@@ -524,10 +526,10 @@
   <string name="pref_presence_settings">Aanwezigheid</string>
   <string name="pref_away_when_screen_off">Even weg wanneer scherm uit staat</string>
   <string name="pref_away_when_screen_off_summary">Stelt je bron in als even weg wanneer het scherm uitgeschakeld is</string>
-  <string name="pref_xa_on_silent_mode">Niet beschikbaar in stille modus</string>
-  <string name="pref_xa_on_silent_mode_summary">Stelt je bron in als niet beschikbaar wanneer je apparaat in stille modus staat</string>
+  <string name="pref_dnd_on_silent_mode">“Niet storen” in stille modus</string>
+  <string name="pref_dnd_on_silent_mode_summary">Stelt je bron in als “Niet storen” wanneer je apparaat in stille modus staat</string>
   <string name="pref_treat_vibrate_as_silent">Trillen behandelen als stille modus</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Stelt je bron in als niet beschikbaar wanneer je apparaat in trilmodus staat</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">Stelt je bron in als “Niet storen” wanneer je apparaat in trilmodus staat</string>
   <string name="pref_show_connection_options">Uitgebreide verbindingsinstellingen</string>
   <string name="pref_show_connection_options_summary">Toon hostnaam- en poortinstellingen bij instellen van een account</string>
   <string name="hostname_example">xmpp.voorbeeld.be</string>
@@ -576,7 +578,7 @@
   <string name="certicate_info_not_available">(Niet beschikbaar)</string>
   <string name="certificate_not_found">Geen certificaat gevonden</string>
   <string name="notify_on_all_messages">Melding bij alle berichten</string>
-  <string name="notify_only_when_highlighted">Melding enkel wanneer je aangesproken wordt</string>
+  <string name="notify_only_when_highlighted">Melding enkel wanneer aangesproken</string>
   <string name="notify_never">Meldingen uitgeschakeld</string>
   <string name="notify_paused">Meldingen gepauzeerd</string>
   <string name="pref_picture_compression">Afbeeldingen comprimeren</string>
@@ -711,4 +713,18 @@
   <string name="block_stranger">Vreemde blokkeren</string>
   <string name="block_entire_domain">Volledig domein blokkeren</string>
   <string name="online_right_now">nu online</string>
+  <string name="retry_decryption">Ontsleutelen opnieuw proberen</string>
+  <string name="session_failure">Sessiefout</string>
+  <string name="sasl_downgrade">SASL-mechanisme neergewaardeerd</string>
+  <string name="account_status_regis_web">Server vereist registratie op website</string>
+  <string name="open_website">Website openen</string>
+  <string name="application_found_to_open_website">Geen applicatie om website te openen</string>
+  <string name="pref_headsup_notifications">Heads-up-meldingen</string>
+  <string name="pref_headsup_notifications_summary">Heads-up-meldingen weergeven</string>
+  <string name="today">Vandaag</string>
+  <string name="yesterday">Gisteren</string>
+  <string name="pref_validate_hostname">Valideer hostnaam met DNSSEC</string>
+  <string name="pref_validate_hostname_summary">Servercertificaten die de gevalideerde hostnaam bevatten worden beschouwd als geverifieerd</string>
+  <string name="network_is_unreachable">Netwerk niet bereikbaar</string>
+  <string name="certificate_does_not_contain_jid">Certificaat bevat geen Jabber-ID</string>
 </resources>

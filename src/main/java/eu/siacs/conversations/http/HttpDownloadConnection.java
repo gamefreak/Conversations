@@ -76,7 +76,7 @@ public class HttpDownloadConnection implements Transferable {
 			}
 			String[] parts = mUrl.getPath().toLowerCase().split("\\.");
 			String lastPart = parts.length >= 1 ? parts[parts.length - 1] : null;
-			String secondToLast = parts.length >= 2 ? parts[parts.length -2] : null;
+			String secondToLast = parts.length >= 2 ? parts[parts.length - 2] : null;
 			if ("pgp".equals(lastPart) || "gpg".equals(lastPart)) {
 				this.message.setEncryption(Message.ENCRYPTION_PGP);
 			} else if (message.getEncryption() != Message.ENCRYPTION_OTR
@@ -92,7 +92,7 @@ public class HttpDownloadConnection implements Transferable {
 			message.setRelativeFilePath(message.getUuid() + "." + extension);
 			this.file = mXmppConnectionService.getFileBackend().getFile(message, false);
 			final String reference = mUrl.getRef();
-			if (reference != null && reference.matches("([A-Fa-f0-9]{2}){48}")) {
+			if (reference != null && AesGcmURLStreamHandler.IV_KEY.matcher(reference).matches()) {
 				this.file.setKeyAndIv(CryptoHelper.hexToBytes(reference));
 			}
 
@@ -149,9 +149,33 @@ public class HttpDownloadConnection implements Transferable {
 			mXmppConnectionService.showErrorToastInUi(R.string.download_failed_could_not_connect);
 		} else if (e instanceof FileWriterException) {
 			mXmppConnectionService.showErrorToastInUi(R.string.download_failed_could_not_write_file);
-		} else if (!(e instanceof  CancellationException)) {
+		} else if (!(e instanceof CancellationException)) {
 			mXmppConnectionService.showErrorToastInUi(R.string.download_failed_file_not_found);
 		}
+	}
+
+	public void updateProgress(long i) {
+		this.mProgress = (int) i;
+		mHttpConnectionManager.updateConversationUi(false);
+	}
+
+	@Override
+	public int getStatus() {
+		return this.mStatus;
+	}
+
+	@Override
+	public long getFileSize() {
+		if (this.file != null) {
+			return this.file.getExpectedSize();
+		} else {
+			return 0;
+		}
+	}
+
+	@Override
+	public int getProgress() {
+		return this.mProgress;
 	}
 
 	private class FileSizeChecker implements Runnable {
@@ -180,6 +204,7 @@ public class HttpDownloadConnection implements Transferable {
 				return;
 			}
 			file.setExpectedSize(size);
+			message.resetFileParams();
 			if (mHttpConnectionManager.hasStoragePermission()
 					&& size <= mHttpConnectionManager.getAutoAcceptFileSize()
 					&& mXmppConnectionService.isDataSaverDisabled()) {
@@ -203,8 +228,8 @@ public class HttpDownloadConnection implements Transferable {
 					connection = (HttpURLConnection) mUrl.openConnection();
 				}
 				connection.setRequestMethod("HEAD");
-				Log.d(Config.LOGTAG,"url: "+connection.getURL().toString());
-				Log.d(Config.LOGTAG,"connection: "+connection.toString());
+				Log.d(Config.LOGTAG, "url: " + connection.getURL().toString());
+				Log.d(Config.LOGTAG, "connection: " + connection.toString());
 				connection.setRequestProperty("User-Agent", mXmppConnectionService.getIqGenerator().getIdentityName());
 				if (connection instanceof HttpsURLConnection) {
 					mHttpConnectionManager.setupTrustManager((HttpsURLConnection) connection, interactive);
@@ -219,6 +244,7 @@ public class HttpDownloadConnection implements Transferable {
 				}
 				return Long.parseLong(contentLength, 10);
 			} catch (IOException e) {
+				Log.d(Config.LOGTAG, "io exception during HEAD " + e.getMessage());
 				throw e;
 			} catch (NumberFormatException e) {
 				throw new IOException();
@@ -257,12 +283,12 @@ public class HttpDownloadConnection implements Transferable {
 			}
 		}
 
-		private void download()  throws Exception {
+		private void download() throws Exception {
 			InputStream is = null;
-			PowerManager.WakeLock wakeLock = mHttpConnectionManager.createWakeLock("http_download_"+message.getUuid());
+			HttpURLConnection connection = null;
+			PowerManager.WakeLock wakeLock = mHttpConnectionManager.createWakeLock("http_download_" + message.getUuid());
 			try {
 				wakeLock.acquire();
-				HttpURLConnection connection;
 				if (mUseTor) {
 					connection = (HttpURLConnection) mUrl.openConnection(mHttpConnectionManager.getProxy());
 				} else {
@@ -271,31 +297,40 @@ public class HttpDownloadConnection implements Transferable {
 				if (connection instanceof HttpsURLConnection) {
 					mHttpConnectionManager.setupTrustManager((HttpsURLConnection) connection, interactive);
 				}
-				connection.setRequestProperty("User-Agent",mXmppConnectionService.getIqGenerator().getIdentityName());
-				final boolean tryResume = file.exists() && file.getKey() == null;
+				connection.setRequestProperty("User-Agent", mXmppConnectionService.getIqGenerator().getIdentityName());
+				final boolean tryResume = file.exists() && file.getKey() == null && file.getSize() > 0;
 				long resumeSize = 0;
+				long expected = file.getExpectedSize();
 				if (tryResume) {
-					Log.d(Config.LOGTAG,"http download trying resume");
 					resumeSize = file.getSize();
-					connection.setRequestProperty("Range", "bytes="+resumeSize+"-");
+					Log.d(Config.LOGTAG, "http download trying resume after" + resumeSize + " of " + expected);
+					connection.setRequestProperty("Range", "bytes=" + resumeSize + "-");
 				}
 				connection.setConnectTimeout(Config.SOCKET_TIMEOUT * 1000);
 				connection.setReadTimeout(Config.SOCKET_TIMEOUT * 1000);
 				connection.connect();
 				is = new BufferedInputStream(connection.getInputStream());
 				final String contentRange = connection.getHeaderField("Content-Range");
-				boolean serverResumed = tryResume && contentRange != null && contentRange.startsWith("bytes "+resumeSize+"-");
+				boolean serverResumed = tryResume && contentRange != null && contentRange.startsWith("bytes " + resumeSize + "-");
 				long transmitted = 0;
-				long expected = file.getExpectedSize();
 				if (tryResume && serverResumed) {
-					Log.d(Config.LOGTAG,"server resumed");
+					Log.d(Config.LOGTAG, "server resumed");
 					transmitted = file.getSize();
-					updateProgress((int) ((((double) transmitted) / expected) * 100));
+					updateProgress(Math.round(((double) transmitted / expected) * 100));
 					os = AbstractConnectionManager.createAppendedOutputStream(file);
 					if (os == null) {
 						throw new FileWriterException();
 					}
 				} else {
+					long reportedContentLengthOnGet;
+					try {
+						reportedContentLengthOnGet = Long.parseLong(connection.getHeaderField("Content-Length"));
+					} catch (NumberFormatException | NullPointerException e) {
+						reportedContentLengthOnGet = 0;
+					}
+					if (expected != reportedContentLengthOnGet) {
+						Log.d(Config.LOGTAG, "content-length reported on GET (" + reportedContentLengthOnGet + ") did not match Content-Length reported on HEAD (" + expected + ")");
+					}
 					file.getParentFile().mkdirs();
 					if (!file.exists() && !file.createNewFile()) {
 						throw new FileWriterException();
@@ -303,7 +338,7 @@ public class HttpDownloadConnection implements Transferable {
 					os = AbstractConnectionManager.createOutputStream(file, true);
 				}
 				int count;
-				byte[] buffer = new byte[1024];
+				byte[] buffer = new byte[4096];
 				while ((count = is.read(buffer)) != -1) {
 					transmitted += count;
 					try {
@@ -311,7 +346,7 @@ public class HttpDownloadConnection implements Transferable {
 					} catch (IOException e) {
 						throw new FileWriterException();
 					}
-					updateProgress((int) ((((double) transmitted) / expected) * 100));
+					updateProgress(Math.round(((double) transmitted / expected) * 100));
 					if (canceled) {
 						throw new CancellationException();
 					}
@@ -322,10 +357,14 @@ public class HttpDownloadConnection implements Transferable {
 					throw new FileWriterException();
 				}
 			} catch (CancellationException | IOException e) {
+				Log.d(Config.LOGTAG, "http download failed " + e.getMessage());
 				throw e;
 			} finally {
 				FileBackend.close(os);
 				FileBackend.close(is);
+				if (connection != null) {
+					connection.disconnect();
+				}
 				wakeLock.release();
 			}
 		}
@@ -334,7 +373,7 @@ public class HttpDownloadConnection implements Transferable {
 			message.setType(Message.TYPE_FILE);
 			final URL url;
 			final String ref = mUrl.getRef();
-			if (ref != null && ref.matches("([A-Fa-f0-9]{2}){48}")) {
+			if (ref != null && AesGcmURLStreamHandler.IV_KEY.matcher(ref).matches()) {
 				url = CryptoHelper.toAesGcmUrl(mUrl);
 			} else {
 				url = mUrl;
@@ -343,29 +382,5 @@ public class HttpDownloadConnection implements Transferable {
 			mXmppConnectionService.updateMessage(message);
 		}
 
-	}
-
-	public void updateProgress(int i) {
-		this.mProgress = i;
-		mHttpConnectionManager.updateConversationUi(false);
-	}
-
-	@Override
-	public int getStatus() {
-		return this.mStatus;
-	}
-
-	@Override
-	public long getFileSize() {
-		if (this.file != null) {
-			return this.file.getExpectedSize();
-		} else {
-			return 0;
-		}
-	}
-
-	@Override
-	public int getProgress() {
-		return this.mProgress;
 	}
 }

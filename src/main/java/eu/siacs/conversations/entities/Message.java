@@ -4,12 +4,15 @@ import android.content.ContentValues;
 import android.database.Cursor;
 import android.text.SpannableStringBuilder;
 
+import com.vdurmont.emoji.EmojiManager;
+
 import java.net.MalformedURLException;
 import java.net.URL;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
 import eu.siacs.conversations.http.AesGcmURLStreamHandler;
+import eu.siacs.conversations.ui.adapter.MessageAdapter;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.MimeUtils;
@@ -80,15 +83,20 @@ public class Message extends AbstractEntity {
 	protected boolean read = true;
 	protected String remoteMsgId = null;
 	protected String serverMsgId = null;
-	protected Conversation conversation = null;
+	private final Conversation conversation;
 	protected Transferable transferable = null;
 	private Message mNextMessage = null;
 	private Message mPreviousMessage = null;
 	private String axolotlFingerprint = null;
 	private String errorMessage = null;
 
-	private Message() {
+	private Boolean isGeoUri = null;
+	private Boolean isEmojisOnly = null;
+	private Boolean treatAsDownloadable = null;
+	private FileParams fileParams = null;
 
+	private Message(Conversation conversation) {
+		this.conversation = conversation;
 	}
 
 	public Message(Conversation conversation, String body, int encryption) {
@@ -96,7 +104,7 @@ public class Message extends AbstractEntity {
 	}
 
 	public Message(Conversation conversation, String body, int encryption, int status) {
-		this(java.util.UUID.randomUUID().toString(),
+		this(conversation, java.util.UUID.randomUUID().toString(),
 				conversation.getUuid(),
 				conversation.getJid() == null ? null : conversation.getJid().toBareJid(),
 				null,
@@ -114,15 +122,15 @@ public class Message extends AbstractEntity {
 				null,
 				false,
 				null);
-		this.conversation = conversation;
 	}
 
-	private Message(final String uuid, final String conversationUUid, final Jid counterpart,
+	private Message(final Conversation conversation, final String uuid, final String conversationUUid, final Jid counterpart,
 					final Jid trueCounterpart, final String body, final long timeSent,
 					final int encryption, final int status, final int type, final boolean carbon,
 					final String remoteMsgId, final String relativeFilePath,
 					final String serverMsgId, final String fingerprint, final boolean read,
 					final String edited, final boolean oob, final String errorMessage) {
+		this.conversation = conversation;
 		this.uuid = uuid;
 		this.conversationUuid = conversationUUid;
 		this.counterpart = counterpart;
@@ -143,7 +151,7 @@ public class Message extends AbstractEntity {
 		this.errorMessage = errorMessage;
 	}
 
-	public static Message fromCursor(Cursor cursor) {
+	public static Message fromCursor(Cursor cursor, Conversation conversation) {
 		Jid jid;
 		try {
 			String value = cursor.getString(cursor.getColumnIndex(COUNTERPART));
@@ -168,7 +176,8 @@ public class Message extends AbstractEntity {
 		} catch (InvalidJidException e) {
 			trueCounterpart = null;
 		}
-		return new Message(cursor.getString(cursor.getColumnIndex(UUID)),
+		return new Message(conversation,
+				cursor.getString(cursor.getColumnIndex(UUID)),
 				cursor.getString(cursor.getColumnIndex(CONVERSATION)),
 				jid,
 				trueCounterpart,
@@ -189,19 +198,26 @@ public class Message extends AbstractEntity {
 	}
 
 	public static Message createStatusMessage(Conversation conversation, String body) {
-		final Message message = new Message();
+		final Message message = new Message(conversation);
 		message.setType(Message.TYPE_STATUS);
-		message.setConversation(conversation);
-		message.setBody(body);
+		message.setStatus(Message.STATUS_RECEIVED);
+		message.body = body;
 		return message;
 	}
 
 	public static Message createLoadMoreMessage(Conversation conversation) {
-		final Message message = new Message();
+		final Message message = new Message(conversation);
 		message.setType(Message.TYPE_STATUS);
-		message.setConversation(conversation);
-		message.setBody("LOAD_MORE");
+		message.body = "LOAD_MORE";
 		return message;
+	}
+
+	public static Message createDateSeparator(Message message) {
+		final Message separator = new Message(message.getConversation());
+		separator.setType(Message.TYPE_STATUS);
+		separator.body = MessageAdapter.DATE_SEPARATOR_BODY;
+		separator.setTime(message.getTimeSent());
+		return separator;
 	}
 
 	@Override
@@ -244,10 +260,6 @@ public class Message extends AbstractEntity {
 		return this.conversation;
 	}
 
-	public void setConversation(Conversation conv) {
-		this.conversation = conv;
-	}
-
 	public Jid getCounterpart() {
 		return counterpart;
 	}
@@ -273,11 +285,15 @@ public class Message extends AbstractEntity {
 		return body;
 	}
 
-	public void setBody(String body) {
+	public synchronized void setBody(String body) {
 		if (body == null) {
 			throw new Error("You should not set the message body to null");
 		}
 		this.body = body;
+		this.isGeoUri = null;
+		this.isEmojisOnly = null;
+		this.treatAsDownloadable = null;
+		this.fileParams = null;
 	}
 
 	public String getErrorMessage() {
@@ -395,7 +411,8 @@ public class Message extends AbstractEntity {
 		return this.transferable;
 	}
 
-	public void setTransferable(Transferable transferable) {
+	public synchronized void setTransferable(Transferable transferable) {
+		this.fileParams = null;
 		this.transferable = transferable;
 	}
 
@@ -490,15 +507,16 @@ public class Message extends AbstractEntity {
 						this.edited() == message.edited() &&
 						(message.getTimeSent() - this.getTimeSent()) <= (Config.MESSAGE_MERGE_WINDOW * 1000) &&
 						this.getBody().length() + message.getBody().length() <= Config.MAX_DISPLAY_MESSAGE_CHARS &&
-						!GeoHelper.isGeoUri(message.getBody()) &&
-						!GeoHelper.isGeoUri(this.body) &&
+						!message.isGeoUri()&&
+						!this.isGeoUri() &&
 						!message.treatAsDownloadable() &&
 						!this.treatAsDownloadable() &&
 						!message.getBody().startsWith(ME_COMMAND) &&
 						!this.getBody().startsWith(ME_COMMAND) &&
-						!this.bodyIsHeart() &&
-						!message.bodyIsHeart() &&
-						((this.axolotlFingerprint == null && message.axolotlFingerprint == null) || this.axolotlFingerprint.equals(message.getFingerprint()))
+						!this.bodyIsOnlyEmojis() &&
+						!message.bodyIsOnlyEmojis() &&
+						((this.axolotlFingerprint == null && message.axolotlFingerprint == null) || this.axolotlFingerprint.equals(message.getFingerprint())) &&
+						UIHelper.sameDay(message.getTimeSent(),this.getTimeSent())
 				);
 	}
 
@@ -644,120 +662,96 @@ public class Message extends AbstractEntity {
 		}
 	}
 
-	public boolean treatAsDownloadable() {
-		if (body.trim().contains(" ")) {
-			return false;
-		}
-		try {
-			final URL url = new URL(body);
-			final String ref = url.getRef();
-			final String protocol = url.getProtocol();
-			final boolean encrypted = ref != null && ref.matches("([A-Fa-f0-9]{2}){48}");
-			return (AesGcmURLStreamHandler.PROTOCOL_NAME.equalsIgnoreCase(protocol) && encrypted)
-					|| (("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) && (oob || encrypted));
+	public synchronized boolean treatAsDownloadable() {
+		if (treatAsDownloadable == null) {
+			if (body.trim().contains(" ")) {
+				treatAsDownloadable = false;
+			}
+			try {
+				final URL url = new URL(body);
+				final String ref = url.getRef();
+				final String protocol = url.getProtocol();
+				final boolean encrypted = ref != null && AesGcmURLStreamHandler.IV_KEY.matcher(ref).matches();
+				treatAsDownloadable = (AesGcmURLStreamHandler.PROTOCOL_NAME.equalsIgnoreCase(protocol) && encrypted)
+						|| (("http".equalsIgnoreCase(protocol) || "https".equalsIgnoreCase(protocol)) && (oob || encrypted));
 
-		} catch (MalformedURLException e) {
-			return false;
+			} catch (MalformedURLException e) {
+				treatAsDownloadable = false;
+			}
 		}
+		return treatAsDownloadable;
 	}
 
-	public boolean bodyIsHeart() {
-		return body != null && UIHelper.HEARTS.contains(body.trim());
+	public synchronized boolean bodyIsOnlyEmojis() {
+		if (isEmojisOnly == null) {
+			isEmojisOnly = EmojiManager.isOnlyEmojis(body.replaceAll("\\s", ""));
+		}
+		return isEmojisOnly;
 	}
 
-	public FileParams getFileParams() {
-		FileParams params = getLegacyFileParams();
-		if (params != null) {
-			return params;
+	public synchronized boolean isGeoUri() {
+		if (isGeoUri == null) {
+			isGeoUri = GeoHelper.GEO_URI.matcher(body).matches();
 		}
-		params = new FileParams();
-		if (this.transferable != null) {
-			params.size = this.transferable.getFileSize();
-		}
-		if (body == null) {
-			return params;
-		}
-		String parts[] = body.split("\\|");
-		switch (parts.length) {
-			case 1:
-				try {
-					params.size = Long.parseLong(parts[0]);
-				} catch (NumberFormatException e) {
+		return isGeoUri;
+	}
+
+	public synchronized void resetFileParams() {
+		this.fileParams = null;
+	}
+
+	public synchronized FileParams getFileParams() {
+		if (fileParams == null) {
+			fileParams = new FileParams();
+			if (this.transferable != null) {
+				fileParams.size = this.transferable.getFileSize();
+			}
+			String parts[] = body == null ? new String[0] : body.split("\\|");
+			switch (parts.length) {
+				case 1:
 					try {
-						params.url = new URL(parts[0]);
-					} catch (MalformedURLException e1) {
-						params.url = null;
+						fileParams.size = Long.parseLong(parts[0]);
+					} catch (NumberFormatException e) {
+						fileParams.url = parseUrl(parts[0]);
 					}
-				}
-				break;
-			case 2:
-			case 4:
-				try {
-					params.url = new URL(parts[0]);
-				} catch (MalformedURLException e1) {
-					params.url = null;
-				}
-				try {
-					params.size = Long.parseLong(parts[1]);
-				} catch (NumberFormatException e) {
-					params.size = 0;
-				}
-				try {
-					params.width = Integer.parseInt(parts[2]);
-				} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-					params.width = 0;
-				}
-				try {
-					params.height = Integer.parseInt(parts[3]);
-				} catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-					params.height = 0;
-				}
-				break;
-			case 3:
-				try {
-					params.size = Long.parseLong(parts[0]);
-				} catch (NumberFormatException e) {
-					params.size = 0;
-				}
-				try {
-					params.width = Integer.parseInt(parts[1]);
-				} catch (NumberFormatException e) {
-					params.width = 0;
-				}
-				try {
-					params.height = Integer.parseInt(parts[2]);
-				} catch (NumberFormatException e) {
-					params.height = 0;
-				}
-				break;
+					break;
+				case 4:
+					fileParams.width = parseInt(parts[2]);
+					fileParams.height = parseInt(parts[3]);
+				case 2:
+					fileParams.url = parseUrl(parts[0]);
+					fileParams.size = parseLong(parts[1]);
+					break;
+				case 3:
+					fileParams.size = parseLong(parts[0]);
+					fileParams.width = parseInt(parts[1]);
+					fileParams.height = parseInt(parts[2]);
+					break;
+			}
 		}
-		return params;
+		return fileParams;
 	}
 
-	public FileParams getLegacyFileParams() {
-		FileParams params = new FileParams();
-		if (body == null) {
-			return params;
+	private static long parseLong(String value) {
+		try {
+			return Long.parseLong(value);
+		} catch (NumberFormatException e) {
+			return 0;
 		}
-		String parts[] = body.split(",");
-		if (parts.length == 3) {
-			try {
-				params.size = Long.parseLong(parts[0]);
-			} catch (NumberFormatException e) {
-				return null;
-			}
-			try {
-				params.width = Integer.parseInt(parts[1]);
-			} catch (NumberFormatException e) {
-				return null;
-			}
-			try {
-				params.height = Integer.parseInt(parts[2]);
-			} catch (NumberFormatException e) {
-				return null;
-			}
-			return params;
-		} else {
+	}
+
+	private static int parseInt(String value) {
+		try {
+			return Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			return 0;
+		}
+	}
+
+	private static URL parseUrl(String value) {
+		try {
+			return new URL(value);
+		} catch (MalformedURLException e) {
 			return null;
 		}
 	}

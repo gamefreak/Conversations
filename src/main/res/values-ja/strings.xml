@@ -80,6 +80,7 @@
   <string name="also_end_conversation">その後、この会話を終了</string>
   <string name="choose_presence">デバイスを選択</string>
   <string name="send_unencrypted_message">暗号化されていないメッセージを送信</string>
+  <string name="send_message">メッセージを送信</string>
   <string name="send_message_to_x">メッセージを %s に送信</string>
   <string name="send_otr_message">OTR 暗号化メッセージを送信</string>
   <string name="send_omemo_message">OMEMO 暗号化メッセージを送信</string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">ユーザー名はすでに使用されています</string>
   <string name="account_status_regis_success">登録が完了しました</string>
   <string name="account_status_regis_not_sup">サーバーが登録をサポートしていません</string>
-  <string name="account_status_security_error">セキュリティ エラー</string>
+  <string name="account_status_tls_error">TLS ネゴシエーションに失敗しました</string>
   <string name="account_status_policy_violation">ポリシー違反</string>
   <string name="account_status_incompatible_server">互換性のないサーバー</string>
   <string name="account_status_stream_error">ストリーム エラー</string>
@@ -169,11 +170,13 @@
   <string name="mgmt_account_disable">一時的に無効にする</string>
   <string name="mgmt_account_publish_avatar">アバターを公開</string>
   <string name="mgmt_account_publish_pgp">OpenPGP 公開鍵を公開</string>
+  <string name="unpublish_pgp">OpenPGP 公開鍵を削除</string>
+  <string name="unpublish_pgp_message">在席通知から OpenPGP 公開鍵を削除してもよろしいですか?\n連絡先はあなたに OpenPGP 暗号化メッセージを送信できなくなります。</string>
   <string name="openpgp_has_been_published">OpenPGP 公開鍵を公開しました。</string>
   <string name="republish_pgp_keys">OpenPGP 公開鍵を再公開するのをお忘れなく!</string>
   <string name="mgmt_account_enable">アカウントを有効にする</string>
   <string name="mgmt_account_are_you_sure">よろしいですか?</string>
-  <string name="mgmt_account_delete_confirm_text">アカウントを削除するとあなたの会話履歴がすべて失われます</string>
+  <string name="mgmt_account_delete_confirm_text">アカウントを削除すると、会話履歴すべてが失われます</string>
   <string name="attach_record_voice">音声を録音</string>
   <string name="account_settings_jabber_id">Jabber ID</string>
   <string name="block_jabber_id">Jabber ID をブロック</string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO フィンガープリント</string>
   <string name="omemo_fingerprint_selected_message">メッセージの OMEMO フィンガープリント</string>
   <string name="omemo_fingerprint_x509_selected_message">メッセージの v\\OMEMO フィンガープリント</string>
-  <string name="this_device_omemo_fingerprint">自分の OMEMO フィンガープリント</string>
   <string name="other_devices">他のデバイス</string>
   <string name="trust_omemo_fingerprints">OMEMO フィンガープリントを信頼</string>
   <string name="fetching_keys">鍵の取得中…</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">%s サイズを確認</string>
   <string name="check_x_filesize_on_host">%2$s で %1$s のサイズを確認</string>
   <string name="message_options">メッセージオプション</string>
-  <string name="copy_text">テキストをコピー</string>
   <string name="select_text">テキストを選択</string>
   <string name="quote">引用</string>
   <string name="copy_original_url">元の URL をコピー</string>
@@ -399,6 +400,7 @@
   <string name="clear_other_devices">デバイスをクリア</string>
   <string name="clear_other_devices_desc">OMEMO のアナウンスから他のすべてのデバイスをクリアしてもよろしいですか? お使いのデバイスが次回接続したとき、それらは自分自身を再アナウンスしますが、それらはその間に送信されたメッセージを受信できない場合があります。</string>
   <string name="error_no_keys_to_trust_server_error">この連絡先で利用可能な鍵がありません。\nサーバーから新しい鍵の取得に失敗しました。おそらく、お使いの連絡先サーバーに何か問題があります。</string>
+  <string name="error_no_keys_to_trust_presence">この連絡先で利用可能な鍵はありません。\n相互存在サブスクリプションあることを確認してください。</string>
   <string name="error_no_keys_to_trust">この連絡先で利用可能な鍵はありません。あなたがその鍵を消去している場合は、新しいものを生成してもらう必要があります。</string>
   <string name="error_trustkeys_title">エラー</string>
   <string name="fetching_history_from_server">サーバーから履歴を取得中</string>
@@ -522,10 +524,10 @@
   <string name="pref_presence_settings">参加</string>
   <string name="pref_away_when_screen_off">画面がオフのときは離席</string>
   <string name="pref_away_when_screen_off_summary">画面がオフになっているとき、リソースを離席としてマークします</string>
-  <string name="pref_xa_on_silent_mode">サイレントモード時は利用不可</string>
-  <string name="pref_xa_on_silent_mode_summary">デバイスがサイレントモードのとき、リソースが利用不可としてマークします</string>
+  <string name="pref_dnd_on_silent_mode">サイレントモード時 “邪魔しないで”</string>
+  <string name="pref_dnd_on_silent_mode_summary">デバイスがサイレントモードの時に、リソースを “邪魔しないで” としてマークします</string>
   <string name="pref_treat_vibrate_as_silent">バイブレートをサイレントモードとして扱う</string>
-  <string name="pref_treat_vibrate_as_silent_summary">デバイスがバイブレートのとき、リソースを利用不可としてマークします</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">デバイスがバイブレートの時に、リソースを “邪魔しないで” としてマークします</string>
   <string name="pref_show_connection_options">拡張接続設定</string>
   <string name="pref_show_connection_options_summary">アカウントを設定するときにホスト名とポートの設定を表示します</string>
   <string name="hostname_example">xmpp.example.com</string>
@@ -573,7 +575,7 @@
   <string name="certicate_info_not_available">(利用不可)</string>
   <string name="certificate_not_found">証明書がありません</string>
   <string name="notify_on_all_messages">すべてのメッセージで通知</string>
-  <string name="notify_only_when_highlighted">ハイライトされたときにのみ通知</string>
+  <string name="notify_only_when_highlighted">メンションされたときにのみ通知</string>
   <string name="notify_never">通知は無効</string>
   <string name="notify_paused">通知は一時停止</string>
   <string name="pref_picture_compression">写真を圧縮</string>
@@ -708,4 +710,18 @@
   <string name="block_stranger">見知らぬ人をブロック</string>
   <string name="block_entire_domain">ドメイン全体をブロック</string>
   <string name="online_right_now">今すぐオンライン</string>
+  <string name="retry_decryption">復号化を再試行</string>
+  <string name="session_failure">セッション失敗</string>
+  <string name="sasl_downgrade">ダウングレードされた SASL メカニズム</string>
+  <string name="account_status_regis_web">サーバーはWebサイトでの登録が必要です</string>
+  <string name="open_website">Webサイトを開く</string>
+  <string name="application_found_to_open_website">Webサイトを開くアプリケーションが見つかりません</string>
+  <string name="pref_headsup_notifications">Heads-up 通知</string>
+  <string name="pref_headsup_notifications_summary">Heads-up 通知を表示</string>
+  <string name="today">今日</string>
+  <string name="yesterday">昨日</string>
+  <string name="pref_validate_hostname">DNSSEC でホスト名を検証</string>
+  <string name="pref_validate_hostname_summary">検証されたホスト名を含むサーバー証明書は検証済みと見なされます</string>
+  <string name="network_is_unreachable">ネットワークが到達できません</string>
+  <string name="certificate_does_not_contain_jid">証明書に Jabber ID が含まれていません</string>
 </resources>

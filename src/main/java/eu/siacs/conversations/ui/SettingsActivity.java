@@ -43,10 +43,13 @@ public class SettingsActivity extends XmppActivity implements
 	public static final String KEEP_FOREGROUND_SERVICE = "enable_foreground_service";
 	public static final String AWAY_WHEN_SCREEN_IS_OFF = "away_when_screen_off";
 	public static final String TREAT_VIBRATE_AS_SILENT = "treat_vibrate_as_silent";
+	public static final String DND_ON_SILENT_MODE = "dnd_on_silent_mode";
 	public static final String MANUALLY_CHANGE_PRESENCE = "manually_change_presence";
 	public static final String BLIND_TRUST_BEFORE_VERIFICATION = "btbv";
 	public static final String AUTOMATIC_MESSAGE_DELETION = "automatic_message_deletion";
 	public static final String BROADCAST_LAST_ACTIVITY = "last_activity";
+	public static final String THEME = "theme";
+	public static final String SHOW_DYNAMIC_TAGS = "show_dynamic_tags";
 
 	public static final int REQUEST_WRITE_LOGS = 0xbf8701;
 	private SettingsFragment mSettingsFragment;
@@ -370,7 +373,7 @@ public class SettingsActivity extends XmppActivity implements
 	public void onSharedPreferenceChanged(SharedPreferences preferences, String name) {
 		final List<String> resendPresence = Arrays.asList(
 				"confirm_messages",
-				"xa_on_silent_mode",
+				DND_ON_SILENT_MODE,
 				AWAY_WHEN_SCREEN_IS_OFF,
 				"allow_message_correction",
 				TREAT_VIBRATE_AS_SILENT,
@@ -393,10 +396,6 @@ public class SettingsActivity extends XmppActivity implements
 				}
 			}
 		} else if (name.equals(KEEP_FOREGROUND_SERVICE)) {
-			boolean foreground_service = preferences.getBoolean(KEEP_FOREGROUND_SERVICE,false);
-			if (!foreground_service) {
-				xmppConnectionService.clearStartTimeCounter();
-			}
 			xmppConnectionService.toggleForegroundService();
 		} else if (resendPresence.contains(name)) {
 			if (xmppConnectionServiceBound) {
@@ -415,6 +414,11 @@ public class SettingsActivity extends XmppActivity implements
 			reconnectAccounts();
 		} else if (name.equals(AUTOMATIC_MESSAGE_DELETION)) {
 			xmppConnectionService.expireOldMessages(true);
+		} else if (name.equals(THEME)) {
+			final int theme = findTheme();
+			if (this.mTheme != theme) {
+				recreate();
+			}
 		} else if (name.equals("active_emote_pack")) {
 			xmppConnectionService.setupEmotes();
 		}

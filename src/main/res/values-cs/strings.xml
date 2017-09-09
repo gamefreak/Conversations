@@ -154,7 +154,6 @@
   <string name="account_status_regis_conflict">Uživatelské jméno se již používá</string>
   <string name="account_status_regis_success">Registrace dokončena</string>
   <string name="account_status_regis_not_sup">Server nepodporuje registrace</string>
-  <string name="account_status_security_error">Bezpečnostní chyba</string>
   <string name="account_status_policy_violation">Porušení podmínek</string>
   <string name="account_status_incompatible_server">Nekompatibilní server</string>
   <string name="account_status_stream_error">Chyba přenosu</string>
@@ -171,7 +170,6 @@
   <string name="republish_pgp_keys">Nezapomeňte znovuzveřejnit své veřejné OpenPGP klíče!</string>
   <string name="mgmt_account_enable">Povolit účet</string>
   <string name="mgmt_account_are_you_sure">Jste si jisti?</string>
-  <string name="mgmt_account_delete_confirm_text">Pokud smažete svůj účet celá historie konverzací bude ztracena</string>
   <string name="attach_record_voice">Nahrát hlas</string>
   <string name="account_settings_jabber_id">Jabber ID</string>
   <string name="account_settings_password">Heslo</string>
@@ -224,7 +222,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO otisk</string>
   <string name="omemo_fingerprint_selected_message">OMEMO otisk zprávy</string>
   <string name="omemo_fingerprint_x509_selected_message">v\\OMEMO otisk zprávy</string>
-  <string name="this_device_omemo_fingerprint">Můj OMEMO otisk</string>
   <string name="other_devices">Ostatní přístroje</string>
   <string name="trust_omemo_fingerprints">Věřit OMEMO otiskům</string>
   <string name="fetching_keys">Získávání klíčů...</string>
@@ -328,7 +325,6 @@
   <string name="check_x_filesize">Ověřit %s velikost</string>
   <string name="check_x_filesize_on_host">Kontrola %1$s velikosti na %2$s</string>
   <string name="message_options">Možnosti zpráv</string>
-  <string name="copy_text">Zkopírovat text</string>
   <string name="select_text">Vybrat text</string>
   <string name="copy_original_url">Kopírovat originální URL</string>
   <string name="send_again">Poslat znovu</string>
@@ -516,10 +512,7 @@
   <string name="pref_presence_settings">Stav</string>
   <string name="pref_away_when_screen_off">Pryč při vypnuté obrazovce</string>
   <string name="pref_away_when_screen_off_summary">Při vypnuté obrazovce označí váš stav jako pryč</string>
-  <string name="pref_xa_on_silent_mode">Nedostupný při vypnutém zvuku</string>
-  <string name="pref_xa_on_silent_mode_summary">Při tichém módu označí váš stav jako nedostupný</string>
   <string name="pref_treat_vibrate_as_silent">Vibrační mód brát stejně jako tichý</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Označí vaše zdroje jako nedostupné při přepnutí do vibračního módu</string>
   <string name="pref_show_connection_options">Rozšířená nastavení připojení</string>
   <string name="pref_show_connection_options_summary">Zobrazovat nastavení hostname a port  při vytváření účtu</string>
   <string name="hostname_example">xmpp.server.cz</string>
@@ -569,7 +562,6 @@
   <string name="certicate_info_not_available">(Nedostupné)</string>
   <string name="certificate_not_found">Certifikát nenalezen</string>
   <string name="notify_on_all_messages">Upozorňovat na všechny zprávy</string>
-  <string name="notify_only_when_highlighted">Upozorňovat pouze pokud zvýrazněno</string>
   <string name="notify_never">Upozornění vypnuta</string>
   <string name="notify_paused">Upozornění pozastavena</string>
   <string name="pref_picture_compression">Komprimovat obrázky</string>

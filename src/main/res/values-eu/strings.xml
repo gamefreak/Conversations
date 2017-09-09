@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Elkarrizketa hau jarraian amaitu</string>
   <string name="choose_presence">Gailua aukeratu</string>
   <string name="send_unencrypted_message">Enkriptatu gabeko mezua bidali</string>
+  <string name="send_message">Mezua bidali</string>
   <string name="send_message_to_x">%s(r)i mezua bidali</string>
   <string name="send_otr_message">OTRz enkriptatutako mezua bidali</string>
   <string name="send_omemo_message">OMEMOz enkriptatutako mezua bidali</string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">Erabiltzaile izena dagoeneko erabilita</string>
   <string name="account_status_regis_success">Erregistroa burutu da</string>
   <string name="account_status_regis_not_sup">Zerbitzariak ez du erregistratzea onartzen</string>
-  <string name="account_status_security_error">Segurtasun akatsa</string>
+  <string name="account_status_tls_error">TLN negoziazioak huts egin du</string>
   <string name="account_status_policy_violation">Politikaren urraketa</string>
   <string name="account_status_incompatible_server">Zerbitzari ez bateragarria</string>
   <string name="account_status_stream_error">Akatsa korrontean</string>
@@ -169,11 +170,13 @@
   <string name="mgmt_account_disable">Aldi baterako ezgaitu</string>
   <string name="mgmt_account_publish_avatar">Profileko argazkia argitaratu</string>
   <string name="mgmt_account_publish_pgp">OpenPGP gako publikoa argitaratu</string>
+  <string name="unpublish_pgp">OpenPGP gako publikoa kendu</string>
+  <string name="unpublish_pgp_message">Ziur zure OpenPGP gako publikoa zure presentzia eguneraketetatik kendu nahi duzula?\nZure kontaktuek ezin dizute gehiago OpenPGPz enkriptatutako mezuak bidali.</string>
   <string name="openpgp_has_been_published">OpenPGP gako publikoa argitaratu da.</string>
   <string name="republish_pgp_keys">Gogoratu ezazu zure OpenPGP gako publikoak birrargitaratzeaz!</string>
   <string name="mgmt_account_enable">Kontua gaitu</string>
   <string name="mgmt_account_are_you_sure">Ziur al zaude?</string>
-  <string name="mgmt_account_delete_confirm_text">Zure kontua ezabatzen baduzu zure elkarrizketa historia guztia galduko da</string>
+  <string name="mgmt_account_delete_confirm_text">Zure kontua ezabatzen baduzu, zure elkarrizketen historia guztia galduko da</string>
   <string name="attach_record_voice">Ahotsa grabatu</string>
   <string name="account_settings_jabber_id">Jabber IDa</string>
   <string name="block_jabber_id">Jabber IDa blokeatu</string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO hatz-marka</string>
   <string name="omemo_fingerprint_selected_message">Mezuaren OMEMO hatz-marka</string>
   <string name="omemo_fingerprint_x509_selected_message">Mezuaren v\\OMEMO hatz-marka</string>
-  <string name="this_device_omemo_fingerprint">Norberaren OMEMO hatz-marka</string>
   <string name="other_devices">Beste gailuak</string>
   <string name="trust_omemo_fingerprints">OMEMO hatz-marketaz fidatu</string>
   <string name="fetching_keys">Gakoak eskuratzen...</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">Egiaztatu %sren neurria</string>
   <string name="check_x_filesize_on_host">Egiaztatu %1$sren neurria %2$s ostalarian</string>
   <string name="message_options">Mezuaren aukerak</string>
-  <string name="copy_text">Testua kopiatu</string>
   <string name="select_text">Testua hautatu</string>
   <string name="quote">Aipatu</string>
   <string name="copy_original_url">Jatorrizko URLa kopiatu</string>
@@ -399,6 +400,7 @@
   <string name="clear_other_devices">Gailuak garbitu</string>
   <string name="clear_other_devices_desc">Ziur al zaude OMEMO iragarpenetik beste gailu guztiak garbitu nahi dituzulaz? Zure gailuak konektatzen diren hurrengoan, beraiek berriragarriko dira, baina agian ez dute mezurik jasoko bitartean.</string>
   <string name="error_no_keys_to_trust_server_error">Ez dago gako erabilgarririk kontaktu honetarako.\nEzin izan da zerbitzaritik gako berririk eskuratu. Agian akatsen bat dago zure kontaktuen zerbitzariarekin.</string>
+  <string name="error_no_keys_to_trust_presence">Ez dago gako erabilgarririk kontaktu honetarako.\nEgiaztatu ezazu bien arteko presentzia harpidetza duzuela.</string>
   <string name="error_no_keys_to_trust">Kontaktu honetarako gako erabilgarririk ez dago. Bere gakoak purgatu badituzu, berri batzuk sortu behar dituzte.</string>
   <string name="error_trustkeys_title">Akatsa</string>
   <string name="fetching_history_from_server">Mezuak zerbitzaritik eskuratzen</string>
@@ -524,10 +526,10 @@
   <string name="pref_presence_settings">Presentzia</string>
   <string name="pref_away_when_screen_off">Urrun pantaila itzalita dagoenean</string>
   <string name="pref_away_when_screen_off_summary">Zure baliabidea urrun bezala markatzen du pantaila itzalita dagoenean</string>
-  <string name="pref_xa_on_silent_mode">Ez eskuragarri modu isilean</string>
-  <string name="pref_xa_on_silent_mode_summary">Zure baliabidea ez eskuragarri bezala markatzen du gailua modu isilean dagoenean</string>
+  <string name="pref_dnd_on_silent_mode">\"Ez gogaitu\" modu isilean</string>
+  <string name="pref_dnd_on_silent_mode_summary">Zure baliabidea \"Ez gogaitu\" bezala markatzen du gailua modu isilean dagoenean</string>
   <string name="pref_treat_vibrate_as_silent">Dardara modu isila bezala tratatu</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Zure baliabidea ez eskuragarri bezala markatzen du gailua dardara moduan dagoenean</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">Zure baliabidea \"Ez gogaitu\" bezala markatzen du gailua dardara moduan dagoenean</string>
   <string name="pref_show_connection_options">Konexioaren ezarpen luzatuak</string>
   <string name="pref_show_connection_options_summary">Ostalariaren izena eta ataka ezarpenak erakutsi kontu bat ezartzerakoan</string>
   <string name="hostname_example">xmpp.adibidea.com</string>
@@ -576,7 +578,7 @@
   <string name="certicate_info_not_available">(Ez eskuragarri)</string>
   <string name="certificate_not_found">Ez da ziurtagiririk aurkitu</string>
   <string name="notify_on_all_messages">Mezu guztiak jakinarazi</string>
-  <string name="notify_only_when_highlighted">Jakinarazi nabarmentzerakoan soilik</string>
+  <string name="notify_only_when_highlighted">Jakinarazi aipatua izaterakoan soilik</string>
   <string name="notify_never">Jakinarazpenak ezgaituta</string>
   <string name="notify_paused">Jakinarazpenak gelditu dira</string>
   <string name="pref_picture_compression">Irudiak konprimatu</string>
@@ -711,4 +713,18 @@
   <string name="block_stranger">Ezezaguna blokeatu</string>
   <string name="block_entire_domain">Domeinu osoa blokeatu</string>
   <string name="online_right_now">orain konektatuta</string>
+  <string name="retry_decryption">Saiatu berriz desenkriptatzen</string>
+  <string name="session_failure">Saioaren akatsa</string>
+  <string name="sasl_downgrade">SASL mekanismoa beheratua</string>
+  <string name="account_status_regis_web">Zerbitzariak webgunean izena ematea eskatzen du</string>
+  <string name="open_website">Webgunea ireki</string>
+  <string name="application_found_to_open_website">Webgunea irekitzeko aplikaziorik ez da aurkitu</string>
+  <string name="pref_headsup_notifications">Goranzko jakinarazpenak</string>
+  <string name="pref_headsup_notifications_summary">Goranzko jakinarazpenak erakutsi</string>
+  <string name="today">Gaur</string>
+  <string name="yesterday">Atzo</string>
+  <string name="pref_validate_hostname">Ostalariaren izena DNSSECekin balioztatu</string>
+  <string name="pref_validate_hostname_summary">Ostalariaren izena balioztatuta daukaten zerbitzarien ziurtagiriak egiaztatutzat hartzen dira</string>
+  <string name="network_is_unreachable">Ezin da sarera heldu</string>
+  <string name="certificate_does_not_contain_jid">Ziurtagiriak ez dauka Jabber ID baliodun bat</string>
 </resources>

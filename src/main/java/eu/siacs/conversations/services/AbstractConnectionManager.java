@@ -33,6 +33,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import eu.siacs.conversations.Config;
+import eu.siacs.conversations.R;
 import eu.siacs.conversations.entities.DownloadableFile;
 
 public class AbstractConnectionManager {
@@ -50,13 +51,7 @@ public class AbstractConnectionManager {
 	}
 
 	public long getAutoAcceptFileSize() {
-		String config = this.mXmppConnectionService.getPreferences().getString(
-				"auto_accept_file_size", "524288");
-		try {
-			return Long.parseLong(config);
-		} catch (NumberFormatException e) {
-			return 524288;
-		}
+		return this.mXmppConnectionService.getLongPreference("auto_accept_file_size",R.integer.auto_accept_filesize);
 	}
 
 	public boolean hasStoragePermission() {
@@ -86,8 +81,7 @@ public class AbstractConnectionManager {
 				Cipher cipher = Cipher.getInstance("AES/CBC/PKCS5Padding");
 				cipher.init(Cipher.ENCRYPT_MODE, new SecretKeySpec(file.getKey(), "AES"), ips);
 				Log.d(Config.LOGTAG, "opening encrypted input stream");
-				final int s = Config.REPORT_WRONG_FILESIZE_IN_OTR_JINGLE ? size : (size / 16 + 1) * 16;
-				return new Pair<InputStream,Integer>(new CipherInputStream(is, cipher),s);
+				return new Pair<InputStream,Integer>(new CipherInputStream(is, cipher),(size / 16 + 1) * 16);
 			}
 		} catch (InvalidKeyException e) {
 			return null;

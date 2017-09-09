@@ -46,6 +46,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -154,14 +155,16 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 								@Override
 								public void run() {
 									final int oldPosition = messagesView.getFirstVisiblePosition();
-									final Message message;
-									if (oldPosition < messageList.size()) {
-										message = messageList.get(oldPosition);
-									}  else {
-										message = null;
+									Message message = null;
+									int childPos;
+									for(childPos = 0; childPos + oldPosition < messageList.size(); ++childPos) {
+										message =  messageList.get(oldPosition + childPos);
+										if (message.getType() != Message.TYPE_STATUS) {
+											break;
+										}
 									}
-									String uuid = message != null ? message.getUuid() : null;
-									View v = messagesView.getChildAt(0);
+									final String uuid = message != null ? message.getUuid() : null;
+									View v = messagesView.getChildAt(childPos);
 									final int pxOffset = (v == null) ? 0 : v.getTop();
 									ConversationFragment.this.conversation.populateWithMessages(ConversationFragment.this.messageList);
 									try {
@@ -309,17 +312,11 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 					return false;
 				}
 			}
-
-			// send the image
-			activity.attachImageToConversation(inputContentInfo.getContentUri());
-
-			// TODO: revoke permissions?
-			// since uploading an image is async its tough to wire a callback to when
-			// the image has finished uploading.
-			// According to the docs: "calling IC#releasePermission() is just to be a
-			// good citizen. Even if we failed to call that method, the system would eventually revoke
-			// the permission sometime after inputContentInfo object gets garbage-collected."
-			// See: https://developer.android.com/samples/CommitContentSampleApp/src/com.example.android.commitcontent.app/MainActivity.html#l164
+			if (activity.hasStoragePermission(ConversationActivity.REQUEST_ADD_EDITOR_CONTENT)) {
+				activity.attachImageToConversation(inputContentInfo.getContentUri());
+			} else {
+				activity.mPendingEditorContent = inputContentInfo.getContentUri();
+			}
 			return true;
 		}
 	};
@@ -354,6 +351,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 							}
 							updateChatMsgHint();
 							updateSendButton();
+							updateEditablity();
 						}
 						break;
 					default:
@@ -379,7 +377,8 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 
 	private void sendMessage() {
 		final String body = mEditMessage.getText().toString();
-		if (body.length() == 0 || this.conversation == null) {
+		final Conversation conversation = this.conversation;
+		if (body.length() == 0 || conversation == null) {
 			return;
 		}
 		final Message message;
@@ -397,7 +396,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 			message.setEdited(message.getUuid());
 			message.setUuid(UUID.randomUUID().toString());
 		}
-		switch (conversation.getNextEncryption()) {
+		switch (message.getConversation().getNextEncryption()) {
 			case Message.ENCRYPTION_OTR:
 				sendOtrMessage(message);
 				break;
@@ -450,7 +449,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 		view.setOnClickListener(null);
 
-		String[] allImagesMimeType = {"image/*"};
 		mEditMessage = (EditMessage) view.findViewById(R.id.textinput);
 		mEditMessage.setOnClickListener(new OnClickListener() {
 
@@ -461,8 +459,9 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				}
 			}
 		});
+
 		mEditMessage.setOnEditorActionListener(mEditorActionListener);
-		mEditMessage.setRichContentListener(allImagesMimeType, mEditorContentListener);
+		mEditMessage.setRichContentListener(new String[]{"image/*"}, mEditorContentListener);
 
 		mSendButton = (ImageButton) view.findViewById(R.id.textSendButton);
 		mSendButton.setOnClickListener(this.mSendButtonListener);
@@ -513,6 +512,8 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 						if (message.getEncryption() == Message.ENCRYPTION_PGP
 								|| message.getEncryption() == Message.ENCRYPTION_DECRYPTED) {
 							fingerprint = "pgp";
+						} else if (message.getEncryption() == Message.ENCRYPTION_OTR) {
+							fingerprint = "otr";
 						} else {
 							fingerprint = message.getFingerprint();
 						}
@@ -601,7 +602,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 					&& t == null;
 			activity.getMenuInflater().inflate(R.menu.message_context, menu);
 			menu.setHeaderTitle(R.string.message_options);
-			MenuItem copyText = menu.findItem(R.id.copy_text);
 			MenuItem selectText = menu.findItem(R.id.select_text);
 			MenuItem retryDecryption = menu.findItem(R.id.retry_decryption);
 			MenuItem correctMessage = menu.findItem(R.id.correct_message);
@@ -612,10 +612,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 			MenuItem cancelTransmission = menu.findItem(R.id.cancel_transmission);
 			MenuItem deleteFile = menu.findItem(R.id.delete_file);
 			MenuItem showErrorMessage = menu.findItem(R.id.show_error_message);
-			if (!treatAsFile
-					&& !GeoHelper.isGeoUri(m.getBody())
-					&& !m.treatAsDownloadable()) {
-				copyText.setVisible(true);
+			if (!treatAsFile && !m.isGeoUri() && !m.treatAsDownloadable()) {
 				selectText.setVisible(ListSelectionManager.isSupported());
 			}
 			if (m.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED) {
@@ -626,14 +623,14 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 					&& (m.getConversation().getMucOptions().nonanonymous() || m.getConversation().getMode() == Conversation.MODE_SINGLE)) {
 				correctMessage.setVisible(true);
 			}
-			if (treatAsFile || (GeoHelper.isGeoUri(m.getBody()))) {
+			if (treatAsFile || (m.getType() == Message.TYPE_TEXT && !m.treatAsDownloadable())) {
 				shareWith.setVisible(true);
 			}
 			if (m.getStatus() == Message.STATUS_SEND_FAILED) {
 				sendAgain.setVisible(true);
 			}
 			if (m.hasFileOnRemoteHost()
-					|| GeoHelper.isGeoUri(m.getBody())
+					|| m.isGeoUri()
 					|| m.treatAsDownloadable()
 					|| (t != null && t instanceof HttpDownloadConnection)) {
 				copyUrl.setVisible(true);
@@ -666,9 +663,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		switch (item.getItemId()) {
 			case R.id.share_with:
 				shareWith(selectedMessage);
-				return true;
-			case R.id.copy_text:
-				copyText(selectedMessage);
 				return true;
 			case R.id.select_text:
 				selectText(selectedMessage);
@@ -713,8 +707,11 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	private void shareWith(Message message) {
 		Intent shareIntent = new Intent();
 		shareIntent.setAction(Intent.ACTION_SEND);
-		if (GeoHelper.isGeoUri(message.getBody())) {
+		if (message.isGeoUri()) {
 			shareIntent.putExtra(Intent.EXTRA_TEXT, message.getBody());
+			shareIntent.setType("text/plain");
+		} else if (!message.isFileOrImage()) {
+			shareIntent.putExtra(Intent.EXTRA_TEXT, message.getMergedBody().toString());
 			shareIntent.setType("text/plain");
 		} else {
 			final DownloadableFile file = activity.xmppConnectionService.getFileBackend().getFile(message);
@@ -736,14 +733,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		} catch (ActivityNotFoundException e) {
 			//This should happen only on faulty androids because normally chooser is always available
 			Toast.makeText(activity,R.string.no_application_found_to_open_file,Toast.LENGTH_SHORT).show();
-		}
-	}
-
-	private void copyText(Message message) {
-		if (activity.copyTextToClipboard(message.getMergedBody().toString(),
-				R.string.message_text)) {
-			Toast.makeText(activity, R.string.message_copied_to_clipboard,
-					Toast.LENGTH_SHORT).show();
 		}
 	}
 
@@ -790,7 +779,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	private void copyUrl(Message message) {
 		final String url;
 		final int resId;
-		if (GeoHelper.isGeoUri(message.getBody())) {
+		if (message.isGeoUri()) {
 			resId = R.string.location;
 			url = message.getBody();
 		} else if (message.hasFileOnRemoteHost()) {
@@ -814,6 +803,8 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		Transferable transferable = message.getTransferable();
 		if (transferable != null) {
 			transferable.cancel();
+		} else if (message.getStatus() != Message.STATUS_RECEIVED) {
+			activity.xmppConnectionService.markMessage(message,Message.STATUS_SEND_FAILED);
 		}
 	}
 
@@ -832,6 +823,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		this.conversation.setNextCounterpart(counterpart);
 		updateChatMsgHint();
 		updateSendButton();
+		updateEditablity();
 	}
 
 	private void correctMessage(Message message) {
@@ -903,15 +895,14 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				updateChatState(this.conversation, msg);
 			}
 			this.conversation.trim();
-			this.mSendButton.setContentDescription(this.getActivity().getApplicationContext().getString(R.string.send_message_to_x,conversation.getName()));
-		} else {
-			this.mSendButton.setContentDescription(this.getActivity().getApplicationContext().getString(R.string.send_message));
+
+		}
+
+		if (activity != null) {
+			this.mSendButton.setContentDescription(activity.getString(R.string.send_message_to_x,conversation.getName()));
 		}
 
 		this.conversation = conversation;
-		boolean canWrite = this.conversation.getMode() == Conversation.MODE_SINGLE || this.conversation.getMucOptions().participating();
-		this.mEditMessage.setEnabled(canWrite);
-		this.mSendButton.setEnabled(canWrite);
 		this.mEditMessage.setKeyboardListener(null);
 		this.mEditMessage.setText("");
 		this.mEditMessage.append(this.conversation.getNextMessage());
@@ -1117,7 +1108,8 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				if (!activity.isConversationsOverviewVisable() || !activity.isConversationsOverviewHideable()) {
 					activity.sendReadMarkerIfNecessary(conversation);
 				}
-				this.updateSendButton();
+				updateSendButton();
+				updateEditablity();
 			}
 		}
 	}
@@ -1129,6 +1121,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 			mEditMessage.append(conversation.getDraftMessage());
 			conversation.setDraftMessage(null);
 		}
+		conversation.setNextMessage(mEditMessage.getText().toString());
 		updateChatMsgHint();
 		new Handler().post(new Runnable() {
 			@Override
@@ -1233,6 +1226,14 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		return activity.getThemeResource(R.attr.ic_send_text_offline, R.drawable.ic_send_text_offline);
 	}
 
+	private void updateEditablity() {
+		boolean canWrite = this.conversation.getMode() == Conversation.MODE_SINGLE || this.conversation.getMucOptions().participating() || this.conversation.getNextCounterpart() != null;
+		this.mEditMessage.setFocusable(canWrite);
+		this.mEditMessage.setFocusableInTouchMode(canWrite);
+		this.mSendButton.setEnabled(canWrite);
+		this.mEditMessage.setCursorVisible(canWrite);
+	}
+
 	public void updateSendButton() {
 		final Conversation c = this.conversation;
 		final SendButtonAction action;
@@ -1253,7 +1254,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				if (conference && c.getNextCounterpart() != null) {
 					action = SendButtonAction.CANCEL;
 				} else {
-					String setting = activity.getPreferences().getString("quick_action", "recent");
+					String setting = activity.getPreferences().getString("quick_action", activity.getResources().getString(R.string.quick_action));
 					if (!setting.equals("none") && UIHelper.receivedLocationQuestion(conversation.getLatestMessage())) {
 						setting = "location";
 					} else if (setting.equals("recent")) {
@@ -1281,9 +1282,10 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				action = SendButtonAction.TEXT;
 			}
 		}
-		if (activity.useSendButtonToIndicateStatus() && c != null
-				&& c.getAccount().getStatus() == Account.State.ONLINE) {
-			if (c.getMode() == Conversation.MODE_SINGLE) {
+		if (activity.useSendButtonToIndicateStatus() && c.getAccount().getStatus() == Account.State.ONLINE) {
+			if (activity.xmppConnectionService != null && activity.xmppConnectionService.getMessageArchiveService().isCatchingUp(c)) {
+				status = Presence.Status.OFFLINE;
+			} else if (c.getMode() == Conversation.MODE_SINGLE) {
 				status = c.getContact().getShownStatus();
 			} else {
 				status = c.getMucOptions().online() ? Presence.Status.ONLINE : Presence.Status.OFFLINE;
@@ -1295,7 +1297,20 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		this.mSendButton.setImageResource(getSendButtonImageResource(action, status));
 	}
 
+	protected void updateDateSeparators() {
+		synchronized (this.messageList) {
+			for(int i = 0; i < this.messageList.size(); ++i) {
+				final Message current = this.messageList.get(i);
+				if (i == 0 || !UIHelper.sameDay(this.messageList.get(i-1).getTimeSent(),current.getTimeSent())) {
+					this.messageList.add(i,Message.createDateSeparator(current));
+					i++;
+				}
+			}
+		}
+	}
+
 	protected void updateStatusMessages() {
+		updateDateSeparators();
 		synchronized (this.messageList) {
 			if (showLoadMoreMessages(conversation)) {
 				this.messageList.add(0, Message.createLoadMoreMessage(conversation));
@@ -1356,7 +1371,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	private boolean showLoadMoreMessages(final Conversation c) {
 		final boolean mam = hasMamSupport(c);
 		final MessageArchiveService service = activity.xmppConnectionService.getMessageArchiveService();
-		return mam && (c.getLastClearHistory() != 0  || (c.countMessages() == 0 && c.messagesLoaded.get() && c.hasMessagesLeftOnServer()  && !service.queryInProgress(c)));
+		return mam && (c.getLastClearHistory().getTimestamp() != 0  || (c.countMessages() == 0 && c.messagesLoaded.get() && c.hasMessagesLeftOnServer()  && !service.queryInProgress(c)));
 	}
 
 	private boolean hasMamSupport(final Conversation c) {
@@ -1636,6 +1651,11 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 			} else if (requestCode == ConversationActivity.REQUEST_TRUST_KEYS_MENU) {
 				int choice = data.getIntExtra("choice", ConversationActivity.ATTACHMENT_CHOICE_INVALID);
 				activity.selectPresenceToAttachFile(choice, conversation.getNextEncryption());
+			}
+		} else if (resultCode == Activity.RESULT_CANCELED) {
+			if (requestCode == ConversationActivity.REQUEST_DECRYPT_PGP) {
+				// discard the message to prevent decryption being blocked
+				conversation.getAccount().getPgpDecryptionService().giveUpCurrentDecryption();
 			}
 		}
 	}

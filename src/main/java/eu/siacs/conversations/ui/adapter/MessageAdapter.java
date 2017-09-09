@@ -16,6 +16,7 @@ import android.text.Spannable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.format.DateUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.RelativeSizeSpan;
@@ -35,6 +36,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.vdurmont.emoji.EmojiManager;
 
 import java.lang.ref.WeakReference;
 import java.net.URL;
@@ -67,12 +70,17 @@ import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.Patterns;
 import eu.siacs.conversations.utils.UIHelper;
+import eu.siacs.conversations.xmpp.mam.MamReference;
 
 public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextView.CopyHandler {
 
 	private static final int SENT = 0;
 	private static final int RECEIVED = 1;
 	private static final int STATUS = 2;
+	private static final int DATE_SEPARATOR = 3;
+
+	public static final String DATE_SEPARATOR_BODY = "DATE_SEPARATOR";
+
 	private static final Pattern XMPP_PATTERN = Pattern
 			.compile("xmpp\\:(?:(?:["
 					+ Patterns.GOOD_IRI_CHAR
@@ -136,12 +144,16 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 
 	@Override
 	public int getViewTypeCount() {
-		return 3;
+		return 4;
 	}
 
 	public int getItemViewType(Message message) {
 		if (message.getType() == Message.TYPE_STATUS) {
-			return STATUS;
+			if (DATE_SEPARATOR_BODY.equals(message.getBody())) {
+				return DATE_SEPARATOR;
+			} else {
+				return STATUS;
+			}
 		} else if (message.getStatus() <= Message.STATUS_RECEIVED) {
 			return RECEIVED;
 		}
@@ -313,7 +325,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		viewHolder.messageBody.setTextIsSelectable(false);
 	}
 
-	private void displayHeartMessage(final ViewHolder viewHolder, final String body) {
+	private void displayEmojiMessage(final ViewHolder viewHolder, final String body) {
 		if (viewHolder.download_button != null) {
 			viewHolder.download_button.setVisibility(View.GONE);
 		}
@@ -321,8 +333,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		viewHolder.messageBody.setVisibility(View.VISIBLE);
 		viewHolder.messageBody.setIncludeFontPadding(false);
 		Spannable span = new SpannableString(body);
-		span.setSpan(new RelativeSizeSpan(4.0f), 0, body.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-		span.setSpan(new ForegroundColorSpan(activity.getWarningTextColor()), 0, body.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+		float size = EmojiManager.isEmoji(body) ? 3.0f : 2.0f;
+		span.setSpan(new RelativeSizeSpan(size), 0, body.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 		viewHolder.messageBody.setText(span);
 	}
 
@@ -593,16 +605,16 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	}
 
 	private void loadMoreMessages(Conversation conversation) {
-		conversation.setLastClearHistory(0);
+		conversation.setLastClearHistory(0,null);
 		activity.xmppConnectionService.updateConversation(conversation);
 		conversation.setHasMessagesLeftOnServer(true);
 		conversation.setFirstMamReference(null);
-		long timestamp = conversation.getLastMessageTransmitted();
+		long timestamp = conversation.getLastMessageTransmitted().getTimestamp();
 		if (timestamp == 0) {
 			timestamp = System.currentTimeMillis();
 		}
 		conversation.messagesLoaded.set(true);
-		MessageArchiveService.Query query = activity.xmppConnectionService.getMessageArchiveService().query(conversation, 0, timestamp);
+		MessageArchiveService.Query query = activity.xmppConnectionService.getMessageArchiveService().query(conversation, new MamReference(0), timestamp, false);
 		if (query != null) {
 			Toast.makeText(activity, R.string.fetching_history_from_server, Toast.LENGTH_LONG).show();
 		} else {
@@ -622,6 +634,11 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		if (view == null) {
 			viewHolder = new ViewHolder();
 			switch (type) {
+				case DATE_SEPARATOR:
+					view = activity.getLayoutInflater().inflate(R.layout.message_date_bubble, parent, false);
+					viewHolder.status_message = (TextView) view.findViewById(R.id.message_body);
+					viewHolder.message_box = (LinearLayout) view.findViewById(R.id.message_box);
+					break;
 				case SENT:
 					view = activity.getLayoutInflater().inflate(
 							R.layout.message_sent, parent, false);
@@ -690,7 +707,18 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 
 		boolean darkBackground = type == RECEIVED && (!isInValidSession || mUseGreenBackground) || activity.isDarkTheme();
 
-		if (type == STATUS) {
+		if (type == DATE_SEPARATOR) {
+			if (UIHelper.today(message.getTimeSent())) {
+				viewHolder.status_message.setText(R.string.today);
+			} else if (UIHelper.yesterday(message.getTimeSent())) {
+				viewHolder.status_message.setText(R.string.yesterday);
+			} else {
+				viewHolder.status_message.setText(DateUtils.formatDateTime(activity,message.getTimeSent(),DateUtils.FORMAT_SHOW_DATE | DateUtils.FORMAT_SHOW_YEAR));
+			}
+			viewHolder.message_box.setBackgroundResource(activity.isDarkTheme() ? R.drawable.date_bubble_grey : R.drawable.date_bubble_white);
+			viewHolder.status_message.setTextColor(activity.getSecondaryTextColor());
+			return view;
+		} else if (type == STATUS) {
 			if ("LOAD_MORE".equals(message.getBody())) {
 				viewHolder.status_message.setVisibility(View.GONE);
 				viewHolder.contact_picture.setVisibility(View.GONE);
@@ -794,10 +822,10 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		} else if (message.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED) {
 			displayDecryptionFailed(viewHolder,darkBackground);
 		} else {
-			if (GeoHelper.isGeoUri(message.getBody())) {
+			if (message.isGeoUri()) {
 				displayLocationMessage(viewHolder,message);
-			} else if (message.bodyIsHeart()) {
-				displayHeartMessage(viewHolder, message.getBody().trim());
+			} else if (message.bodyIsOnlyEmojis()) {
+				displayEmojiMessage(viewHolder, message.getBody().replaceAll("\\s",""));
 			} else if (message.treatAsDownloadable()) {
 				try {
 					URL url = new URL(message.getBody());

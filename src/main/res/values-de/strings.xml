@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Diese Unterhaltung danach beenden</string>
   <string name="choose_presence">Gerät auswählen</string>
   <string name="send_unencrypted_message">Unverschlüsselt schreiben…</string>
+  <string name="send_message">Nachricht senden</string>
   <string name="send_message_to_x">Sende Nachricht an %s</string>
   <string name="send_otr_message">OTR-verschlüsselt schreiben…</string>
   <string name="send_omemo_message">OMEMO-verschlüsselt schreiben…</string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">Benutzername wird bereits verwendet</string>
   <string name="account_status_regis_success">Registrierung abgeschlossen</string>
   <string name="account_status_regis_not_sup">Der Server unterstützt keine Registrierung</string>
-  <string name="account_status_security_error">Sicherheitsfehler</string>
+  <string name="account_status_tls_error">TLS-Aushandlung fehlgeschlagen</string>
   <string name="account_status_policy_violation">Verstoß gegen die Richtlinien</string>
   <string name="account_status_incompatible_server">Inkompatibler Server</string>
   <string name="account_status_stream_error">Datenstromfehler</string>
@@ -169,6 +170,8 @@
   <string name="mgmt_account_disable">Vorübergehend abschalten</string>
   <string name="mgmt_account_publish_avatar">Avatar veröffentlichen</string>
   <string name="mgmt_account_publish_pgp">Öffentlichen OpenPGP-Schlüssel veröffentlichen</string>
+  <string name="unpublish_pgp">Öffentlichen OpenPGP-Schlüssel verwerfen</string>
+  <string name="unpublish_pgp_message">Bist du sicher, dass du deinen öffentlichen OpenPGP-Schlüssel aus deiner Anwesenheitsmitteilung entfernen möchtest?\nDeine Kontakte können dir dann keine OpenPGP-verschlüsselten Nachrichten senden.</string>
   <string name="openpgp_has_been_published">Öffentlicher OpenPGP-Schlüssel wurde veröffentlicht.</string>
   <string name="republish_pgp_keys">Deine öffentliche OpenPGP-Schlüssel müssen veröffentlicht werden!</string>
   <string name="mgmt_account_enable">Konto aktivieren </string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">v\\OMEMO-Fingerabdruck</string>
   <string name="omemo_fingerprint_selected_message">OMEMO-Fingerabdruck der Nachricht</string>
   <string name="omemo_fingerprint_x509_selected_message">v\\OMEMO-Fingerabdruck der Nachricht</string>
-  <string name="this_device_omemo_fingerprint">Eigener OMEMO-Fingerabdruck</string>
   <string name="other_devices">Andere Geräte</string>
   <string name="trust_omemo_fingerprints">OMEMO-Fingerabdruck vertrauen</string>
   <string name="fetching_keys">Schlüssel werden abgerufen …</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">%s-Größe prüfen</string>
   <string name="check_x_filesize_on_host">%1$s-Größe auf %2$s prüfen</string>
   <string name="message_options">Nachrichtenoptionen</string>
-  <string name="copy_text">Text kopieren</string>
   <string name="select_text">Text markieren</string>
   <string name="quote">Zitat</string>
   <string name="copy_original_url">Original-URL kopieren</string>
@@ -399,7 +400,8 @@
   <string name="clear_other_devices">Geräte entfernen</string>
   <string name="clear_other_devices_desc">Alle anderen Geräte aus der OMEMO-Bekanntmachung entfernen? Die Bekanntmachung wird bei der nächsten Verbindung erneuert, möglicherweise werden aber nicht alle Nachrichten empfangen, die in der Zwischenzeit versendet wurden.</string>
   <string name="error_no_keys_to_trust_server_error">Für diesen Kontakt sind keine benutzbaren Schlüssel verfügbar.\nNeue Schlüssel vom Server herunterzuladen war nicht erfolgreich. Vielleicht stimmt etwas mit dem Server deines Kontakts nicht.</string>
-  <string name="error_no_keys_to_trust">Es sind keine Schlüssel für diesen Kontakt verfügbar. Falls sie gelöscht wurden, müssen diese neu erstellt werden.</string>
+  <string name="error_no_keys_to_trust_presence">Für diesen Kontakt sind keine benutzbaren Schlüssel verfügbar.\nStelle sicher, dass du den gegenseitigen Online-Status aktiviert hast.</string>
+  <string name="error_no_keys_to_trust">Für diesen Kontakt sind keine benutzbaren Schlüssel verfügbar. Falls sie gelöscht wurden, müssen diese neu erstellt werden.</string>
   <string name="error_trustkeys_title">Fehler</string>
   <string name="fetching_history_from_server">Lade Chatverlauf…</string>
   <string name="no_more_history_on_server">Keine weiteren Nachrichten vorhanden</string>
@@ -524,10 +526,10 @@
   <string name="pref_presence_settings">Status</string>
   <string name="pref_away_when_screen_off">Abwesend bei abgeschaltetem Bildschirm</string>
   <string name="pref_away_when_screen_off_summary">Setzt deinen Status auf \"abwesend\", solange dein Bildschirm abgeschaltet ist</string>
-  <string name="pref_xa_on_silent_mode">Nicht verfügbar bei Stummschaltung</string>
-  <string name="pref_xa_on_silent_mode_summary">Setzt deinen Status auf \"nicht verfügbar\", solange dein Gerät lautlos ist</string>
+  <string name="pref_dnd_on_silent_mode">\"Bitte nicht stören\" bei Stummschaltung</string>
+  <string name="pref_dnd_on_silent_mode_summary">Setzt deinen Status auf \"Bitte nicht stören\", solange dein Gerät stummgeschaltet ist </string>
   <string name="pref_treat_vibrate_as_silent">Vibration als Lautlos behandeln</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Setzt deinen Status auf \"nicht verfügbar\", solange das Gerät auf Vibration geschaltet ist</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">Setzt deinen Status auf \"Bitte nicht stören\", solange das Gerät auf Vibration geschaltet ist</string>
   <string name="pref_show_connection_options">Erweiterte Verbindungsoptionen</string>
   <string name="pref_show_connection_options_summary">Hostname- und Port-Optionen bei Kontoeinrichtung anzeigen</string>
   <string name="hostname_example">xmpp.domain.de</string>
@@ -576,7 +578,7 @@
   <string name="certicate_info_not_available">(Nicht verfügbar)</string>
   <string name="certificate_not_found">Kein Zertifikat gefunden</string>
   <string name="notify_on_all_messages">Bei allen Nachrichten benachrichtigen</string>
-  <string name="notify_only_when_highlighted">Nur benachrichtigen, wenn ich angesprochen werde</string>
+  <string name="notify_only_when_highlighted">Nur benachrichtigen, wenn ich erwähnt werde</string>
   <string name="notify_never">Benachrichtigungen deaktiviert</string>
   <string name="notify_paused">Benachrichtigungen pausiert</string>
   <string name="pref_picture_compression">Bilder komprimieren</string>
@@ -711,4 +713,18 @@
   <string name="block_stranger">Unbekannten sperren</string>
   <string name="block_entire_domain">Gesamte Domain sperren</string>
   <string name="online_right_now">aktuell online</string>
+  <string name="retry_decryption">Entschlüsseln wiederholen</string>
+  <string name="session_failure">Sitzungsfehler</string>
+  <string name="sasl_downgrade">SASL-Mechanismus zurückgestuft</string>
+  <string name="account_status_regis_web">Der Server benötigt eine Registrierung auf einer Website</string>
+  <string name="open_website">Website öffnen</string>
+  <string name="application_found_to_open_website">Keine Anwendung zum Öffnen der Website gefunden</string>
+  <string name="pref_headsup_notifications">Benachrichtigungsvorschau</string>
+  <string name="pref_headsup_notifications_summary">Zeige Benachrichtigungsvorschau am oberen Bildschirmrand an</string>
+  <string name="today">Heute</string>
+  <string name="yesterday">Gestern</string>
+  <string name="pref_validate_hostname">Überprüfe den Hostnamen mit DNSSEC</string>
+  <string name="pref_validate_hostname_summary">Serverzertifikate, die den überprüften Hostnamen enthalten, werden als verifiziert betrachtet</string>
+  <string name="network_is_unreachable">Netzwerk nicht verfügbar</string>
+  <string name="certificate_does_not_contain_jid">Zertifikat enthält keine Jabber-ID</string>
 </resources>

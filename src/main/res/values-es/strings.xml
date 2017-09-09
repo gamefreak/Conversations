@@ -80,6 +80,7 @@
   <string name="also_end_conversation">Además, terminar esta conversación</string>
   <string name="choose_presence">Seleccionar dispositivo</string>
   <string name="send_unencrypted_message">Enviar mensaje sin cifrar</string>
+  <string name="send_message">Enviar mensaje</string>
   <string name="send_message_to_x">Enviar mensaje a %s</string>
   <string name="send_otr_message">Enviar mensaje cifrado con OTR</string>
   <string name="send_omemo_message">Enviar mensaje cifrado con OMEMO </string>
@@ -156,7 +157,7 @@
   <string name="account_status_regis_conflict">El identificador ya está en uso</string>
   <string name="account_status_regis_success">Registro completado</string>
   <string name="account_status_regis_not_sup">El servidor no soporta registros</string>
-  <string name="account_status_security_error">Error de seguridad</string>
+  <string name="account_status_tls_error">Error de negociación TLS</string>
   <string name="account_status_policy_violation">Policy violation</string>
   <string name="account_status_incompatible_server">Servidor incompatible</string>
   <string name="account_status_stream_error">Stream error</string>
@@ -169,11 +170,13 @@
   <string name="mgmt_account_disable">Deshabilitar temporalmente</string>
   <string name="mgmt_account_publish_avatar">Imagen de perfil</string>
   <string name="mgmt_account_publish_pgp">Publicar clave pública OpenPGP</string>
+  <string name="unpublish_pgp">Eliminar la clave pública OpenPGP</string>
+  <string name="unpublish_pgp_message">¿Estás seguro de que quieres eliminar tu clave pública OpenPGP de tu anuncio de presencia?\nTus contactos no podrán enviarte mensajes cifrados con OpenPGP.</string>
   <string name="openpgp_has_been_published">Clave pública OpenPGP ha sido publicada.</string>
   <string name="republish_pgp_keys">¡Recuerda republicar tus claves públicas OpenPGP!</string>
   <string name="mgmt_account_enable">Habilitar</string>
   <string name="mgmt_account_are_you_sure">¿Estás seguro?</string>
-  <string name="mgmt_account_delete_confirm_text">Si eliminas tu cuenta tu historial completo de conversaciones se perderá</string>
+  <string name="mgmt_account_delete_confirm_text">Si borras tu cuenta, tu historial de conversaciones también se perderá</string>
   <string name="attach_record_voice">Grabar audio</string>
   <string name="account_settings_jabber_id">Identificador Jabber</string>
   <string name="block_jabber_id">Bloquear Identificador Jabber</string>
@@ -227,7 +230,6 @@
   <string name="omemo_fingerprint_x509">Huella digital v\\OMEMO</string>
   <string name="omemo_fingerprint_selected_message">Huella digital OMEMO del mensaje</string>
   <string name="omemo_fingerprint_x509_selected_message">huella digital v\\OMEMO del mensaje</string>
-  <string name="this_device_omemo_fingerprint">Tu huella digital OMEMO</string>
   <string name="other_devices">Otros dispositivos</string>
   <string name="trust_omemo_fingerprints">Huellas digitales OMEMO de confianza</string>
   <string name="fetching_keys">Buscando claves...</string>
@@ -331,7 +333,6 @@
   <string name="check_x_filesize">Comprobar tamaño de %s</string>
   <string name="check_x_filesize_on_host">Comprobar tamaño de %1$s en %2$s</string>
   <string name="message_options">Opciones de mensaje</string>
-  <string name="copy_text">Copiar texto</string>
   <string name="select_text">Seleccionar texto</string>
   <string name="quote">Citar</string>
   <string name="copy_original_url">Copiar URL original</string>
@@ -398,8 +399,9 @@
   <string name="wipe_omemo_pep">Limpiar otros dispositivos de PEP</string>
   <string name="clear_other_devices">Limpiar dispositivos</string>
   <string name="clear_other_devices_desc">¿Estás seguro de que quieres limpiar todos los otros dispositivos del anuncio OMEMO? La próxima vez que tus dispositivos conecten, tendrán que volver a anunciarse, pero estos podrían no recibir los mensajes enviados durante el proceso.</string>
-  <string name="error_no_keys_to_trust_server_error">No hay claves usables disponibles para este contacto. La búsqueda de nuevas claves al servidor ha fallado. Puede que exista un problema con el servidor de tus contactos.</string>
-  <string name="error_no_keys_to_trust">No hay claves usables disponibles para este contacto. Si has eliminado alguna de sus claves, tus contactos necesitarán generar nuevas claves.</string>
+  <string name="error_no_keys_to_trust_server_error">No hay claves disponibles para este contacto. La búsqueda de nuevas claves al servidor ha fallado. Puede que exista un problema con el servidor de tu contacto.</string>
+  <string name="error_no_keys_to_trust_presence">No hay claves disponibles para este contacto.\n Asegúrate que tenéis suscripción de presencia mutua. </string>
+  <string name="error_no_keys_to_trust">No hay claves disponibles para este contacto. Si has eliminado alguna de sus claves, tus contactos necesitarán generar nuevas claves.</string>
   <string name="error_trustkeys_title">Error</string>
   <string name="fetching_history_from_server">Buscando historial en el servidor</string>
   <string name="no_more_history_on_server">No hay más historial en el servidor</string>
@@ -524,10 +526,10 @@
   <string name="pref_presence_settings">Presencia</string>
   <string name="pref_away_when_screen_off">Ausente con pantalla apagada</string>
   <string name="pref_away_when_screen_off_summary">Cambia tu estado a ausente cuando la pantalla está apagada</string>
-  <string name="pref_xa_on_silent_mode">No disponible en modo silencio</string>
-  <string name="pref_xa_on_silent_mode_summary">Cambia tu estado a no disponible cuando el dispositivo está en modo silencio</string>
+  <string name="pref_dnd_on_silent_mode">\"No molestar\" en modo silencio</string>
+  <string name="pref_dnd_on_silent_mode_summary">Cambia tu estado a \"no molestar\" cuando el dispositivo está en modo silencio</string>
   <string name="pref_treat_vibrate_as_silent">Modo vibración como modo silencio</string>
-  <string name="pref_treat_vibrate_as_silent_summary">Cambia tu estado a no disponible cuando el dispositivo está en modo vibración</string>
+  <string name="pref_treat_vibrate_as_dnd_summary">Cambia tu estado a \"no molestar\" cuando el dispositivo está en modo vibración</string>
   <string name="pref_show_connection_options">Opciones de conexión</string>
   <string name="pref_show_connection_options_summary">Mostrar el hostname y el puerto cuando se está creando una cuenta</string>
   <string name="hostname_example">xmpp.ejemplo.com</string>
@@ -576,7 +578,7 @@
   <string name="certicate_info_not_available">(No disponible)</string>
   <string name="certificate_not_found">Certificado no encontrado</string>
   <string name="notify_on_all_messages">Notificar para todos los mensajes</string>
-  <string name="notify_only_when_highlighted">Notificar solo cuando se recibe un mensaje resaltado</string>
+  <string name="notify_only_when_highlighted">Notificar solo cuando eres mencionado</string>
   <string name="notify_never">Notificaciones deshabilitadas</string>
   <string name="notify_paused">Notificaciones pausadas</string>
   <string name="pref_picture_compression">Comprimir imágenes</string>
@@ -711,4 +713,18 @@
   <string name="block_stranger">Bloquear desconocido</string>
   <string name="block_entire_domain">Bloquear el dominio completo</string>
   <string name="online_right_now">Conectado ahora mismo</string>
+  <string name="retry_decryption">Reintentar descifrado</string>
+  <string name="session_failure">Fallo de sesión</string>
+  <string name="sasl_downgrade">Downgraded SASL mechanism</string>
+  <string name="account_status_regis_web">El servidor requiere registro en su página web</string>
+  <string name="open_website">Abrir página web</string>
+  <string name="application_found_to_open_website">No se ha encontrado aplicación para abrir la página web</string>
+  <string name="pref_headsup_notifications">Notificaciones emergentes</string>
+  <string name="pref_headsup_notifications_summary">Mostrar ventana emergente al recibir una notificación</string>
+  <string name="today">Hoy</string>
+  <string name="yesterday">Ayer</string>
+  <string name="pref_validate_hostname">Validar hostname con DNSSEC</string>
+  <string name="pref_validate_hostname_summary">Los certificados del servidor que contienen el hostname validado son considerados verificados</string>
+  <string name="network_is_unreachable">La red es inaccesible</string>
+  <string name="certificate_does_not_contain_jid">El certificado no contiene un identificador Jabber</string>
 </resources>
