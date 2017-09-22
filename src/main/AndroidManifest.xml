@@ -43,6 +43,7 @@
                 <action android:name="android.media.RINGER_MODE_CHANGED" />
             </intent-filter>
         </receiver>
+        <receiver android:name="horse.vinylscratch.conversations.UpdateCheckReceiver" />
 
         <activity
             android:name=".ui.ConversationActivity"

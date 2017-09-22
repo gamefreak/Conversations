@@ -37,7 +37,7 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 
 	@Override
 	protected Void doInBackground(Void... params) {
-//		String updateAddress = ;
+		Log.i(TAG, "Checking for updates");
 		HttpsURLConnection connection = null;
 		String jsonString = "";
 		try  {
@@ -62,8 +62,8 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 				Log.i(TAG, "compare version " + version + " to " + ownVersion);
 				if (compareVersions(version, ownVersion) != 1) {
 					Log.i(TAG, "Version " + version + " up to date");
+					return null;
 				}
-//				String parts[] = version.split("\\.");
 
 				JSONArray assets = json.getJSONArray("assets");
 				for (int i = 0; i < assets.length(); i++) {
@@ -71,6 +71,7 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 					if (asset.has("content_type") && asset.has("browser_download_url")) {
 						if (!APK_CONTENT_TYPE.equals(asset.getString("content_type"))) continue;
 						String url = asset.getString("browser_download_url");
+						Log.i(TAG, "New version available at " + url);
 						showNotification(version, url);
 						return null;
 					}
