@@ -80,6 +80,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.services.XmppConnectionService.XmppConnectionBinder;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.ExceptionHelper;
+import eu.siacs.conversations.utils.ThemeHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.OnKeyStatusUpdated;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
@@ -411,7 +412,7 @@ public abstract class XmppActivity extends Activity {
 	}
 
 	public boolean isDarkTheme() {
-		return this.mTheme == R.style.ConversationsTheme_Dark || this.mTheme == R.style.ConversationsTheme_Dark_LargerText;
+		return ThemeHelper.isDarkTheme(this.mTheme);
 	}
 
 	public int getThemeResource(int r_attr_name, int r_drawable_def) {
@@ -1038,20 +1039,7 @@ public abstract class XmppActivity extends Activity {
 	}
 
 	protected int findTheme() {
-		Boolean dark   = getPreferences().getString(SettingsActivity.THEME, getResources().getString(R.string.theme)).equals("dark");
-		Boolean larger = getPreferences().getBoolean("use_larger_font", getResources().getBoolean(R.bool.use_larger_font));
-
-		if(dark) {
-			if(larger)
-				return R.style.ConversationsTheme_Dark_LargerText;
-			else
-				return R.style.ConversationsTheme_Dark;
-		} else {
-			if (larger)
-				return R.style.ConversationsTheme_LargerText;
-			else
-				return R.style.ConversationsTheme;
-		}
+		return ThemeHelper.findTheme(this);
 	}
 
 	@Override
