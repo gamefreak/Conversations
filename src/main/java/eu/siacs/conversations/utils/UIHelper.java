@@ -345,7 +345,7 @@ public class UIHelper {
 		if (message.getStatus() == Message.STATUS_RECEIVED) {
 			final Contact contact = message.getContact();
 			if (conversation.getMode() == Conversation.MODE_MULTI) {
-				if (contact != null) {
+				if (contact != null && !contact.usesFallbackName()) {
 					return contact.getDisplayName();
 				} else {
 					return getDisplayedMucCounterpart(message.getCounterpart());

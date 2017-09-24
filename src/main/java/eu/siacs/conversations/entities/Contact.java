@@ -111,6 +111,19 @@ public class Contact implements ListItem, Blockable {
 				cursor.getString(cursor.getColumnIndex(GROUPS)));
 	}
 
+	public boolean usesFallbackName() {
+		if (Config.X509_VERIFICATION && this.commonName != null && !this.commonName.isEmpty()) {
+			return false;
+		} else if (this.systemName != null && !this.systemName.isEmpty()) {
+			return false;
+		} else if (this.serverName != null && !this.serverName.isEmpty()) {
+			return false;
+		} else if (this.presenceName != null && !this.presenceName.isEmpty() && mutualPresenceSubscription() ) {
+			return false;
+		}
+		return true;
+	}
+
 	public String getDisplayName() {
 		if (Config.X509_VERIFICATION && this.commonName != null && !this.commonName.isEmpty()) {
 			return this.commonName;
