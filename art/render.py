@@ -123,7 +123,7 @@ for (source_filename, settings) in images.items():
 			height = factor * base_height
 
 		path = "../src/main/res/drawable-{resolution}/{output_filename}.png".format(resolution=resolution, output_filename=output_filename)
-		execute_cmd(inkscape, "-f", source_filename, "-z", "-C", "-w", width, "-h", height, "-e", path)
+		execute_cmd(inkscape, "-f", source_filename, "-z", "-C", "-w", int(width), "-h", int(height), "-e", path)
 
 
 		top = []
@@ -154,11 +154,11 @@ for (source_filename, settings) in images.items():
 		if len(left) != 2: continue
 
 
-		execute_cmd(imagemagick, "-background", "none", "PNG32:" + path, "-gravity", "center", "-extent", "{}x{}".format(width+2, height+2), "PNG32:" + path)
+		execute_cmd(imagemagick, "-background", "none", "PNG32:" + path, "-gravity", "center", "-extent", "{}x{}".format(int(width)+2, int(height)+2), "PNG32:" + path)
 
 		draw_format = "rectangle %d,%d %d,%d"
 		top_line = ("-draw", draw_format % (min(top) + 1, 0, max(top), 0))
-		right_line = ("-draw", draw_format % (width + 1, max(right) + 1, width + 1, max(right)))
+		right_line = ("-draw", draw_format % (width + 1, min(right) + 1, width + 1, max(right)))
 		bottom_line = ("-draw", draw_format % (min(bottom) + 1, height + 1, max(bottom), height + 1))
 		left_line = ("-draw", draw_format % (0, min(left) + 1, 0, max(left)))
 		draws = [top_line, right_line, bottom_line, left_line]
