@@ -56,9 +56,10 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 
 		try {
 			JSONObject json = new JSONObject(jsonString);
-			if (json.has("tag_name") && json.has("assets")) {
+			if (json.has("tag_name") && json.has("assets") && json.has("html_url")) {
 				String version = json.getString("tag_name");
 				String ownVersion = BuildConfig.VERSION_NAME;
+				String url = json.getString("html_url");
 				Log.i(TAG, "compare version " + version + " to " + ownVersion);
 				if (compareVersions(version, ownVersion) != 1) {
 					Log.i(TAG, "Version " + version + " up to date");
@@ -70,7 +71,6 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 					JSONObject asset = assets.getJSONObject(i);
 					if (asset.has("content_type") && asset.has("browser_download_url")) {
 						if (!APK_CONTENT_TYPE.equals(asset.getString("content_type"))) continue;
-						String url = asset.getString("browser_download_url");
 						Log.i(TAG, "New version available at " + url);
 						showNotification(version, url);
 						return null;
