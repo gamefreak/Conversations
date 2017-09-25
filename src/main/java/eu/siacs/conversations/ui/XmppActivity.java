@@ -5,6 +5,7 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.ActivityManager;
 import android.app.AlertDialog;
 import android.app.AlertDialog.Builder;
 import android.app.PendingIntent;
@@ -42,10 +43,12 @@ import android.os.IBinder;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
+import android.support.annotation.StyleRes;
 import android.support.v4.content.ContextCompat;
 import android.text.InputType;
 import android.util.DisplayMetrics;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
@@ -423,6 +426,20 @@ public abstract class XmppActivity extends Activity {
 		ta.recycle();
 
 		return res;
+	}
+
+	@Override
+	protected void onApplyThemeResource(Resources.Theme theme, @StyleRes int resid, boolean first) {
+		super.onApplyThemeResource(theme, resid, first);
+
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+			// Need to do this manually
+			TypedValue tv = new TypedValue();
+			theme.resolveAttribute(android.R.attr.colorPrimary, tv, true);
+
+			ActivityManager.TaskDescription taskDescription = new ActivityManager.TaskDescription(null, null, tv.data);
+			setTaskDescription(taskDescription);
+		}
 	}
 
 	protected boolean isOptimizingBattery() {
