@@ -7,6 +7,7 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
+import android.os.AsyncTask;
 import android.util.DisplayMetrics;
 import android.util.JsonReader;
 import android.util.Log;
@@ -117,7 +118,7 @@ public class EmoticonService {
 		}
 	}
 
-	public void loadPack(File file) {
+	public void loadPack(final File file) {
 		if (file == null) {
 			synchronized (this.emotes) {
 				this.currentPack = null;
@@ -127,7 +128,13 @@ public class EmoticonService {
 				Log.i("emote service", "emote active emotes cleared");
 			}
 		} else {
-			loadPackJson(file);
+			AsyncTask.execute(new Runnable() {
+				@Override
+				public void run() {
+
+					loadPackJson(file);
+				}
+			});
 		}
 	}
 
