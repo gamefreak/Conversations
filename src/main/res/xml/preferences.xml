@@ -9,10 +9,8 @@
             android:summary="@string/pref_grant_presence_updates_summary"
             android:title="@string/pref_grant_presence_updates"/>
 
-        <ListPreference
+        <EditTextPreference
             android:defaultValue="@string/default_resource"
-            android:entries="@array/resources"
-            android:entryValues="@array/resources"
             android:key="resource"
             android:summary="@string/pref_xmpp_resource_summary"
             android:title="@string/pref_xmpp_resource"/>

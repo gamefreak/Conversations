@@ -81,6 +81,7 @@ public class SettingsActivity extends XmppActivity implements
 	public void onStart() {
 		super.onStart();
 		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
+		/*
 		ListPreference resources = (ListPreference) mSettingsFragment.findPreference("resource");
 		if (resources != null) {
 			ArrayList<CharSequence> entries = new ArrayList<>(Arrays.asList(resources.getEntries()));
@@ -90,6 +91,7 @@ public class SettingsActivity extends XmppActivity implements
 				resources.setEntryValues(entries.toArray(new CharSequence[entries.size()]));
 			}
 		}
+		//*/
 
 		if (Config.FORCE_ORBOT) {
 			PreferenceCategory connectionOptions = (PreferenceCategory) mSettingsFragment.findPreference("connection_options");
