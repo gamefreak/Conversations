@@ -21,7 +21,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
-import android.os.ParcelFileDescriptor;
 import android.os.PowerManager;
 import android.os.PowerManager.WakeLock;
 import android.os.SystemClock;
@@ -41,8 +40,6 @@ import net.java.otr4j.session.Session;
 import net.java.otr4j.session.SessionID;
 import net.java.otr4j.session.SessionImpl;
 import net.java.otr4j.session.SessionStatus;
-import net.ypresto.androidtranscoder.MediaTranscoder;
-import net.ypresto.androidtranscoder.format.MediaFormatStrategyPresets;
 
 import org.openintents.openpgp.IOpenPgpService2;
 import org.openintents.openpgp.util.OpenPgpApi;
@@ -111,7 +108,6 @@ import eu.siacs.conversations.persistance.DatabaseBackend;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.ui.SettingsActivity;
 import eu.siacs.conversations.ui.UiCallback;
-import eu.siacs.conversations.ui.UiInformableCallback;
 import eu.siacs.conversations.utils.ConversationsFileObserver;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.ExceptionHelper;
@@ -159,7 +155,6 @@ public class XmppConnectionService extends Service {
 	public static final String ACTION_REPLY_TO_CONVERSATION = "reply_to_conversations";
 	public static final String ACTION_MARK_AS_READ = "mark_as_read";
 	public static final String ACTION_CLEAR_NOTIFICATION = "clear_notification";
-	public static final String ACTION_DISABLE_FOREGROUND = "disable_foreground";
 	public static final String ACTION_DISMISS_ERROR_NOTIFICATIONS = "dismiss_error";
 	public static final String ACTION_TRY_AGAIN = "try_again";
 	public static final String ACTION_IDLE_PING = "idle_ping";
@@ -167,6 +162,7 @@ public class XmppConnectionService extends Service {
 	public static final String ACTION_GCM_TOKEN_REFRESH = "gcm_token_refresh";
 	public static final String ACTION_GCM_MESSAGE_RECEIVED = "gcm_message_received";
 	private final SerialSingleThreadExecutor mFileAddingExecutor = new SerialSingleThreadExecutor();
+	private final SerialSingleThreadExecutor mVideoCompressionExecutor = new SerialSingleThreadExecutor();
 	private final SerialSingleThreadExecutor mDatabaseExecutor = new SerialSingleThreadExecutor();
 	private ReplacingSerialSingleThreadExecutor mContactMergerExecutor = new ReplacingSerialSingleThreadExecutor(true);
 	private final IBinder mBinder = new XmppConnectionBinder();
@@ -193,6 +189,7 @@ public class XmppConnectionService extends Service {
 	private NotificationService mNotificationService = new NotificationService(this);
 	private ShortcutService mShortcutService = new ShortcutService(this);
 	private AtomicBoolean mInitialAddressbookSyncCompleted = new AtomicBoolean(false);
+	private AtomicBoolean mForceForegroundService = new AtomicBoolean(false);
 	private OnMessagePacketReceived mMessageParser = new MessageParser(this);
 	private OnPresencePacketReceived mPresenceParser = new PresenceParser(this);
 	private IqParser mIqParser = new IqParser(this);
@@ -403,6 +400,16 @@ public class XmppConnectionService extends Service {
 		}
 	}
 
+	public void startForcingForegroundNotification() {
+		mForceForegroundService.set(true);
+		toggleForegroundService();
+	}
+
+	public void stopForcingForegroundNotification() {
+		mForceForegroundService.set(false);
+		toggleForegroundService();
+	}
+
 	private OpenPgpServiceConnection pgpServiceConnection;
 	private PgpEngine mPgpEngine = null;
 	private WakeLock wakeLock;
@@ -499,103 +506,12 @@ public class XmppConnectionService extends Service {
 		}
 		message.setCounterpart(conversation.getNextCounterpart());
 		message.setType(Message.TYPE_FILE);
-		mFileAddingExecutor.execute(new Runnable() {
-
-			private void processAsFile() {
-				final String path = getFileBackend().getOriginalPath(uri);
-				if (path != null) {
-					message.setRelativeFilePath(path);
-					getFileBackend().updateFileParams(message);
-					if (message.getEncryption() == Message.ENCRYPTION_DECRYPTED) {
-						getPgpEngine().encrypt(message, callback);
-					} else {
-						callback.success(message);
-					}
-				} else {
-					try {
-						getFileBackend().copyFileToPrivateStorage(message, uri);
-						getFileBackend().updateFileParams(message);
-						if (message.getEncryption() == Message.ENCRYPTION_DECRYPTED) {
-							final PgpEngine pgpEngine = getPgpEngine();
-							if (pgpEngine != null) {
-								pgpEngine.encrypt(message, callback);
-							} else if (callback != null) {
-								callback.error(R.string.unable_to_connect_to_keychain, null);
-							}
-						} else {
-							callback.success(message);
-						}
-					} catch (FileBackend.FileCopyException e) {
-						callback.error(e.getResId(), message);
-					}
-				}
-			}
-
-			private void processAsVideo() throws FileNotFoundException {
-				Log.d(Config.LOGTAG,"processing file as video");
-				message.setRelativeFilePath(message.getUuid() + ".mp4");
-				final DownloadableFile file = getFileBackend().getFile(message);
-				file.getParentFile().mkdirs();
-				ParcelFileDescriptor parcelFileDescriptor = getContentResolver().openFileDescriptor(uri, "r");
-				FileDescriptor fileDescriptor = parcelFileDescriptor.getFileDescriptor();
-				final ArrayList<Integer> progressTracker = new ArrayList<>();
-				final UiInformableCallback<Message> informableCallback;
-				if (callback instanceof UiInformableCallback) {
-					informableCallback = (UiInformableCallback<Message>) callback;
-				} else {
-					informableCallback = null;
-				}
-				MediaTranscoder.Listener listener = new MediaTranscoder.Listener() {
-					@Override
-					public void onTranscodeProgress(double progress) {
-						int p = ((int) Math.round(progress * 100) / 20) * 20;
-						if (!progressTracker.contains(p) && p != 100 && p != 0) {
-							progressTracker.add(p);
-							if (informableCallback != null) {
-								informableCallback.inform(getString(R.string.transcoding_video_progress, String.valueOf(p)));
-							}
-						}
-					}
-
-					@Override
-					public void onTranscodeCompleted() {
-						if (message.getEncryption() == Message.ENCRYPTION_DECRYPTED) {
-							getPgpEngine().encrypt(message, callback);
-						} else {
-							callback.success(message);
-						}
-					}
-
-					@Override
-					public void onTranscodeCanceled() {
-						processAsFile();
-					}
-
-					@Override
-					public void onTranscodeFailed(Exception e) {
-						Log.d(Config.LOGTAG,"video transcoding failed "+e.getMessage());
-						processAsFile();
-					}
-				};
-				MediaTranscoder.getInstance().transcodeVideo(fileDescriptor, file.getAbsolutePath(),
-						MediaFormatStrategyPresets.createAndroid720pStrategy(), listener);
-			}
-
-			@Override
-			public void run() {
-				final String mimeType = MimeUtils.guessMimeTypeFromUri(XmppConnectionService.this, uri);
-				if (mimeType != null && mimeType.startsWith("video/") && Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-					try {
-						processAsVideo();
-					} catch (Throwable e) {
-						processAsFile();
-					}
-				} else {
-					processAsFile();
-				}
-
-			}
-		});
+		final AttachFileToConversationRunnable runnable = new AttachFileToConversationRunnable(this,uri,message,callback);
+		if (runnable.isVideoMessage()) {
+			mVideoCompressionExecutor.execute(runnable);
+		} else {
+			mFileAddingExecutor.execute(runnable);
+		}
 	}
 
 	public void attachImageToConversation(final Conversation conversation, final Uri uri, final UiCallback<Message> callback) {
@@ -660,7 +576,8 @@ public class XmppConnectionService extends Service {
 		String pushedAccountHash = null;
 		boolean interactive = false;
 		if (action != null) {
-			final Conversation c = findConversationByUuid(intent.getStringExtra("uuid"));
+			final String uuid = intent.getStringExtra("uuid");
+			final Conversation c = findConversationByUuid(uuid);
 			switch (action) {
 				case ConnectivityManager.CONNECTIVITY_ACTION:
 					if (hasInternetConnection() && Config.RESET_ATTEMPT_COUNT_ON_NETWORK_CHANGE) {
@@ -682,10 +599,6 @@ public class XmppConnectionService extends Service {
 						mNotificationService.clear();
 					}
 					break;
-				case ACTION_DISABLE_FOREGROUND:
-					getPreferences().edit().putBoolean(SettingsActivity.KEEP_FOREGROUND_SERVICE, false).commit();
-					toggleForegroundService();
-					break;
 				case ACTION_DISMISS_ERROR_NOTIFICATIONS:
 					dismissErrorNotifications();
 					break;
@@ -703,7 +616,11 @@ public class XmppConnectionService extends Service {
 					}
 					break;
 				case ACTION_MARK_AS_READ:
-					sendReadMarker(c);
+					if (c != null) {
+						sendReadMarker(c);
+					} else {
+						Log.d(Config.LOGTAG,"received mark read intent for unknown conversation ("+uuid+")");
+					}
 					break;
 				case AudioManager.RINGER_MODE_CHANGED_ACTION:
 					if (dndOnSilentMode()) {
@@ -1008,7 +925,7 @@ public class XmppConnectionService extends Service {
 	public void onCreate() {
 		ExceptionHelper.init(getApplicationContext());
 		PRNGFixes.apply();
-		Resolver.registerXmppConnectionService(this);
+		Resolver.init(this);
 		this.mRandom = new SecureRandom();
 		updateMemorizingTrustmanager();
 		final int maxMemory = (int) (Runtime.getRuntime().maxMemory() / 1024);
@@ -1109,10 +1026,12 @@ public class XmppConnectionService extends Service {
 	}
 
 	public void toggleForegroundService() {
-		if (keepForegroundService() && hasEnabledAccounts()) {
+		if (mForceForegroundService.get() || (keepForegroundService() && hasEnabledAccounts())) {
 			startForeground(NotificationService.FOREGROUND_NOTIFICATION_ID, this.mNotificationService.createForegroundNotification());
+			Log.d(Config.LOGTAG,"started foreground service");
 		} else {
 			stopForeground(true);
+			Log.d(Config.LOGTAG,"stopped foreground service");
 		}
 	}
 
@@ -1123,10 +1042,10 @@ public class XmppConnectionService extends Service {
 	@Override
 	public void onTaskRemoved(final Intent rootIntent) {
 		super.onTaskRemoved(rootIntent);
-		if (!keepForegroundService()) {
-			this.logoutAndSave(false);
-		} else {
+		if (keepForegroundService() || mForceForegroundService.get()) {
 			Log.d(Config.LOGTAG,"ignoring onTaskRemoved because foreground service is activated");
+		} else {
+			this.logoutAndSave(false);
 		}
 	}
 

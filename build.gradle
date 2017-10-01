@@ -3,10 +3,6 @@
 buildscript {
     repositories {
         jcenter()
-        mavenCentral()
-        maven {
-            url 'https://maven.google.com'
-        }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:2.3.3'
@@ -18,10 +14,18 @@ apply plugin: 'com.android.application'
 repositories {
     jcenter()
     mavenCentral()
+    maven {
+        url 'https://maven.google.com'
+    }
 }
 
 configurations {
     playstoreCompile
+    freeCompile
+}
+
+ext {
+    supportLibVersion = '26.1.0'
 }
 
 dependencies {
@@ -29,15 +33,17 @@ dependencies {
     playstoreCompile 'com.google.android.gms:play-services-gcm:11.0.4'
     compile 'org.sufficientlysecure:openpgp-api:10.0'
     compile 'com.soundcloud.android:android-crop:1.0.1@aar'
-    compile 'com.android.support:support-v13:25.3.1'
-    compile 'com.android.support:appcompat-v7:25.3.1'
+    compile "com.android.support:support-v13:$supportLibVersion"
+    compile "com.android.support:appcompat-v7:$supportLibVersion"
+    compile "com.android.support:support-emoji:$supportLibVersion"
+    freeCompile "com.android.support:support-emoji-bundled:$supportLibVersion"
     compile 'org.bouncycastle:bcprov-jdk15on:1.52'
     compile 'org.bouncycastle:bcmail-jdk15on:1.52'
     compile 'org.jitsi:org.otr4j:0.22'
     compile 'org.gnu.inet:libidn:1.15'
     compile 'com.google.zxing:core:3.2.1'
     compile 'com.google.zxing:android-integration:3.2.1'
-    compile 'de.measite.minidns:minidns-hla:0.2.2'
+    compile 'de.measite.minidns:minidns-hla:0.2.4'
     compile 'de.timroes.android:EnhancedListView:0.3.4'
     compile 'me.leolin:ShortcutBadger:1.1.17@aar'
     compile 'com.kyleduo.switchbutton:library:1.2.8'
@@ -45,9 +51,6 @@ dependencies {
     compile 'com.makeramen:roundedimageview:2.3.0'
     compile "com.wefika:flowlayout:0.4.1"
     compile 'net.ypresto.androidtranscoder:android-transcoder:0.2.0'
-    compile('com.vdurmont:emoji-java:3.3.0') {
-        exclude group: 'org.json', module: 'json'
-    }
 }
 
 ext {
@@ -56,14 +59,14 @@ ext {
 }
 
 android {
-    compileSdkVersion 25
-    buildToolsVersion "26.0.1"
+    compileSdkVersion 26
+    buildToolsVersion "26.0.2"
 
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 25
         versionCode 237
-        versionName "1.20.1.3"
+        versionName "1.21.0"
         archivesBaseName += "-$versionName"
         applicationId "horse.vinylscratch.conversations"
     }
@@ -101,7 +104,7 @@ android {
     }
 
     lintOptions {
-        disable 'ExtraTranslation', 'MissingTranslation', 'InvalidPackage', 'MissingQuantity', 'AppCompatResource'
+        disable 'MissingTranslation', 'InvalidPackage', 'MissingQuantity', 'AppCompatResource'
     }
 
     subprojects {

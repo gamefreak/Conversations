@@ -614,13 +614,6 @@ public class NotificationService {
 		return PendingIntent.getService(mXmppConnectionService, (conversation.getUuid().hashCode() % NOTIFICATION_ID_MULTIPLIER) + 16 * NOTIFICATION_ID_MULTIPLIER, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 	}
 
-	private PendingIntent createDisableForeground() {
-		final Intent intent = new Intent(mXmppConnectionService,
-				XmppConnectionService.class);
-		intent.setAction(XmppConnectionService.ACTION_DISABLE_FOREGROUND);
-		return PendingIntent.getService(mXmppConnectionService, 34, intent, 0);
-	}
-
 	private PendingIntent createTryAgainIntent() {
 		final Intent intent = new Intent(mXmppConnectionService, XmppConnectionService.class);
 		intent.setAction(XmppConnectionService.ACTION_TRY_AGAIN);
@@ -701,18 +694,6 @@ public class NotificationService {
 		mBuilder.setWhen(0);
 		mBuilder.setPriority(Config.SHOW_CONNECTED_ACCOUNTS ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_MIN);
 		mBuilder.setSmallIcon(R.drawable.ic_link_white_24dp);
-		if (Config.SHOW_DISABLE_FOREGROUND) {
-			final int cancelIcon;
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-				mBuilder.setCategory(Notification.CATEGORY_SERVICE);
-				cancelIcon = R.drawable.ic_cancel_white_24dp;
-			} else {
-				cancelIcon = R.drawable.ic_action_cancel;
-			}
-			mBuilder.addAction(cancelIcon,
-					mXmppConnectionService.getString(R.string.disable_foreground_service),
-					createDisableForeground());
-		}
 		return mBuilder.build();
 	}
 
@@ -757,5 +738,17 @@ public class NotificationService {
 				new Intent(mXmppConnectionService,ManageAccountActivity.class),
 				PendingIntent.FLAG_UPDATE_CURRENT));
 		notificationManager.notify(ERROR_NOTIFICATION_ID, mBuilder.build());
+	}
+
+	public Notification updateFileAddingNotification(int current, Message message) {
+		final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mXmppConnectionService);
+		NotificationCompat.Builder mBuilder = new NotificationCompat.Builder(mXmppConnectionService);
+		mBuilder.setContentTitle(mXmppConnectionService.getString(R.string.transcoding_video));
+		mBuilder.setProgress(100, current, false);
+		mBuilder.setSmallIcon(R.drawable.ic_hourglass_empty_white_24dp);
+		mBuilder.setContentIntent(createContentIntent(message.getConversation()));
+		Notification notification = mBuilder.build();
+		notificationManager.notify(FOREGROUND_NOTIFICATION_ID, notification);
+		return notification;
 	}
 }
