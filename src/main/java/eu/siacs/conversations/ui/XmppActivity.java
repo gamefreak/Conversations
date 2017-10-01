@@ -385,6 +385,7 @@ public abstract class XmppActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		metrics = getResources().getDisplayMetrics();
 		ExceptionHelper.init(getApplicationContext());
+		UIHelper.init(getApplicationContext());
 
 		mPrimaryTextColor = ContextCompat.getColor(this, R.color.black87);
 		mSecondaryTextColor = ContextCompat.getColor(this, R.color.black54);

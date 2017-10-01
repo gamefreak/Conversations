@@ -43,4 +43,5 @@
     <bool name="validate_hostname">false</bool>
     <bool name="enable_custom_priority">false</bool>
     <integer name="priority">0</integer>
+    <bool name="always_use_nick">true</bool>
 </resources>

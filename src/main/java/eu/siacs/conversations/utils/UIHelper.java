@@ -1,6 +1,8 @@
 package eu.siacs.conversations.utils;
 
 import android.content.Context;
+import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
 import android.util.Pair;
@@ -54,6 +56,11 @@ public class UIHelper {
 		| DateUtils.FORMAT_NO_YEAR | DateUtils.FORMAT_ABBREV_ALL;
 	private static final int FULL_DATE_FLAGS = DateUtils.FORMAT_SHOW_TIME
 		| DateUtils.FORMAT_ABBREV_ALL | DateUtils.FORMAT_SHOW_DATE;
+
+	private static SharedPreferences sharedPreferences = null;
+	public static void init(Context context) {
+		sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
+	}
 
 	public static String readableTimeDifference(Context context, long time) {
 		return readableTimeDifference(context, time, false);
@@ -345,7 +352,8 @@ public class UIHelper {
 		if (message.getStatus() == Message.STATUS_RECEIVED) {
 			final Contact contact = message.getContact();
 			if (conversation.getMode() == Conversation.MODE_MULTI) {
-				if (contact != null && !contact.usesFallbackName()) {
+				boolean alwaysUseNick = contact != null && sharedPreferences != null ? sharedPreferences.getBoolean("always_use_nick", true) : false;
+				if (!alwaysUseNick && contact != null && !contact.usesFallbackName()) {
 					return contact.getDisplayName();
 				} else {
 					return getDisplayedMucCounterpart(message.getCounterpart());

@@ -175,6 +175,11 @@
             android:key="show_dynamic_tags"
             android:summary="@string/pref_show_dynamic_tags_summary"
             android:title="@string/pref_show_dynamic_tags"/>
+        <CheckBoxPreference
+            android:defaultValue="@bool/always_use_nick"
+            android:key="always_use_nick"
+            android:title="Show nick for contacts"
+            android:summary="Always use nick in group chats even when contacts have a name set." />
     </PreferenceCategory>
     <PreferenceCategory
         android:key="advanced"
