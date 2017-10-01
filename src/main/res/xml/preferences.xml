@@ -242,6 +242,18 @@
                     android:key="show_connection_options"
                     android:summary="@string/pref_show_connection_options_summary"
                     android:title="@string/pref_show_connection_options"/>
+                <CheckBoxPreference
+                    android:defaultValue="@bool/enable_custom_priority"
+                    android:key="enable_custom_priority"
+                    android:summary="Override the default priority of 0"
+                    android:title="Enable custom priority" />
+                <EditTextPreference
+                    android:defaultValue="@integer/priority"
+                    android:key="priority"
+                    android:summary="Set a custom XMPP priority"
+                    android:dependency="enable_custom_priority"
+                    android:title="Priority"
+                    android:inputType="number" />
             </PreferenceCategory>
             <PreferenceCategory android:title="@string/pref_input_options">
                 <CheckBoxPreference

@@ -3615,6 +3615,20 @@ public class XmppConnectionService extends Service {
 		} else {
 			packet = mPresenceGenerator.selfPresence(account, getTargetPresence());
 		}
+
+		if (getPreferences().getBoolean("enable_custom_priority", false)) {
+			String priority = getPreferences().getString("priority", "0");
+
+			try {
+				int priorityValue = Integer.parseInt(priority);
+				if (priorityValue >= 0) {
+					packet.addChild(new Element("priority").setContent(priority));
+				}
+			} catch (NumberFormatException ignored) {
+				// just fall through, if not valid simply don't send it
+			}
+		}
+
 		if (mLastActivity > 0 && includeIdleTimestamp) {
 			long since = Math.min(mLastActivity, System.currentTimeMillis()); //don't send future dates
 			packet.addChild("idle",Namespace.IDLE).setAttribute("since", AbstractGenerator.getTimestamp(since));

@@ -380,7 +380,9 @@ public class SettingsActivity extends XmppActivity implements
 				"allow_message_correction",
 				TREAT_VIBRATE_AS_SILENT,
 				MANUALLY_CHANGE_PRESENCE,
-				BROADCAST_LAST_ACTIVITY);
+				BROADCAST_LAST_ACTIVITY,
+				"enable_custom_priority",
+				"priority");
 		if (name.equals("resource")) {
 			String resource = preferences.getString("resource", "mobile")
 					.toLowerCase(Locale.US);

@@ -41,4 +41,6 @@
     <bool name="never_send">false</bool>
     <bool name="return_to_previous">false</bool>
     <bool name="validate_hostname">false</bool>
+    <bool name="enable_custom_priority">false</bool>
+    <integer name="priority">0</integer>
 </resources>
