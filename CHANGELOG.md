@@ -1,5 +1,12 @@
 # Changelog
 
+### Version 1.21.0.1
+* Header color in app switcher changes with the theme.
+* Faster startup.
+* Add option to modify priority (ender expert settings).
+* Changed resource preference to a text field .
+* Add option to always use nick in MUCs even for contacts with a name assigned.
+
 ### Version 1.21.0
 * Inline player for audio messages
 * Stronger compression for long videos
