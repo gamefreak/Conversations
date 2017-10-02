@@ -429,7 +429,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			}
 		}
 		if (!neededEmotes.isEmpty()) {
-			new EmoteLoaderTask(this).execute(neededEmotes.toArray(new String[0]));
+			EmoteLoaderTask  task = new EmoteLoaderTask(this);
+			task.executeOnExecutor(activity.emoticonService().getExecutor(), neededEmotes.toArray(new String[0]));
 		}
 		return true;
 	}

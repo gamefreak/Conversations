@@ -10,7 +10,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.URLConnection;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import eu.siacs.conversations.Config;
 
@@ -20,31 +21,37 @@ public class DownloadPackTask extends AsyncTask<String, Void, Boolean> {
 
 	private boolean downloadPack(URL url, File destination) {
 		Log.i("emote downloader", "Beginning download of emote pack from " + url.toString());
+		HttpsURLConnection con = null;
 		try  {
-			URLConnection con = url.openConnection();
+			con = (HttpsURLConnection) url.openConnection();
+			con.setConnectTimeout(Config.SOCKET_TIMEOUT * 1000);
+			con.setReadTimeout(Config.SOCKET_TIMEOUT * 1000);
 			con.connect();
 
-			InputStream stream = con.getInputStream();
-			FileOutputStream outStream = new FileOutputStream(destination);
-			final int BUFFER_SIZE = 16384;
-			byte buffer[] = new byte[BUFFER_SIZE];
-			int reads = 0;
-			do {
+			try (InputStream stream = con.getInputStream();
+				 FileOutputStream outStream = new FileOutputStream(destination)) {
 
-				int bytesRead = stream.read(buffer);
-				reads++;
-				if (bytesRead <= 0) break;
-				if (reads % 256 == 0) {
-					Log.v("emote downloader", String.format("emote downloader: %,d bytes recieved", (reads * BUFFER_SIZE + bytesRead)));
-				}
-				outStream.write(buffer, 0, bytesRead);
-			} while (true);
-			outStream.close();
-			stream.close();
+				final int BUFFER_SIZE = 16384;
+				byte buffer[] = new byte[BUFFER_SIZE];
+				int reads = 0;
+				int totalBytesReceved = 0;
+				do {
+					int bytesRead = stream.read(buffer);
+					totalBytesReceved += bytesRead;
+					reads++;
+					if (bytesRead <= 0) break;
+					if (reads % 256 == 0) {
+						Log.v("emote downloader", String.format("emote downloader: %,d bytes recieved", totalBytesReceved));
+					}
+					outStream.write(buffer, 0, bytesRead);
+				} while (true);
+			}
 			Log.i("emote downloader", "download complete");
 			return true;
 		} catch (IOException e) {
 			Log.e("emote downloader", "emote download from " + url.toString() + " failed.", e);
+		} finally {
+			if (con != null) con.disconnect();
 		}
 		return false;
 	}

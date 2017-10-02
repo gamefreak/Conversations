@@ -23,10 +23,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import eu.siacs.conversations.services.XmppConnectionService;
+import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
 
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
@@ -34,11 +36,17 @@ public class EmoticonService {
 	private File file = null;
 	private String currentPack = null;
 	private LruCache<String, Drawable> images;
+	private SerialSingleThreadExecutor executor;
 
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
 		this.emotes = new HashMap<>(4000);
 		this.images = new LruCache<>(128);
+		this.executor = new SerialSingleThreadExecutor();
+	}
+
+	public Executor getExecutor() {
+		return executor;
 	}
 
 	public boolean hasPack() {
@@ -54,11 +62,9 @@ public class EmoticonService {
 	}
 
 	public Drawable getEmote(String name) {
-		Log.v("emote service", "emote " + name + " requested");
 		Emote emote = this.emotes.get(name);
 
 		if (emote == null) return null;
-		Log.v("emote service", "translated emote " + name + " -> " + emote.getImageName());
 		Drawable image = this.images.get(emote.getImageName());
 		if (image == null) image = loadImage(emote);
 		return image;
@@ -67,6 +73,7 @@ public class EmoticonService {
 	public Drawable makePlaceholder(String name) {
 		return this.makePlaceholder(this.emotes.get(name));
 	}
+
 	public Drawable makePlaceholder(Emote emote) {
 		RectShape shape = new RectShape();
 		DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
@@ -107,7 +114,7 @@ public class EmoticonService {
 			drawable.setFilterBitmap(false);
 			int width = (int)(image.getWidth() * Math.ceil(metrics.density));
 			int height = (int)(image.getHeight() * Math.ceil(metrics.density));
-			Log.i("emote loader", String.format("translated %dx%d -> %dx%d @ %g", image.getWidth(), image.getHeight(), width, height, metrics.density));
+			Log.v("emote loader", String.format("translated %dx%d -> %dx%d @ %g", image.getWidth(), image.getHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
 			this.images.put(imageName, drawable);
@@ -131,7 +138,6 @@ public class EmoticonService {
 			AsyncTask.execute(new Runnable() {
 				@Override
 				public void run() {
-
 					loadPackJson(file);
 				}
 			});
