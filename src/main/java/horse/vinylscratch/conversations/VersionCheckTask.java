@@ -23,6 +23,7 @@ import java.util.Arrays;
 import javax.net.ssl.HttpsURLConnection;
 
 import eu.siacs.conversations.BuildConfig;
+import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 
 public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
@@ -43,6 +44,8 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 		try  {
 			URL url = new URL(UPDATE_URL);
 			connection = (HttpsURLConnection)url.openConnection();
+			connection.setConnectTimeout(Config.SOCKET_TIMEOUT * 1000);
+			connection.setReadTimeout(Config.SOCKET_TIMEOUT * 1000);
 			BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
 			String line;
 			while ((line = reader.readLine()) != null) jsonString += line;
