@@ -7,6 +7,7 @@ import android.content.Context;
 import android.os.Build;
 import android.support.text.emoji.widget.EmojiTextView;
 import android.util.AttributeSet;
+import android.view.ViewConfiguration;
 
 public class CopyTextView extends EmojiTextView {
 
@@ -36,6 +37,17 @@ public class CopyTextView extends EmojiTextView {
 
 	public void setCopyHandler(CopyHandler copyHandler) {
 		this.copyHandler = copyHandler;
+	}
+
+	@Override
+	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+
+		if (widthMeasureSpec * heightMeasureSpec * 4 > ViewConfiguration.get(getContext()).getScaledMaximumDrawingCacheSize()) {
+			if (getLayerType() == LAYER_TYPE_SOFTWARE) {
+				setLayerType(LAYER_TYPE_HARDWARE, null);
+			}
+		}
 	}
 
 	@Override

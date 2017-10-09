@@ -415,7 +415,9 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		Pattern pattern = Pattern.compile(re);
 		Matcher matcher = pattern.matcher(body.toString());
 		List<String> neededEmotes = new ArrayList<>();
-		while (matcher.find()) {
+		int emoteCount = 0;
+		while (matcher.find() && emoteCount < Config.MAX_EMOTES_PER_MESSAGE /* why we can't have nice things */) {
+			emoteCount++;
 			String name = body.toString().substring(matcher.start(), matcher.end());
 			if (!activity.emoticonService().isEmote(name)) continue;
 			Drawable drawable = activity.emoticonService().tryGetEmote(name);

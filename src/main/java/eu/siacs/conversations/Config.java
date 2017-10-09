@@ -75,6 +75,7 @@ public final class Config {
 
 	public static final int REFRESH_UI_INTERVAL = 500;
 
+	public static final int MAX_EMOTES_PER_MESSAGE = 32; // this is why we can't have nice things
 	public static final int MAX_DISPLAY_MESSAGE_CHARS = 4096;
 	public static final int MAX_STORAGE_MESSAGE_CHARS = 1024 * 1024 * 1024;
 
