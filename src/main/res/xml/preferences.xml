@@ -24,6 +24,11 @@
             android:title="@string/pref_select_pack"
             android:summary="@string/pref_select_pack_summary"
             />
+        <CheckBoxPreference
+            android:key="enable_gif_emotes"
+            android:defaultValue="true"
+            android:title="Animate gifs"
+            android:summary="Play gif animations. Using this option may increase power consumption." />
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/pref_privacy">
         <CheckBoxPreference

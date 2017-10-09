@@ -467,7 +467,9 @@ public class XmppConnectionService extends Service {
 
 
 	public void setupEmotes() {
-		String pack = getPreferences().getString("active_emote_pack", "");
+		String pack = getPreferences().getString(SettingsActivity.ACTIVE_EMOTE_PACK, "");
+		boolean enableGifs = getPreferences().getBoolean(SettingsActivity.ENABLE_GIF_EMOTES, true);
+		getEmoticonService().setEnableAnimations(enableGifs);
 		LoadPackTask task =  new LoadPackTask(getEmoticonService());
 		task.execute(pack);
 	}

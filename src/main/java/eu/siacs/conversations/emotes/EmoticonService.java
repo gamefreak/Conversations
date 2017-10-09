@@ -52,8 +52,8 @@ public class EmoticonService {
 	private File file = null;
 	private String currentPack = null;
 	private LruCache<String, EmoteHolder> images;
+	private boolean enableAnimations = true;
 	private SerialSingleThreadExecutor executor;
-
 
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
@@ -130,7 +130,7 @@ public class EmoticonService {
 			ZipEntry entry = zipFile.getEntry(emotePath);
 			EmoteHolder holder = null;
 			Drawable drawable = null;
-			if (emotePath.endsWith(".gif")) {
+			if (this.enableAnimations && emotePath.endsWith(".gif")) {
 				byte[] buffer = new byte[(int)entry.getSize()];
 				int bytesRead = 0;
 				while (bytesRead < buffer.length) {
@@ -178,6 +178,14 @@ public class EmoticonService {
 					loadPackJson(file);
 				}
 			});
+		}
+	}
+
+	public void setEnableAnimations(boolean newState) {
+		if (this.enableAnimations != newState) {
+			this.enableAnimations = newState;
+			// could also loop through and evict only gif
+			this.images.evictAll();
 		}
 	}
 

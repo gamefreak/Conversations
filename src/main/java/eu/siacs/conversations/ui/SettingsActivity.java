@@ -51,6 +51,9 @@ public class SettingsActivity extends XmppActivity implements
 	public static final String THEME = "theme";
 	public static final String SHOW_DYNAMIC_TAGS = "show_dynamic_tags";
 
+	public static final String ACTIVE_EMOTE_PACK = "active_emote_pack";
+	public static final String ENABLE_GIF_EMOTES = "enable_gif_emotes";
+
 	public static final int REQUEST_WRITE_LOGS = 0xbf8701;
 	private SettingsFragment mSettingsFragment;
 
@@ -104,7 +107,7 @@ public class SettingsActivity extends XmppActivity implements
 		boolean removeLocation = new Intent("eu.siacs.conversations.location.request").resolveActivity(getPackageManager()) == null;
 		boolean removeVoice = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION).resolveActivity(getPackageManager()) == null;
 
-		final ListPreference activeEmotePackPreference = (ListPreference)mSettingsFragment.findPreference("active_emote_pack");
+		final ListPreference activeEmotePackPreference = (ListPreference)mSettingsFragment.findPreference(ACTIVE_EMOTE_PACK);
 		activeEmotePackPreference.setEntries(new String[]{"None"});
 		activeEmotePackPreference.setDefaultValue("");
 		activeEmotePackPreference.setEntryValues(new String[]{""});
@@ -423,8 +426,10 @@ public class SettingsActivity extends XmppActivity implements
 			if (this.mTheme != theme) {
 				recreate();
 			}
-		} else if (name.equals("active_emote_pack")) {
+		} else if (name.equals(ACTIVE_EMOTE_PACK)) {
 			xmppConnectionService.setupEmotes();
+		} else if (name.equals(ENABLE_GIF_EMOTES)) {
+			xmppConnectionService.getEmoticonService().setEnableAnimations(getPreferences().getBoolean(ENABLE_GIF_EMOTES, true));
 		}
 
 	}
