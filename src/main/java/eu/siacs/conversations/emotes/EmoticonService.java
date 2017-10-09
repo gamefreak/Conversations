@@ -8,6 +8,8 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.AsyncTask;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
 import android.util.JsonReader;
 import android.util.Log;
@@ -18,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -34,14 +35,25 @@ import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
 
+class EmoteHolder {
+	Drawable drawable;
+	// need to hold on to the MultiCallback object since GifDrawable uses a WeakReference
+	MultiCallback callback;
+
+	EmoteHolder(@NonNull Drawable drawable, @Nullable MultiCallback callback) {
+		this.drawable = drawable;
+		this.callback = callback;
+	}
+}
+
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
 	private Map<String, Emote> emotes;
 	private File file = null;
 	private String currentPack = null;
-	private LruCache<String, Drawable> images;
-	private HashMap<Emote, MultiCallback> callbacks = new HashMap<>();
+	private LruCache<String, EmoteHolder> images;
 	private SerialSingleThreadExecutor executor;
+
 
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
@@ -70,9 +82,9 @@ public class EmoticonService {
 		Emote emote = this.emotes.get(name);
 
 		if (emote == null) return null;
-		Drawable image = this.images.get(emote.getImageName());
+		EmoteHolder image = this.images.get(emote.getImageName());
 		if (image == null) image = loadImage(emote);
-		return image;
+		return image.drawable;
 	}
 
 	public Drawable makePlaceholder(String name) {
@@ -102,12 +114,12 @@ public class EmoticonService {
 		if (emote == null) return null;
 		String imageName = emote.getImageName();
 		Log.v("emote service", "translated emote " + name + " -> " + imageName);
-		Drawable image = this.images.get(imageName);
-//		if (image == null) image = loadImage(imageName);
-		return image;
+		EmoteHolder image = this.images.get(imageName);
+		if (image == null) return null;
+		return image.drawable;
 	}
 
-	private Drawable loadImage(Emote emote) {
+	private EmoteHolder loadImage(Emote emote) {
 		String imageName = emote.getImageName();
 		Log.i("emote service", "loading image " + imageName);
 		String emotePath = "emotes/" + imageName;
@@ -116,6 +128,7 @@ public class EmoticonService {
 			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
 
 			ZipEntry entry = zipFile.getEntry(emotePath);
+			EmoteHolder holder = null;
 			Drawable drawable = null;
 			if (emotePath.endsWith(".gif")) {
 				byte[] buffer = new byte[(int)entry.getSize()];
@@ -124,21 +137,16 @@ public class EmoticonService {
 					bytesRead += stream.read(buffer, bytesRead, buffer.length - bytesRead);
 				}
 				final GifDrawable gifDrawable = new GifDrawable(buffer);
-				MultiCallback callback = null;
-				if (callbacks.containsKey(emote)) {
-					callback = callbacks.get(emote);
-				} else {
-					callback = new MultiCallback(true);
-					callbacks.put(emote, callback);
-				}
+				MultiCallback callback = new MultiCallback(true);
 
 				gifDrawable.setCallback(callback);
-				gifDrawable.start();
 
 				drawable = gifDrawable;
+				holder = new EmoteHolder(gifDrawable, callback);
 			} else {
 				Bitmap image = BitmapFactory.decodeStream(stream);
 				drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+				holder = new EmoteHolder(drawable, null);
 			}
 			drawable.setFilterBitmap(false);
 			int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
@@ -146,8 +154,8 @@ public class EmoticonService {
 //			Log.v("emote loader", String.format("translated %dx%d -> %dx%d @ %g", drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
-			this.images.put(imageName, drawable);
-			return drawable;
+			this.images.put(imageName, holder);
+			return holder;
 		} catch (IOException e) {
 			Log.e("emote service", "failed to load image " + imageName, e);
 			return null;
