@@ -72,6 +72,8 @@ import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.Patterns;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.mam.MamReference;
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.MultiCallback;
 
 public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextView.CopyHandler {
 
@@ -408,7 +410,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	}
 
 
-	private boolean handleTextEmotes(SpannableStringBuilder body) {
+	private boolean handleTextEmotes(ViewHolder viewHolder, SpannableStringBuilder body) {
 		String re = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
 		Pattern pattern = Pattern.compile(re);
 		Matcher matcher = pattern.matcher(body.toString());
@@ -420,6 +422,11 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			if (drawable != null) {
 				ImageSpan span = new ImageSpan(drawable);
 				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+				if (drawable instanceof GifDrawable) {
+					GifDrawable gif = (GifDrawable)drawable;
+					MultiCallback callback = (MultiCallback)gif.getCallback();
+					callback.addView(viewHolder.messageBody);
+				}
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
 			}
@@ -505,12 +512,13 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
 
-			handleTextEmotes(body);
+			handleTextEmotes(viewHolder, body);
 
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(body);
 			viewHolder.messageBody.setTextIsSelectable(true);
 			viewHolder.messageBody.setMovementMethod(ClickableMovementMethod.getInstance());
+			viewHolder.messageBody.setLayerType(View.LAYER_TYPE_SOFTWARE, null); // at least 16 hours work to find this one line
 			listSelectionManager.onUpdate(viewHolder.messageBody, message);
 		} else {
 			viewHolder.messageBody.setText("");

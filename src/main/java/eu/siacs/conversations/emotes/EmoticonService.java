@@ -18,17 +18,21 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.ref.WeakReference;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.MultiCallback;
 
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
@@ -36,6 +40,7 @@ public class EmoticonService {
 	private File file = null;
 	private String currentPack = null;
 	private LruCache<String, Drawable> images;
+	private HashMap<Emote, MultiCallback> callbacks = new HashMap<>();
 	private SerialSingleThreadExecutor executor;
 
 	public EmoticonService(XmppConnectionService service) {
@@ -105,16 +110,40 @@ public class EmoticonService {
 	private Drawable loadImage(Emote emote) {
 		String imageName = emote.getImageName();
 		Log.i("emote service", "loading image " + imageName);
+		String emotePath = "emotes/" + imageName;
 		try (ZipFile zipFile = new ZipFile(this.file);
-			InputStream stream = zipFile.getInputStream(zipFile.getEntry("emotes/" + imageName))) {
+			InputStream stream = zipFile.getInputStream(zipFile.getEntry(emotePath))) {
 			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
 
-			Bitmap image = BitmapFactory.decodeStream(stream);
-			BitmapDrawable drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+			ZipEntry entry = zipFile.getEntry(emotePath);
+			Drawable drawable = null;
+			if (emotePath.endsWith(".gif")) {
+				byte[] buffer = new byte[(int)entry.getSize()];
+				int bytesRead = 0;
+				while (bytesRead < buffer.length) {
+					bytesRead += stream.read(buffer, bytesRead, buffer.length - bytesRead);
+				}
+				final GifDrawable gifDrawable = new GifDrawable(buffer);
+				MultiCallback callback = null;
+				if (callbacks.containsKey(emote)) {
+					callback = callbacks.get(emote);
+				} else {
+					callback = new MultiCallback(true);
+					callbacks.put(emote, callback);
+				}
+
+				gifDrawable.setCallback(callback);
+				gifDrawable.start();
+
+				drawable = gifDrawable;
+			} else {
+				Bitmap image = BitmapFactory.decodeStream(stream);
+				drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+			}
 			drawable.setFilterBitmap(false);
-			int width = (int)(image.getWidth() * Math.ceil(metrics.density));
-			int height = (int)(image.getHeight() * Math.ceil(metrics.density));
-			Log.v("emote loader", String.format("translated %dx%d -> %dx%d @ %g", image.getWidth(), image.getHeight(), width, height, metrics.density));
+			int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
+			int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
+//			Log.v("emote loader", String.format("translated %dx%d -> %dx%d @ %g", drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
 			this.images.put(imageName, drawable);
