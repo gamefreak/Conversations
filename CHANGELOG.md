@@ -1,5 +1,13 @@
 # Changelog
 
+### Version 1.21.0.2
+* Animated gif emotes!
+  * Includes setting to disable animations.
+* Set a limit on the number of emotes that will get rendered in a message (thank @Woll0r for teaching us why we can't have nice things).
+* Load emotes on a separate thread.
+* Fix an issue where update checker could fail to time out and cause certain background tasks to not run.
+* Preemptively fixed a similar issue with the pack downloader.
+
 ### Version 1.21.0.1
 * Header color in app switcher changes with the theme.
 * Faster startup.
