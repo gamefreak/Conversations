@@ -22,6 +22,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +50,7 @@ class EmoteHolder {
 public class EmoticonService {
 	private XmppConnectionService xmppConnectionService = null;
 	private Map<String, Emote> emotes;
+	private List<Emote> allEmotes;
 	private File file = null;
 	private String currentPack = null;
 	private LruCache<String, EmoteHolder> images;
@@ -58,6 +60,7 @@ public class EmoticonService {
 	public EmoticonService(XmppConnectionService service) {
 		this.xmppConnectionService = service;
 		this.emotes = new HashMap<>(4000);
+		this.allEmotes = new ArrayList<>(4000);
 		this.images = new LruCache<>(128);
 		this.executor = new SerialSingleThreadExecutor("emoticon looper");
 	}
@@ -151,7 +154,6 @@ public class EmoticonService {
 			drawable.setFilterBitmap(false);
 			int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
 			int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
-//			Log.v("emote loader", String.format("translated %dx%d -> %dx%d @ %g", drawable.getIntrinsicWidth(), drawable.getIntrinsicHeight(), width, height, metrics.density));
 			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 
 			this.images.put(imageName, holder);
@@ -189,6 +191,10 @@ public class EmoticonService {
 		}
 	}
 
+	public List<Emote> getAllEmotes() {
+		return this.allEmotes;
+	}
+
 	public File getPackDirectory() {
 		return new File(xmppConnectionService.getFilesDir(), "emoticons");
 	}
@@ -200,7 +206,7 @@ public class EmoticonService {
 			 Reader readerx = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
 			 JsonReader reader = new JsonReader(readerx);
 		) {
-			Map<String, Emote> newEmotes = new HashMap<>(2000);
+			List<Emote> newEmotes = new ArrayList<>(2000);
 			reader.beginObject();
 			while (reader.hasNext()) {
 				String key = reader.nextName();
@@ -229,10 +235,8 @@ public class EmoticonService {
 						}
 						reader.endObject();
 
-						Emote emote = new Emote(imageName, width, height);
-						for (String name : aliases) {
-							newEmotes.put(name, emote);
-						}
+						Emote emote = new Emote(imageName, width, height, aliases);
+						newEmotes.add(emote);
 					}
 					reader.endObject();
 				} else {
@@ -244,7 +248,14 @@ public class EmoticonService {
 				this.currentPack = file.getName();
 				this.file = file;
 				this.emotes.clear();
-				this.emotes.putAll(newEmotes);
+				for (Emote emote : newEmotes) {
+					for (String alias : emote.getAliases()) {
+						this.emotes.put(alias, emote);
+					}
+				}
+
+				this.allEmotes.clear();
+				this.allEmotes.addAll(newEmotes);
 				this.images.evictAll();
 				Log.i("emote service", "emote data load complete (found " + this.emotes.size() + " emotes)");
 			}
