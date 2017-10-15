@@ -7,4 +7,6 @@
 	<dimen name="fineprint_size">11sp</dimen>
 	<dimen name="audio_player_width">224dp</dimen>
 	<dimen name="swipe_handle_size">32dp</dimen>
+    <dimen name="emote_list_item_spacing">16dp</dimen>
+    <dimen name="emote_list_item_spacing_half">8dp</dimen>
 </resources>

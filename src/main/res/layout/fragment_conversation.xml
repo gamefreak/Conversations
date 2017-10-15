@@ -52,6 +52,16 @@
         </eu.siacs.conversations.ui.widget.EditMessage>
 
         <ImageButton
+            android:id="@+id/open_emote_view"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_toLeftOf="@id/textSendButton"
+            android:layout_centerVertical="true"
+            android:background="?attr/color_background_primary"
+            android:src="@drawable/ic_insert_emoticon_black_36dp"
+            android:contentDescription="View Emotes" />
+
+        <ImageButton
             android:id="@+id/textSendButton"
             android:layout_width="48dp"
             android:layout_height="48dp"
