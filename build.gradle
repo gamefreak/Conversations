@@ -55,7 +55,7 @@ dependencies {
     implementation "com.wefika:flowlayout:0.4.1"
     implementation 'net.ypresto.androidtranscoder:android-transcoder:0.2.0'
     implementation 'com.github.scottyab:showhidepasswordedittext:0.8'
-    compile 'pl.droidsonroids.gif:android-gif-drawable:1.2.8'
+    implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.8'
 }
 
 ext {

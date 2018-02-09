@@ -59,7 +59,7 @@ public class EmoticonService {
 		this.xmppConnectionService = service;
 		this.emotes = new HashMap<>(4000);
 		this.images = new LruCache<>(128);
-		this.executor = new SerialSingleThreadExecutor();
+		this.executor = new SerialSingleThreadExecutor("emoticon looper");
 	}
 
 	public Executor getExecutor() {
