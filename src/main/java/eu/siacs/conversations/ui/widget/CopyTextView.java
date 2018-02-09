@@ -5,11 +5,11 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.os.Build;
-import android.support.text.emoji.widget.EmojiTextView;
 import android.util.AttributeSet;
+import android.widget.TextView;
 import android.view.ViewConfiguration;
 
-public class CopyTextView extends EmojiTextView {
+public class CopyTextView extends TextView {
 
 	public CopyTextView(Context context) {
 		super(context);

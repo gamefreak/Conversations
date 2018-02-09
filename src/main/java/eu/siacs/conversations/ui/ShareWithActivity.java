@@ -2,6 +2,7 @@ package eu.siacs.conversations.ui;
 
 import android.app.PendingIntent;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -27,13 +28,16 @@ import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.adapter.ConversationAdapter;
+import eu.siacs.conversations.ui.service.EmojiService;
 import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.jid.InvalidJidException;
 import eu.siacs.conversations.xmpp.jid.Jid;
 
 public class ShareWithActivity extends XmppActivity implements XmppConnectionService.OnConversationUpdate {
 
+	private static final int REQUEST_STORAGE_PERMISSION = 0x733f32;
 	private boolean mReturnToPrevious = false;
+	private Conversation mPendingConversation = null;
 
 	@Override
 	public void onConversationUpdate() {
@@ -145,9 +149,25 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
 	}
 
 	@Override
+	public void onRequestPermissionsResult(int requestCode, String permissions[], int[] grantResults) {
+		if (grantResults.length > 0)
+			if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+				if (requestCode == REQUEST_STORAGE_PERMISSION) {
+					if (this.mPendingConversation != null) {
+						share(this.mPendingConversation);
+					} else {
+						Log.d(Config.LOGTAG,"unable to find stored conversation");
+					}
+				}
+			} else {
+				Toast.makeText(this, R.string.no_storage_permission, Toast.LENGTH_SHORT).show();
+			}
+	}
+
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-
+		new EmojiService(this).init();
 		if (getActionBar() != null) {
 			getActionBar().setDisplayHomeAsUpEnabled(false);
 			getActionBar().setHomeButtonEnabled(false);
@@ -156,7 +176,7 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
 		setContentView(R.layout.share_with);
 		setTitle(getString(R.string.title_activity_sharewith));
 
-		mListView = (ListView) findViewById(R.id.choose_conversation_list);
+		mListView = findViewById(R.id.choose_conversation_list);
 		mAdapter = new ConversationAdapter(this, this.mConversations);
 		mListView.setAdapter(mAdapter);
 		mListView.setOnItemClickListener(new OnItemClickListener() {
@@ -274,6 +294,10 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
 	}
 
 	private void share(final Conversation conversation) {
+		if (share.uris.size() != 0 && !hasStoragePermission(REQUEST_STORAGE_PERMISSION)) {
+			mPendingConversation = conversation;
+			return;
+		}
 		final Account account = conversation.getAccount();
 		final XmppConnection connection = account.getXmppConnection();
 		final long max = connection == null ? -1 : connection.getFeatures().getMaxHttpUploadSize();
@@ -288,23 +312,21 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
 			return;
 		}
 		if (share.uris.size() != 0) {
-			OnPresenceSelected callback = new OnPresenceSelected() {
-				@Override
-				public void onPresenceSelected() {
-					attachmentCounter.set(share.uris.size());
-					if (share.image) {
-						share.multiple = share.uris.size() > 1;
-						replaceToast(getString(share.multiple ? R.string.preparing_images : R.string.preparing_image));
-						for (Iterator<Uri> i = share.uris.iterator(); i.hasNext(); i.remove()) {
-							ShareWithActivity.this.xmppConnectionService
-									.attachImageToConversation(conversation, i.next(),
-											attachFileCallback);
-						}
-					} else {
-						replaceToast(getString(R.string.preparing_file));
-						ShareWithActivity.this.xmppConnectionService
-								.attachFileToConversation(conversation, share.uris.get(0), attachFileCallback);
+			OnPresenceSelected callback = () -> {
+				attachmentCounter.set(share.uris.size());
+				if (share.image) {
+					share.multiple = share.uris.size() > 1;
+					replaceToast(getString(share.multiple ? R.string.preparing_images : R.string.preparing_image));
+					for (Iterator<Uri> i = share.uris.iterator(); i.hasNext(); i.remove()) {
+						final Uri uri = i.next();
+						delegateUriPermissionsToService(uri);
+						xmppConnectionService.attachImageToConversation(conversation, uri, attachFileCallback);
 					}
+				} else {
+					replaceToast(getString(R.string.preparing_file));
+					final Uri uri = share.uris.get(0);
+					delegateUriPermissionsToService(uri);
+					xmppConnectionService.attachFileToConversation(conversation, uri, attachFileCallback);
 				}
 			};
 			if (account.httpUploadAvailable()

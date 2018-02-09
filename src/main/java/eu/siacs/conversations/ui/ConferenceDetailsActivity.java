@@ -16,6 +16,7 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -59,6 +60,7 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 	private TextView mAccountJid;
 	private LinearLayout membersView;
 	private LinearLayout mMoreDetails;
+	private RelativeLayout mMucSettings;
 	private TextView mConferenceType;
 	private TableLayout mConferenceInfoTable;
 	private TextView mConferenceInfoMam;
@@ -204,8 +206,9 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 	private OnValueEdited onSubjectEdited = new OnValueEdited() {
 
 		@Override
-		public void onValueEdited(String value) {
+		public String onValueEdited(String value) {
 			xmppConnectionService.pushSubjectToConference(mConversation,value);
+			return null;
 		}
 	};
 
@@ -234,6 +237,7 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		mFullJid = (TextView) findViewById(R.id.muc_jabberid);
 		membersView = (LinearLayout) findViewById(R.id.muc_members);
 		mAccountJid = (TextView) findViewById(R.id.details_account);
+		mMucSettings = findViewById(R.id.muc_settings);
 		mMoreDetails = (LinearLayout) findViewById(R.id.muc_more_details);
 		mMoreDetails.setVisibility(View.GONE);
 		mChangeConferenceSettingsButton = (ImageButton) findViewById(R.id.change_conference_button);
@@ -254,15 +258,19 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 						new OnValueEdited() {
 
 							@Override
-							public void onValueEdited(String value) {
-								xmppConnectionService.renameInMuc(mConversation,value,renameCallback);
+							public String onValueEdited(String value) {
+								if (xmppConnectionService.renameInMuc(mConversation,value,renameCallback)) {
+									return null;
+								} else {
+									return getString(R.string.invalid_username);
+								}
 							}
 						});
 			}
 		});
 		this.mAdvancedMode = getPreferences().getBoolean("advanced_muc_mode", false);
 		this.mConferenceInfoTable = (TableLayout) findViewById(R.id.muc_info_more);
-		mConferenceInfoTable.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);
+		this.mConferenceInfoTable.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);
 		this.mConferenceInfoMam = (TextView) findViewById(R.id.muc_info_mam);
 		this.mNotifyStatusButton = (ImageButton) findViewById(R.id.notification_status_button);
 		this.mNotifyStatusButton.setOnClickListener(this.mNotifyStatusClickListener);
@@ -307,7 +315,8 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 				this.mAdvancedMode = !menuItem.isChecked();
 				menuItem.setChecked(this.mAdvancedMode);
 				getPreferences().edit().putBoolean("advanced_muc_mode", mAdvancedMode).apply();
-				mConferenceInfoTable.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);
+				final boolean online = mConversation != null && mConversation.getMucOptions().online();
+				mConferenceInfoTable.setVisibility(this.mAdvancedMode && online ? View.VISIBLE : View.GONE);
 				invalidateOptionsMenu();
 				updateView();
 				break;
@@ -366,7 +375,7 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 			this.mSelectedUser = user;
 			String name;
 			final Contact contact = user.getContact();
-			if (contact != null) {
+			if (contact != null && contact.showInRoster()) {
 				name = contact.getDisplayName();
 			} else if (user.getRealJid() != null){
 				name = user.getRealJid().toBareJid().toString();
@@ -385,7 +394,7 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 				MenuItem banFromConference = menu.findItem(R.id.ban_from_conference);
 				MenuItem invite = menu.findItem(R.id.invite);
 				startConversation.setVisible(true);
-				if (contact != null) {
+				if (contact != null && contact.showInRoster()) {
 					showContactDetails.setVisible(!contact.isSelf());
 				}
 				if (user.getRole() == MucOptions.Role.NONE) {
@@ -453,7 +462,11 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 				}
 				return true;
 			case R.id.send_private_message:
-				privateMsgInMuc(mConversation,mSelectedUser.getName());
+				if (mConversation.getMucOptions().allowPm()) {
+					privateMsgInMuc(mConversation,mSelectedUser.getName());
+				} else {
+					Toast.makeText(this, R.string.private_messages_are_disabled, Toast.LENGTH_SHORT).show();
+				}
 				return true;
 			case R.id.invite:
 				xmppConnectionService.directInvite(mConversation, jid);
@@ -543,6 +556,8 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		TextView mRoleAffiliaton = (TextView) findViewById(R.id.muc_role);
 		if (mucOptions.online()) {
 			mMoreDetails.setVisibility(View.VISIBLE);
+			mMucSettings.setVisibility(View.VISIBLE);
+			mConferenceInfoTable.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);
 			final String status = getStatus(self);
 			if (status != null) {
 				mRoleAffiliaton.setVisibility(View.VISIBLE);
@@ -565,6 +580,10 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 			} else {
 				mChangeConferenceSettingsButton.setVisibility(View.GONE);
 			}
+		} else {
+			mMoreDetails.setVisibility(View.GONE);
+			mMucSettings.setVisibility(View.GONE);
+			mConferenceInfoTable.setVisibility(View.GONE);
 		}
 
 		int ic_notifications = 		  getThemeResource(R.attr.icon_notifications, R.drawable.ic_notifications_black_24dp);

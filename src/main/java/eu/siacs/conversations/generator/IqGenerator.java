@@ -45,8 +45,7 @@ public class IqGenerator extends AbstractGenerator {
 		final IqPacket packet = new IqPacket(IqPacket.TYPE.RESULT);
 		packet.setId(request.getId());
 		packet.setTo(request.getFrom());
-		final Element query = packet.addChild("query",
-				"http://jabber.org/protocol/disco#info");
+		final Element query = packet.addChild("query", "http://jabber.org/protocol/disco#info");
 		query.setAttribute("node", request.query().getAttribute("node"));
 		final Element identity = query.addChild("identity");
 		identity.setAttribute("category", "client");
@@ -88,6 +87,12 @@ public class IqGenerator extends AbstractGenerator {
 		}
 		String minutes = String.format(Locale.US,"%02d",offsetMinutes);
 		time.addChild("tzo").setContent(hours+":"+minutes);
+		return packet;
+	}
+
+	public IqPacket purgeOfflineMessages() {
+		final IqPacket packet = new IqPacket(IqPacket.TYPE.SET);
+		packet.addChild("offline",Namespace.FLEXIBLE_OFFLINE_MESSAGE_RETRIEVAL).addChild("purge");
 		return packet;
 	}
 
@@ -337,11 +342,9 @@ public class IqGenerator extends AbstractGenerator {
 		IqPacket packet = new IqPacket(IqPacket.TYPE.GET);
 		packet.setTo(host);
 		Element request = packet.addChild("request", Namespace.HTTP_UPLOAD);
-		request.addChild("filename").setContent(convertFilename(file.getName()));
-		request.addChild("size").setContent(String.valueOf(file.getExpectedSize()));
-		if (mime != null) {
-			request.addChild("content-type").setContent(mime);
-		}
+		request.setAttribute("filename",convertFilename(file.getName()));
+		request.setAttribute("size",file.getExpectedSize());
+		request.setAttribute("content-type",mime);
 		return packet;
 	}
 
@@ -414,6 +417,7 @@ public class IqGenerator extends AbstractGenerator {
 		options.putString("muc#roomconfig_membersonly", "1");
 		options.putString("muc#roomconfig_publicroom", "0");
 		options.putString("muc#roomconfig_whois", "anyone");
+		options.putString("mam","1");
 		return options;
 	}
 

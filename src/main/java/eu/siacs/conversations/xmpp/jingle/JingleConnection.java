@@ -5,6 +5,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
@@ -99,7 +100,7 @@ public class JingleConnection implements Transferable {
 	private byte[] expectedHash = new byte[0];
 
 	private boolean responding() {
-		return responder.equals(account.getJid());
+		return responder != null && responder.equals(account.getJid());
 	}
 
 	private boolean initiating() {
@@ -154,7 +155,14 @@ public class JingleConnection implements Transferable {
 		return this.mFileInputStream;
 	}
 
-	public OutputStream getFileOutputStream() {
+	public OutputStream getFileOutputStream() throws IOException {
+		if (this.file == null) {
+			Log.d(Config.LOGTAG,"file object was not assigned");
+			return null;
+		}
+		this.file.getParentFile().mkdirs();
+		this.file.createNewFile();
+		this.mFileOutputStream = AbstractConnectionManager.createOutputStream(this.file,message.getEncryption() == Message.ENCRYPTION_AXOLOTL);
 		return this.mFileOutputStream;
 	}
 
@@ -440,7 +448,7 @@ public class JingleConnection implements Transferable {
 				}
 				this.file = this.mXmppConnectionService.getFileBackend().getFile(message, false);
 				if (mXmppAxolotlMessage != null) {
-					XmppAxolotlMessage.XmppAxolotlKeyTransportMessage transportMessage = account.getAxolotlService().processReceivingKeyTransportMessage(mXmppAxolotlMessage);
+					XmppAxolotlMessage.XmppAxolotlKeyTransportMessage transportMessage = account.getAxolotlService().processReceivingKeyTransportMessage(mXmppAxolotlMessage, false);
 					if (transportMessage != null) {
 						message.setEncryption(Message.ENCRYPTION_AXOLOTL);
 						this.file.setKey(transportMessage.getKey());
@@ -459,7 +467,6 @@ public class JingleConnection implements Transferable {
 						this.file.setKeyAndIv(key);
 					}
 				}
-				this.mFileOutputStream = AbstractConnectionManager.createOutputStream(this.file,message.getEncryption() == Message.ENCRYPTION_AXOLOTL);
 				this.file.setExpectedSize(size);
 				message.resetFileParams();
 				Log.d(Config.LOGTAG, "receiving file: expecting size of " + this.file.getExpectedSize());
@@ -907,8 +914,7 @@ public class JingleConnection implements Transferable {
 			}
 			this.mJingleConnectionManager.updateConversationUi(true);
 		} else {
-			this.mXmppConnectionService.markMessage(this.message,
-					Message.STATUS_SEND_FAILED);
+			this.mXmppConnectionService.markMessage(this.message, Message.STATUS_SEND_FAILED);
 			this.message.setTransferable(null);
 		}
 	}

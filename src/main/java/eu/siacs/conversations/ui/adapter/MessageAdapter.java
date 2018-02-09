@@ -6,11 +6,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.content.res.Resources;
 import android.graphics.Bitmap;
+import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.support.annotation.ColorInt;
 import android.support.v4.content.ContextCompat;
 import android.text.Spannable;
 import android.text.SpannableString;
@@ -23,6 +25,7 @@ import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
 import android.text.util.Linkify;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -30,6 +33,7 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ImageView;
@@ -62,15 +66,19 @@ import eu.siacs.conversations.services.NotificationService;
 import eu.siacs.conversations.ui.ConversationActivity;
 import eu.siacs.conversations.ui.service.AudioPlayer;
 import eu.siacs.conversations.ui.text.DividerSpan;
+import eu.siacs.conversations.ui.text.FixedURLSpan;
 import eu.siacs.conversations.ui.text.QuoteSpan;
 import eu.siacs.conversations.ui.widget.ClickableMovementMethod;
 import eu.siacs.conversations.ui.widget.CopyTextView;
 import eu.siacs.conversations.ui.widget.ListSelectionManager;
 import eu.siacs.conversations.utils.CryptoHelper;
+import eu.siacs.conversations.utils.EmojiWrapper;
 import eu.siacs.conversations.utils.Emoticons;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.Patterns;
+import eu.siacs.conversations.utils.StylingHelper;
 import eu.siacs.conversations.utils.UIHelper;
+import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
@@ -111,6 +119,14 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		}
 	};
 
+	private static final Linkify.MatchFilter XMPPURI_MATCH_FILTER = new Linkify.MatchFilter() {
+		@Override
+		public boolean acceptMatch(CharSequence s, int start, int end) {
+			XmppUri uri = new XmppUri(s.subSequence(start,end).toString());
+			return uri.isJidValid();
+		}
+	};
+
 	private final ConversationActivity activity;
 
 	private DisplayMetrics metrics;
@@ -133,6 +149,14 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		this.activity = activity;
 		metrics = getContext().getResources().getDisplayMetrics();
 		updatePreferences();
+	}
+
+	public void flagScreenOn() {
+		activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+	}
+
+	public void flagScreenOff() {
+		activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 	}
 
 	public void setOnContactPictureClicked(OnContactPictureClicked listener) {
@@ -202,9 +226,9 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		if (message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE || message.getTransferable() != null) {
 			FileParams params = message.getFileParams();
 			if (params.size > (1.5 * 1024 * 1024)) {
-				filesize = params.size / (1024 * 1024)+ " MiB";
+				filesize = Math.round(params.size * 1f/ (1024 * 1024))+ " MiB";
 			} else if (params.size >= 1024) {
-				filesize = params.size / 1024 + " KiB";
+				filesize = Math.round(params.size * 1f/ 1024) + " KiB";
 			} else if (params.size > 0){
 				filesize = params.size + " B";
 			}
@@ -277,8 +301,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			viewHolder.indicator.setVisibility(View.VISIBLE);
 		}
 
-		String formatedTime = UIHelper.readableTimeDifferenceFull(getContext(),
-				message.getMergedTimeSent());
+		String formatedTime = UIHelper.readableTimeDifferenceFull(getContext(), message.getMergedTimeSent());
 		if (message.getStatus() <= Message.STATUS_RECEIVED) {
 			if ((filesize != null) && (info != null)) {
 				viewHolder.time.setText(formatedTime + " \u00B7 " + filesize +" \u00B7 " + info);
@@ -337,7 +360,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		Spannable span = new SpannableString(body);
 		float size = Emoticons.isEmoji(body) ? 3.0f : 2.0f;
 		span.setSpan(new RelativeSizeSpan(size), 0, body.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-		viewHolder.messageBody.setText(span);
+		viewHolder.messageBody.setText(EmojiWrapper.transform(span));
 	}
 
 	private int applyQuoteSpan(SpannableStringBuilder body, int start, int end, boolean darkBackground) {
@@ -449,6 +472,13 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		viewHolder.image.setVisibility(View.GONE);
 		viewHolder.audioPlayer.setVisibility(View.GONE);
 		viewHolder.messageBody.setVisibility(View.VISIBLE);
+
+		viewHolder.messageBody.setTextColor(this.getMessageTextColor(darkBackground, true));
+		viewHolder.messageBody.setLinkTextColor(this.getMessageTextColor(darkBackground, true));
+		viewHolder.messageBody.setHighlightColor(ContextCompat.getColor(activity, darkBackground
+				? (type == SENT || !mUseGreenBackground ? R.color.black26 : R.color.grey800) : R.color.grey500));
+		viewHolder.messageBody.setTypeface(null, Typeface.NORMAL);
+
 		if (message.getBody() != null) {
 			final String nick = UIHelper.getMessageDisplayName(message);
 			SpannableStringBuilder body = message.getMergedBody();
@@ -494,10 +524,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				} else {
 					body.insert(privateMarkerIndex, " ");
 				}
-				body.setSpan(new ForegroundColorSpan(getMessageTextColor(darkBackground, false)),
-						0, privateMarkerIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-				body.setSpan(new StyleSpan(Typeface.BOLD),
-						0, privateMarkerIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+				body.setSpan(new ForegroundColorSpan(getMessageTextColor(darkBackground, false)), 0, privateMarkerIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+				body.setSpan(new StyleSpan(Typeface.BOLD), 0, privateMarkerIndex, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 				if (hasMeCommand) {
 					body.setSpan(new StyleSpan(Typeface.BOLD_ITALIC), privateMarkerIndex + 1,
 							privateMarkerIndex + 1 + nick.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -510,14 +538,24 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 					body.setSpan(new StyleSpan(Typeface.BOLD), matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 				}
 			}
-			Linkify.addLinks(body, XMPP_PATTERN, "xmpp");
+			Matcher matcher = Emoticons.generatePattern(body).matcher(body);
+			while(matcher.find()) {
+				if (matcher.start() < matcher.end()) {
+					body.setSpan(new RelativeSizeSpan(1.2f), matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+				}
+			}
+
+			StylingHelper.format(body, viewHolder.messageBody.getCurrentTextColor());
+
+			Linkify.addLinks(body, XMPP_PATTERN, "xmpp", XMPPURI_MATCH_FILTER, null);
 			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
+			FixedURLSpan.fix(body);
 
 			handleTextEmotes(viewHolder, body);
 
 			viewHolder.messageBody.setAutoLinkMask(0);
-			viewHolder.messageBody.setText(body);
+			viewHolder.messageBody.setText(EmojiWrapper.transform(body));
 			viewHolder.messageBody.setTextIsSelectable(true);
 			viewHolder.messageBody.setMovementMethod(ClickableMovementMethod.getInstance());
 			viewHolder.messageBody.setLayerType(View.LAYER_TYPE_SOFTWARE, null); // at least 16 hours work to find this one line
@@ -526,11 +564,6 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			viewHolder.messageBody.setText("");
 			viewHolder.messageBody.setTextIsSelectable(false);
 		}
-		viewHolder.messageBody.setTextColor(this.getMessageTextColor(darkBackground, true));
-		viewHolder.messageBody.setLinkTextColor(this.getMessageTextColor(darkBackground, true));
-		viewHolder.messageBody.setHighlightColor(ContextCompat.getColor(activity, darkBackground
-				? (type == SENT || !mUseGreenBackground ? R.color.black26 : R.color.grey800) : R.color.grey500));
-		viewHolder.messageBody.setTypeface(null, Typeface.NORMAL);
 	}
 
 	private void displayDownloadableMessage(ViewHolder viewHolder, final Message message, String text) {
@@ -656,59 +689,41 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			switch (type) {
 				case DATE_SEPARATOR:
 					view = activity.getLayoutInflater().inflate(R.layout.message_date_bubble, parent, false);
-					viewHolder.status_message = (TextView) view.findViewById(R.id.message_body);
-					viewHolder.message_box = (LinearLayout) view.findViewById(R.id.message_box);
+					viewHolder.status_message = view.findViewById(R.id.message_body);
+					viewHolder.message_box = view.findViewById(R.id.message_box);
 					break;
 				case SENT:
-					view = activity.getLayoutInflater().inflate(
-							R.layout.message_sent, parent, false);
-					viewHolder.message_box = (LinearLayout) view
-						.findViewById(R.id.message_box);
-					viewHolder.contact_picture = (ImageView) view
-						.findViewById(R.id.message_photo);
-					viewHolder.download_button = (Button) view
-						.findViewById(R.id.download_button);
-					viewHolder.indicator = (ImageView) view
-						.findViewById(R.id.security_indicator);
-					viewHolder.edit_indicator = (ImageView) view.findViewById(R.id.edit_indicator);
-					viewHolder.image = (ImageView) view
-						.findViewById(R.id.message_image);
-					viewHolder.messageBody = (CopyTextView) view
-						.findViewById(R.id.message_body);
-					viewHolder.time = (TextView) view
-						.findViewById(R.id.message_time);
-					viewHolder.indicatorReceived = (ImageView) view
-						.findViewById(R.id.indicator_received);
-					viewHolder.audioPlayer = (RelativeLayout) view.findViewById(R.id.audio_player);
+					view = activity.getLayoutInflater().inflate(R.layout.message_sent, parent, false);
+					viewHolder.message_box = view.findViewById(R.id.message_box);
+					viewHolder.contact_picture = view.findViewById(R.id.message_photo);
+					viewHolder.download_button = view.findViewById(R.id.download_button);
+					viewHolder.indicator = view.findViewById(R.id.security_indicator);
+					viewHolder.edit_indicator = view.findViewById(R.id.edit_indicator);
+					viewHolder.image = view.findViewById(R.id.message_image);
+					viewHolder.messageBody = view.findViewById(R.id.message_body);
+					viewHolder.time = view.findViewById(R.id.message_time);
+					viewHolder.indicatorReceived = view.findViewById(R.id.indicator_received);
+					viewHolder.audioPlayer = view.findViewById(R.id.audio_player);
 					break;
 				case RECEIVED:
-					view = activity.getLayoutInflater().inflate(
-							R.layout.message_received, parent, false);
-					viewHolder.message_box = (LinearLayout) view
-						.findViewById(R.id.message_box);
-					viewHolder.contact_picture = (ImageView) view
-						.findViewById(R.id.message_photo);
-					viewHolder.download_button = (Button) view
-						.findViewById(R.id.download_button);
-					viewHolder.indicator = (ImageView) view
-						.findViewById(R.id.security_indicator);
-					viewHolder.edit_indicator = (ImageView) view.findViewById(R.id.edit_indicator);
-					viewHolder.image = (ImageView) view
-						.findViewById(R.id.message_image);
-					viewHolder.messageBody = (CopyTextView) view
-						.findViewById(R.id.message_body);
-					viewHolder.time = (TextView) view
-						.findViewById(R.id.message_time);
-					viewHolder.indicatorReceived = (ImageView) view
-						.findViewById(R.id.indicator_received);
-					viewHolder.encryption = (TextView) view.findViewById(R.id.message_encryption);
-					viewHolder.audioPlayer = (RelativeLayout) view.findViewById(R.id.audio_player);
+					view = activity.getLayoutInflater().inflate(R.layout.message_received, parent, false);
+					viewHolder.message_box = view.findViewById(R.id.message_box);
+					viewHolder.contact_picture = view.findViewById(R.id.message_photo);
+					viewHolder.download_button = view.findViewById(R.id.download_button);
+					viewHolder.indicator = view.findViewById(R.id.security_indicator);
+					viewHolder.edit_indicator = view.findViewById(R.id.edit_indicator);
+					viewHolder.image = view.findViewById(R.id.message_image);
+					viewHolder.messageBody = view.findViewById(R.id.message_body);
+					viewHolder.time = view.findViewById(R.id.message_time);
+					viewHolder.indicatorReceived = view.findViewById(R.id.indicator_received);
+					viewHolder.encryption = view.findViewById(R.id.message_encryption);
+					viewHolder.audioPlayer = view.findViewById(R.id.audio_player);
 					break;
 				case STATUS:
 					view = activity.getLayoutInflater().inflate(R.layout.message_status, parent, false);
-					viewHolder.contact_picture = (ImageView) view.findViewById(R.id.message_photo);
-					viewHolder.status_message = (TextView) view.findViewById(R.id.status_message);
-					viewHolder.load_more_messages = (Button) view.findViewById(R.id.load_more_messages);
+					viewHolder.contact_picture = view.findViewById(R.id.message_photo);
+					viewHolder.status_message = view.findViewById(R.id.status_message);
+					viewHolder.load_more_messages = view.findViewById(R.id.load_more_messages);
 					break;
 				default:
 					throw new AssertionError("Unknown view type");
@@ -758,7 +773,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				if (conversation.getMode() == Conversation.MODE_SINGLE) {
 					showAvatar = true;
 					loadAvatar(message,viewHolder.contact_picture,activity.getPixel(32));
-				} else if (message.getCounterpart() != null ){
+				} else if (message.getCounterpart() != null || message.getTrueCounterpart() != null || (message.getCounterparts() != null && message.getCounterparts().size() > 0)) {
 					showAvatar = true;
 					loadAvatar(message,viewHolder.contact_picture,activity.getPixel(32));
 				} else {
@@ -844,8 +859,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		} else {
 			if (message.isGeoUri()) {
 				displayLocationMessage(viewHolder,message);
-			} else if (message.bodyIsOnlyEmojis()) {
-				displayEmojiMessage(viewHolder, message.getBody().replaceAll("\\s",""));
+			} else if (message.bodyIsOnlyEmojis() && message.getType() != Message.TYPE_PRIVATE) {
+				displayEmojiMessage(viewHolder, message.getBody().trim());
 			} else if (message.treatAsDownloadable()) {
 				try {
 					URL url = new URL(message.getBody());
@@ -1001,6 +1016,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		try {
 			uri = FileBackend.getUriForFile(activity, file);
 		} catch (SecurityException e) {
+			Log.d(Config.LOGTAG,"No permission to access "+file.getAbsolutePath(),e);
 			Toast.makeText(activity, activity.getString(R.string.no_permission_to_access_x, file.getAbsolutePath()), Toast.LENGTH_SHORT).show();
 			return;
 		}
@@ -1124,9 +1140,15 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			if (bm != null) {
 				cancelPotentialWork(message, imageView);
 				imageView.setImageBitmap(bm);
-				imageView.setBackgroundColor(0x00000000);
+				imageView.setBackgroundColor(Color.TRANSPARENT);
 			} else {
-				imageView.setBackgroundColor(UIHelper.getColorForName(UIHelper.getMessageDisplayName(message)));
+				@ColorInt int bg;
+				if (message.getType() == Message.TYPE_STATUS && message.getCounterparts() != null && message.getCounterparts().size() > 1) {
+					bg = Color.TRANSPARENT;
+				} else {
+					bg = UIHelper.getColorForName(UIHelper.getMessageDisplayName(message));
+				}
+				imageView.setBackgroundColor(bg);
 				imageView.setImageDrawable(null);
 				final BitmapWorkerTask task = new BitmapWorkerTask(imageView, size);
 				final AsyncDrawable asyncDrawable = new AsyncDrawable(activity.getResources(), null, task);

@@ -72,7 +72,7 @@ public class HttpDownloadConnection implements Transferable {
 			if (message.hasFileOnRemoteHost()) {
 				mUrl = CryptoHelper.toHttpsUrl(message.getFileParams().url);
 			} else {
-				mUrl = CryptoHelper.toHttpsUrl(new URL(message.getBody()));
+				mUrl = CryptoHelper.toHttpsUrl(new URL(message.getBody().split("\n")[0]));
 			}
 			String[] parts = mUrl.getPath().toLowerCase().split("\\.");
 			String lastPart = parts.length >= 1 ? parts[parts.length - 1] : null;
@@ -89,7 +89,7 @@ public class HttpDownloadConnection implements Transferable {
 			} else {
 				extension = lastPart;
 			}
-			message.setRelativeFilePath(message.getUuid() + "." + extension);
+			message.setRelativeFilePath(message.getUuid() + (extension != null ? ("." + extension) : ""));
 			this.file = mXmppConnectionService.getFileBackend().getFile(message, false);
 			final String reference = mUrl.getRef();
 			if (reference != null && AesGcmURLStreamHandler.IV_KEY.matcher(reference).matches()) {

@@ -61,12 +61,12 @@ public final class Config {
 	public static final int MINI_GRACE_PERIOD = 750;
 
 	public static final int AVATAR_SIZE = 192;
-	public static final Bitmap.CompressFormat AVATAR_FORMAT = Bitmap.CompressFormat.WEBP;
+	public static final Bitmap.CompressFormat AVATAR_FORMAT = Bitmap.CompressFormat.JPEG;
+	public static final int AVATAR_CHAR_LIMIT = 9400;
 
 	public static final int IMAGE_SIZE = 1920;
 	public static final Bitmap.CompressFormat IMAGE_FORMAT = Bitmap.CompressFormat.JPEG;
 	public static final int IMAGE_QUALITY = 75;
-	public static final int IMAGE_MAX_SIZE = 524288; //512KiB
 
 	public static final int MESSAGE_MERGE_WINDOW = 20;
 
@@ -84,7 +84,7 @@ public final class Config {
 	public static final long OMEMO_AUTO_EXPIRY = 7 * MILLISECONDS_IN_DAY;
 	public static final boolean REMOVE_BROKEN_DEVICES = false;
 	public static final boolean OMEMO_PADDING = false;
-	public static boolean PUT_AUTH_TAG_INTO_KEY = true;
+	public static final boolean PUT_AUTH_TAG_INTO_KEY = true;
 
 
 	public static final boolean DISABLE_PROXY_LOOKUP = false; //useful to debug ibb
@@ -102,13 +102,8 @@ public final class Config {
 
 	public static final boolean IGNORE_ID_REWRITE_IN_MUC = true;
 
-	public static final boolean PARSE_REAL_JID_FROM_MUC_MAM = false; //dangerous if server doesn’t filter
-
 	public static final long MAM_MAX_CATCHUP =  MILLISECONDS_IN_DAY * 5;
 	public static final int MAM_MAX_MESSAGES = 750;
-
-	public static final long FREQUENT_RESTARTS_DETECTION_WINDOW = 12 * 60 * 60 * 1000; // 10 hours
-	public static final long FREQUENT_RESTARTS_THRESHOLD = 0; // previous value was 16;
 
 	public static final ChatState DEFAULT_CHATSTATE = ChatState.ACTIVE;
 	public static final int TYPING_TIMEOUT = 8;
