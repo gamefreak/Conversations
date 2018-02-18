@@ -218,7 +218,8 @@
             android:exported="false"
             android:grantUriPermissions="true"/>
 
-
+        <activity android:name="horse.vinylscratch.conversations.EmoticonBrowserActivity">
+        </activity>
     </application>
 
 </manifest>

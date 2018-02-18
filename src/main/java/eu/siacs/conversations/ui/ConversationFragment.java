@@ -83,6 +83,7 @@ import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.jid.Jid;
+import horse.vinylscratch.conversations.EmoticonBrowserActivity;
 
 public class ConversationFragment extends Fragment implements EditMessage.KeyboardListener {
 
@@ -553,6 +554,19 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 
 		mSendButton = (ImageButton) view.findViewById(R.id.textSendButton);
 		mSendButton.setOnClickListener(this.mSendButtonListener);
+
+		final ImageButton viewEmotesButton = view.findViewById(R.id.open_emote_view);
+		viewEmotesButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+//				Intent i = new Intent()
+				Intent intent = new Intent(getContext(), EmoticonBrowserActivity.class);
+
+				ConversationFragment.this.startActivityForResult(intent, EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE);
+//				if (emoteDialogFragment == null) return;
+//				emoteDialogFragment.show(activity.getSupportFragmentManager(), "emote_dialog");
+			}
+		});
 
 		snackbar = (RelativeLayout) view.findViewById(R.id.snackbar);
 		snackbarMessage = (TextView) view.findViewById(R.id.snackbar_message);
@@ -1732,6 +1746,12 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 			} else if (requestCode == ConversationActivity.REQUEST_TRUST_KEYS_MENU) {
 				int choice = data.getIntExtra("choice", ConversationActivity.ATTACHMENT_CHOICE_INVALID);
 				activity.selectPresenceToAttachFile(choice, conversation.getNextEncryption());
+			}
+			else if (requestCode == EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE) {
+				String emoteText = data.getStringExtra("emote");
+				if (emoteText != null) {
+					this.appendText(emoteText);
+				}
 			}
 		} else if (resultCode == Activity.RESULT_CANCELED) {
 			if (requestCode == ConversationActivity.REQUEST_DECRYPT_PGP) {
