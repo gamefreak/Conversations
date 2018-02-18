@@ -2,6 +2,7 @@ package eu.siacs.conversations.emotes;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
@@ -11,6 +12,7 @@ import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.AsyncTask;
 import android.os.IBinder;
+import android.preference.PreferenceManager;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
@@ -35,6 +37,7 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import eu.siacs.conversations.services.XmppConnectionService;
+import eu.siacs.conversations.ui.SettingsActivity;
 import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
@@ -64,6 +67,18 @@ public class EmoticonService extends Service {
 		this.allEmotes = new ArrayList<>(4000);
 		this.images = new LruCache<>(128);
 		this.executor = new SerialSingleThreadExecutor("emoticon looper");
+	}
+
+	@Override
+	public void onCreate() {
+		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+		String pack = preferences.getString(SettingsActivity.ACTIVE_EMOTE_PACK, "");
+		boolean enableGifs = preferences.getBoolean(SettingsActivity.ENABLE_GIF_EMOTES, true);
+		this.setEnableAnimations(enableGifs);
+		LoadPackTask task =  new LoadPackTask(this);
+		task.execute(pack);
+
+		super.onCreate();
 	}
 
 	public Executor getExecutor() {

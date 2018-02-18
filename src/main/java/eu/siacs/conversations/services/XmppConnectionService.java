@@ -480,15 +480,6 @@ public class XmppConnectionService extends Service {
 		return this.emoticonService;
 	}
 
-
-	public void setupEmotes() {
-		String pack = getPreferences().getString(SettingsActivity.ACTIVE_EMOTE_PACK, "");
-		boolean enableGifs = getPreferences().getBoolean(SettingsActivity.ENABLE_GIF_EMOTES, true);
-		getEmoticonService().setEnableAnimations(enableGifs);
-		LoadPackTask task =  new LoadPackTask(getEmoticonService());
-		task.execute(pack);
-	}
-
 	public void attachLocationToConversation(final Conversation conversation,
 	                                         final Uri uri,
 	                                         final UiCallback<Message> callback) {
@@ -998,7 +989,6 @@ public class XmppConnectionService extends Service {
 			@Override
 			public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
 				emoticonService = ((EmoticonService.Binder)iBinder).getService();
-				setupEmotes();
 			}
 
 			@Override
