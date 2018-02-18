@@ -220,6 +220,7 @@
 
         <activity android:name="horse.vinylscratch.conversations.EmoticonBrowserActivity">
         </activity>
+		<service android:name=".emotes.EmoticonService" />
     </application>
 
 </manifest>

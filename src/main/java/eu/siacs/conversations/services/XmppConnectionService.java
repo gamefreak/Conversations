@@ -5,9 +5,11 @@ import android.annotation.TargetApi;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.graphics.Bitmap;
@@ -240,7 +242,7 @@ public class XmppConnectionService extends Service {
 	private HttpConnectionManager mHttpConnectionManager = new HttpConnectionManager(
 			this);
 	private AvatarService mAvatarService = new AvatarService(this);
-	private EmoticonService emoticonService = new EmoticonService(this);
+	private EmoticonService emoticonService = null;
 	private MessageArchiveService mMessageArchiveService = new MessageArchiveService(this);
 	private PushManagementService mPushManagementService = new PushManagementService(this);
 	private OnConversationUpdate mOnConversationUpdate = null;
@@ -991,6 +993,19 @@ public class XmppConnectionService extends Service {
 	public void onCreate() {
 		ExceptionHelper.init(getApplicationContext());
 		PRNGFixes.apply();
+
+		bindService(new Intent(this, EmoticonService.class), new ServiceConnection() {
+			@Override
+			public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+				emoticonService = ((EmoticonService.Binder)iBinder).getService();
+				setupEmotes();
+			}
+
+			@Override
+			public void onServiceDisconnected(ComponentName componentName) {
+				emoticonService = null;
+			}
+		}, Context.BIND_AUTO_CREATE);
 		Resolver.init(this);
 		this.mRandom = new SecureRandom();
 		updateMemorizingTrustmanager();
@@ -1055,8 +1070,6 @@ public class XmppConnectionService extends Service {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
 			registerReceiver(this.mEventReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
 		}
-
-		setupEmotes();
 	}
 
 	@Override

@@ -552,7 +552,9 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
 			FixedURLSpan.fix(body);
 
-			handleTextEmotes(viewHolder, body);
+			if (activity.emoticonService() != null) {
+				handleTextEmotes(viewHolder, body);
+			}
 
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(EmojiWrapper.transform(body));

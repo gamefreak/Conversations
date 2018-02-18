@@ -1,5 +1,7 @@
 package eu.siacs.conversations.emotes;
 
+import android.app.Service;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
@@ -8,6 +10,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.ShapeDrawable;
 import android.graphics.drawable.shapes.RectShape;
 import android.os.AsyncTask;
+import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.DisplayMetrics;
@@ -47,8 +50,7 @@ class EmoteHolder {
 	}
 }
 
-public class EmoticonService {
-	private XmppConnectionService xmppConnectionService = null;
+public class EmoticonService extends Service {
 	private Map<String, Emote> emotes;
 	private List<Emote> allEmotes;
 	private File file = null;
@@ -57,8 +59,7 @@ public class EmoticonService {
 	private boolean enableAnimations = true;
 	private SerialSingleThreadExecutor executor;
 
-	public EmoticonService(XmppConnectionService service) {
-		this.xmppConnectionService = service;
+	public EmoticonService() {
 		this.emotes = new HashMap<>(4000);
 		this.allEmotes = new ArrayList<>(4000);
 		this.images = new LruCache<>(128);
@@ -96,7 +97,7 @@ public class EmoticonService {
 
 	public Drawable makePlaceholder(Emote emote) {
 		RectShape shape = new RectShape();
-		DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
+		DisplayMetrics metrics = getResources().getDisplayMetrics();
 		ShapeDrawable sd = new ShapeDrawable(shape);
 		sd.getPaint().setColor(0xff0000ff);
 		sd.getPaint().setStyle(Paint.Style.FILL);
@@ -128,7 +129,7 @@ public class EmoticonService {
 		String emotePath = "emotes/" + imageName;
 		try (ZipFile zipFile = new ZipFile(this.file);
 			InputStream stream = zipFile.getInputStream(zipFile.getEntry(emotePath))) {
-			DisplayMetrics metrics = xmppConnectionService.getResources().getDisplayMetrics();
+			DisplayMetrics metrics = getResources().getDisplayMetrics();
 
 			ZipEntry entry = zipFile.getEntry(emotePath);
 			EmoteHolder holder = null;
@@ -148,7 +149,7 @@ public class EmoticonService {
 				holder = new EmoteHolder(gifDrawable, callback);
 			} else {
 				Bitmap image = BitmapFactory.decodeStream(stream);
-				drawable = new BitmapDrawable(this.xmppConnectionService.getResources(), image);
+				drawable = new BitmapDrawable(getResources(), image);
 				holder = new EmoteHolder(drawable, null);
 			}
 			drawable.setFilterBitmap(false);
@@ -196,7 +197,7 @@ public class EmoticonService {
 	}
 
 	public File getPackDirectory() {
-		return new File(xmppConnectionService.getFilesDir(), "emoticons");
+		return new File(getFilesDir(), "emoticons");
 	}
 
 	private void loadPackJson(File file) {
@@ -266,5 +267,16 @@ public class EmoticonService {
 		} catch (NullPointerException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public class Binder extends android.os.Binder {
+		public EmoticonService getService() {
+			return EmoticonService.this;
+		}
+	}
+
+	@Override
+	public IBinder onBind(Intent intent) {
+		return new EmoticonService.Binder();
 	}
 }
