@@ -23,4 +23,5 @@
 	<color name="bubble">#ff4b9b4a</color>
 	<color name="unreadcountlight">#ff4b9b4a</color>
 	<color name="unreadcountdark">#ff326130</color>
+    <color name="emote_button_tint">#5d5d5d</color>
 </resources>
