@@ -162,7 +162,7 @@ public class SetPresenceActivity extends XmppActivity implements View.OnClickLis
 	}
 
 	@Override
-	void onBackendConnected() {
+	protected void onBackendConnected() {
 		mAccount = extractAccount(getIntent());
 		if (mAccount != null) {
 			setStatusInSpinner(mAccount.getPresenceStatus());
