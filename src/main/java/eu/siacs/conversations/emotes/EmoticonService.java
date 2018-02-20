@@ -40,6 +40,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.SettingsActivity;
 import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
 import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.GifIOException;
 import pl.droidsonroids.gif.MultiCallback;
 
 class EmoteHolder {
@@ -61,6 +62,8 @@ public class EmoticonService extends Service {
 	private LruCache<String, EmoteHolder> images;
 	private boolean enableAnimations = true;
 	private SerialSingleThreadExecutor executor;
+	// incremented whenever the emotes are loaded/cleared
+	private int loadedPackVersion = 0;
 
 	public EmoticonService() {
 		this.emotes = new HashMap<>(4000);
@@ -69,15 +72,18 @@ public class EmoticonService extends Service {
 		this.executor = new SerialSingleThreadExecutor("emoticon looper");
 	}
 
-	@Override
-	public void onCreate() {
+	public void doLoad() {
 		SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
 		String pack = preferences.getString(SettingsActivity.ACTIVE_EMOTE_PACK, "");
 		boolean enableGifs = preferences.getBoolean(SettingsActivity.ENABLE_GIF_EMOTES, true);
 		this.setEnableAnimations(enableGifs);
 		LoadPackTask task =  new LoadPackTask(this);
 		task.execute(pack);
+	}
 
+	@Override
+	public void onCreate() {
+		this.doLoad();
 		super.onCreate();
 	}
 
@@ -91,6 +97,10 @@ public class EmoticonService extends Service {
 
 	public String getCurrentPack() {
 		return this.currentPack;
+	}
+
+	public int getLoadedPackVersion() {
+		return loadedPackVersion;
 	}
 
 	public boolean isEmote(String name) {
@@ -155,13 +165,21 @@ public class EmoticonService extends Service {
 				while (bytesRead < buffer.length) {
 					bytesRead += stream.read(buffer, bytesRead, buffer.length - bytesRead);
 				}
-				final GifDrawable gifDrawable = new GifDrawable(buffer);
-				MultiCallback callback = new MultiCallback(true);
+				try {
+					GifDrawable gifDrawable = new GifDrawable(buffer);
+					MultiCallback callback = new MultiCallback(true);
 
-				gifDrawable.setCallback(callback);
+					gifDrawable.setCallback(callback);
 
-				drawable = gifDrawable;
-				holder = new EmoteHolder(gifDrawable, callback);
+					drawable = gifDrawable;
+					holder = new EmoteHolder(gifDrawable, callback);
+				}  catch (GifIOException e) {
+					Log.w("emote service", "failed to load " + imageName + " as gif, falling back to regular image.", e);
+
+					Bitmap image = BitmapFactory.decodeStream(stream);
+					drawable = new BitmapDrawable(getResources(), image);
+					holder = new EmoteHolder(drawable, null);
+				}
 			} else {
 				Bitmap image = BitmapFactory.decodeStream(stream);
 				drawable = new BitmapDrawable(getResources(), image);
@@ -183,6 +201,7 @@ public class EmoticonService extends Service {
 	public void loadPack(final File file) {
 		if (file == null) {
 			synchronized (this.emotes) {
+				this.loadedPackVersion++;
 				this.currentPack = null;
 				this.file = null;
 				this.emotes.clear();
@@ -273,6 +292,7 @@ public class EmoticonService extends Service {
 				this.allEmotes.clear();
 				this.allEmotes.addAll(newEmotes);
 				this.images.evictAll();
+				this.loadedPackVersion++;
 				Log.i("emote service", "emote data load complete (found " + this.emotes.size() + " emotes)");
 			}
 		} catch (ZipException  e) {
