@@ -218,7 +218,9 @@
             android:exported="false"
             android:grantUriPermissions="true"/>
 
-        <activity android:name="horse.vinylscratch.conversations.EmoticonBrowserActivity">
+        <activity android:name="horse.vinylscratch.conversations.EmoticonBrowserActivity"
+				  android:label="Emoticons"
+				  android:parentActivityName=".ui.ConversationActivity">
         </activity>
 		<service android:name=".emotes.EmoticonService" />
     </application>
