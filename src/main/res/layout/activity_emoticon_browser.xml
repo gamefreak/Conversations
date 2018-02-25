@@ -11,14 +11,6 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
-
-        <SearchView
-            android:id="@+id/search_field"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:inputType="text|textNoSuggestions|textFilter"
-            android:minHeight="48dp"
-            android:minLines="1" />
     </LinearLayout>
     <GridView
         android:id="@+id/emote_grid"

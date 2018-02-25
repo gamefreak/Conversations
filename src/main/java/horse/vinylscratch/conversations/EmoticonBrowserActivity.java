@@ -1,9 +1,11 @@
 package horse.vinylscratch.conversations;
 
+import android.app.ActionBar;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -11,6 +13,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
 import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -18,6 +21,7 @@ import android.view.ViewGroup;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ImageView;
+import android.widget.Spinner;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -29,19 +33,41 @@ import eu.siacs.conversations.R;
 import eu.siacs.conversations.emotes.Emote;
 import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.ui.XmppActivity;
+import horse.vinylscratch.conversations.entities.EmoteDbHelper;
 
 
 public class EmoticonBrowserActivity extends XmppActivity {
+	enum BrowserMode {
+		FREQUENT("Most Used"),
+		RECENT("Recently Used"),
+		ALL("All");
+
+		final private String label;
+
+		BrowserMode(String label) {
+			this.label = label;
+		}
+
+		@Override
+		public String toString() {
+			return this.label;
+		}
+	}
+
 	class EmoteAdapter extends BaseAdapter {
 		private EmoticonService emoticonService = null;
 		private int lastPackVersion = -1;
 		private List<Emote> emotes = new ArrayList<>();
+		private BrowserMode mode = BrowserMode.ALL;
 		private String searchFilter = null;
 		private Context context = null;
 
-		//		public EmoteAdapter() {
-		public EmoteAdapter(@NonNull Context context) {
+		private SQLiteDatabase db;
+
+		public EmoteAdapter(@NonNull Context context, SQLiteDatabase db) {
 			this.context = context;
+
+			this.db = db;
 		}
 
 		public void setEmoticonService(EmoticonService emoticonService) {
@@ -137,11 +163,21 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			this.applyFilter();
 			this.notifyDataSetChanged();
 		}
+
+		public BrowserMode getMode() {
+			return mode;
+		}
+
+		public void setMode(BrowserMode mode) {
+			this.mode = mode;
+		}
 	}
 
 
 	static final String TAG = "EmoteBrowserActivity";
 	public static final int REQUEST_CHOOSE_EMOTE = 0x7dd3a842;
+
+	private EmoteDbHelper dbHelper = null;
 
 
 	private EmoticonService emoticonService = null;
@@ -155,8 +191,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_emoticon_browser);
 
+		setTitle("");
+
 		grid = (GridView) findViewById(R.id.emote_grid);
-		emoteAdapter = new EmoteAdapter(getApplicationContext());
+
+		this.dbHelper = new EmoteDbHelper(this);
+		emoteAdapter = new EmoteAdapter(this, this.dbHelper.getReadableDatabase());
 		grid.setAdapter(emoteAdapter);
 		grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 			@Override
@@ -166,8 +206,18 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			}
 		});
 
+		ActionBar actionBar = getActionBar();
+		actionBar.setCustomView(R.layout.emoticon_browser_toolbar);
+		actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP | ActionBar.DISPLAY_SHOW_CUSTOM);
 
-		SearchView searchField = findViewById(R.id.search_field);
+
+		View actionBarView = actionBar.getCustomView();
+		Spinner spinner = actionBarView.findViewById(R.id.spinner);
+		ArrayAdapter<BrowserMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, BrowserMode.values());
+		spinner.setAdapter(adapter);
+
+
+		SearchView searchField = actionBarView.findViewById(R.id.search_view);
 		searchField.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextSubmit(String query) {
@@ -207,6 +257,11 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		finish();
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (dbHelper != null) dbHelper.close();
+	}
 
 	@Override
 	protected void refreshUiReal() {
