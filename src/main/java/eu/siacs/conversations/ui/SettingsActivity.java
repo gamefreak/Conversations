@@ -442,7 +442,7 @@ public class SettingsActivity extends XmppActivity implements
 				recreate();
 			}
 		} else if (name.equals(ACTIVE_EMOTE_PACK)) {
-			xmppConnectionService.setupEmotes();
+			xmppConnectionService.getEmoticonService().doLoad();
 		} else if (name.equals(ENABLE_GIF_EMOTES)) {
 			xmppConnectionService.getEmoticonService().setEnableAnimations(getPreferences().getBoolean(ENABLE_GIF_EMOTES, true));
 		}
