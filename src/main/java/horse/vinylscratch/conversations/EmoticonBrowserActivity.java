@@ -40,14 +40,14 @@ import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote
 
 
 public class EmoticonBrowserActivity extends XmppActivity {
-	enum BrowserMode {
+	enum SortMode {
+		ALL("All"),
 		FREQUENT("Most Used"),
-		RECENT("Recently Used"),
-		ALL("All");
+		RECENT("Recently Used");
 
 		final private String label;
 
-		BrowserMode(String label) {
+		SortMode(String label) {
 			this.label = label;
 		}
 
@@ -61,7 +61,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		private EmoticonService emoticonService = null;
 		private int lastPackVersion = -1;
 		private List<Emote> emotes = new ArrayList<>();
-		private BrowserMode mode = BrowserMode.ALL;
+		private SortMode mode = SortMode.ALL;
 		private String searchFilter = null;
 		private Context context = null;
 
@@ -92,7 +92,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 		private List<Emote> getSortedEmotes() {
 			if (this.emoticonService == null) return new ArrayList<>();
-			if (this.mode == BrowserMode.ALL) {
+			if (this.mode == SortMode.ALL) {
 				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
 				Collections.sort(theEmotes, new Comparator<Emote>() {
 					@Override
@@ -102,7 +102,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				});
 				return theEmotes;
 			} else {
-				String sortBy = (this.mode == BrowserMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
+				String sortBy = (this.mode == SortMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
 				Cursor cursor = db.query(RecentEmote.TABLE_NAME, new String[]{RecentEmote.COLUMN_NAME_EMOTE}, null,  null, null, null, sortBy);
 				List emotes = new ArrayList<Emote>();
 				while(cursor.moveToNext()) {
@@ -186,11 +186,11 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			this.notifyDataSetChanged();
 		}
 
-		public BrowserMode getMode() {
+		public SortMode getMode() {
 			return mode;
 		}
 
-		public void setMode(BrowserMode mode) {
+		public void setMode(SortMode mode) {
 			this.mode = mode;
 			this.applyFilter();
 			this.notifyDataSetChanged();
@@ -239,12 +239,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		View actionBarView = actionBar.getCustomView();
 
 		modeSpinner = actionBarView.findViewById(R.id.spinner);
-		ArrayAdapter<BrowserMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, BrowserMode.values());
+		ArrayAdapter<SortMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, SortMode.values());
 		modeSpinner.setAdapter(adapter);
 		modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
-				BrowserMode newMode = (BrowserMode) adapterView.getItemAtPosition(position);
+				SortMode newMode = (SortMode) adapterView.getItemAtPosition(position);
 				emoteAdapter.setMode(newMode);
 			}
 
@@ -290,7 +290,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	@Override
 	public void onStart() {
 		super.onStart();
-		BrowserMode mode = BrowserMode.valueOf(getPreferences().getString(PREF_SORT_MODE, BrowserMode.ALL.name()));
+		SortMode mode = SortMode.valueOf(getPreferences().getString(PREF_SORT_MODE, SortMode.ALL.name()));
 		modeSpinner.setSelection(mode.ordinal());
 	}
 
