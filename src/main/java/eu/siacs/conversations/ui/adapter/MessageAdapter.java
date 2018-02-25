@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
+import eu.siacs.conversations.emotes.Emote;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.DownloadableFile;
@@ -434,8 +435,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 
 
 	private boolean handleTextEmotes(ViewHolder viewHolder, SpannableStringBuilder body) {
-		String re = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
-		Pattern pattern = Pattern.compile(re);
+		Pattern pattern = Pattern.compile(Emote.PATTERN);
 		Matcher matcher = pattern.matcher(body.toString());
 		List<String> neededEmotes = new ArrayList<>();
 		int emoteCount = 0;

@@ -5,6 +5,8 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -34,6 +36,7 @@ import eu.siacs.conversations.emotes.Emote;
 import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.ui.XmppActivity;
 import horse.vinylscratch.conversations.entities.EmoteDbHelper;
+import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote;
 
 
 public class EmoticonBrowserActivity extends XmppActivity {
@@ -87,17 +90,42 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 		}
 
+		private List<Emote> getSortedEmotes() {
+			if (this.emoticonService == null) return new ArrayList<>();
+			if (this.mode == BrowserMode.ALL) {
+				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
+				Collections.sort(theEmotes, new Comparator<Emote>() {
+					@Override
+					public int compare(Emote left, Emote right) {
+						return left.getAliases().get(0).compareTo(right.getAliases().get(0));
+					}
+				});
+				return theEmotes;
+			} else {
+				String sortBy = (this.mode == BrowserMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
+				Cursor cursor = db.query(RecentEmote.TABLE_NAME, new String[]{RecentEmote.COLUMN_NAME_EMOTE}, null,  null, null, null, sortBy);
+				List emotes = new ArrayList<Emote>();
+				while(cursor.moveToNext()) {
+					String emoteName = cursor.getString(cursor.getColumnIndexOrThrow(RecentEmote.COLUMN_NAME_EMOTE));
+					Emote emote = this.emoticonService.getEmoteInfo(emoteName);
+					if (emote == null) continue;
+					emotes.add(emote);
+				}
+				return emotes;
+			}
+		}
+
 		private void applyFilter() {
 			if (this.emoticonService == null) {
 				this.emotes.clear();
 			} else if (this.searchFilter == null || this.searchFilter.trim().isEmpty()) {
 				this.emotes.clear();
-				this.emotes.addAll(this.emoticonService.getAllEmotes());
+				this.emotes.addAll(getSortedEmotes());
 			} else {
 				this.emotes.clear();
 
 				String filter = this.searchFilter.toLowerCase();
-				for (Emote emote : this.emoticonService.getAllEmotes()) {
+				for (Emote emote : this.getSortedEmotes()) {
 					for (String alias : emote.getAliases()) {
 						if (alias.toLowerCase().contains(filter)) {
 							this.emotes.add(emote);
@@ -106,12 +134,6 @@ public class EmoticonBrowserActivity extends XmppActivity {
 					}
 				}
 			}
-			Collections.sort(this.emotes, new Comparator<Emote>() {
-				@Override
-				public int compare(Emote left, Emote right) {
-					return left.getAliases().get(0).compareTo(right.getAliases().get(0));
-				}
-			});
 		}
 
 		@Override
@@ -170,12 +192,15 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 		public void setMode(BrowserMode mode) {
 			this.mode = mode;
+			this.applyFilter();
+			this.notifyDataSetChanged();
 		}
 	}
 
 
 	static final String TAG = "EmoteBrowserActivity";
 	public static final int REQUEST_CHOOSE_EMOTE = 0x7dd3a842;
+	static final String PREF_SORT_MODE = "SORT_MODE";
 
 	private EmoteDbHelper dbHelper = null;
 
@@ -184,6 +209,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	private EmoteAdapter emoteAdapter = null;
 
 	private GridView grid = null;
+	private Spinner modeSpinner = null;
 
 
 	@Override
@@ -210,11 +236,23 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		actionBar.setCustomView(R.layout.emoticon_browser_toolbar);
 		actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP | ActionBar.DISPLAY_SHOW_CUSTOM);
 
-
 		View actionBarView = actionBar.getCustomView();
-		Spinner spinner = actionBarView.findViewById(R.id.spinner);
+
+		modeSpinner = actionBarView.findViewById(R.id.spinner);
 		ArrayAdapter<BrowserMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, BrowserMode.values());
-		spinner.setAdapter(adapter);
+		modeSpinner.setAdapter(adapter);
+		modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+			@Override
+			public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
+				BrowserMode newMode = (BrowserMode) adapterView.getItemAtPosition(position);
+				emoteAdapter.setMode(newMode);
+			}
+
+			@Override
+			public void onNothingSelected(AdapterView<?> adapterView) {
+
+			}
+		});
 
 
 		SearchView searchField = actionBarView.findViewById(R.id.search_view);
@@ -247,6 +285,21 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				emoteAdapter.setEmoticonService(null);
 			}
 		}, Context.BIND_AUTO_CREATE);
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		BrowserMode mode = BrowserMode.valueOf(getPreferences().getString(PREF_SORT_MODE, BrowserMode.ALL.name()));
+		modeSpinner.setSelection(mode.ordinal());
+	}
+
+	@Override
+	public void onStop() {
+		super.onStop();
+		SharedPreferences.Editor editor = getPreferences().edit();
+		editor.putString(PREF_SORT_MODE, emoteAdapter.getMode().name());
+		editor.apply();
 	}
 
 	private void emoteClicked(Emote emote) {

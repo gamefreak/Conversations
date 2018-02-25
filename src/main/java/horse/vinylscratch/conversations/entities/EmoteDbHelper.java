@@ -4,6 +4,8 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
+import static horse.vinylscratch.conversations.entities.RecentEmoteContract.*;
+
 
 public class EmoteDbHelper extends SQLiteOpenHelper {
 	public static final int DATABASE_VERESION = 1;
@@ -14,10 +16,10 @@ public class EmoteDbHelper extends SQLiteOpenHelper {
 	}
 	@Override
 	public void onCreate(SQLiteDatabase sql) {
-		sql.execSQL("CREATE TABLE recent_emotes(\n" +
-				"  emote VARCHAR(128) PRIMARY KEY,\n" +
-				"  hit_count INTEGER NOT NULL DEFAULT 1,\n" +
-				"  last_use TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n" +
+		sql.execSQL("CREATE TABLE " + RecentEmote.TABLE_NAME + "(\n" +
+				RecentEmote.COLUMN_NAME_EMOTE + " VARCHAR(128) PRIMARY KEY,\n" +
+				RecentEmote.COLUMN_NAME_HIT_COUNT+ " INTEGER NOT NULL DEFAULT 1,\n" +
+				RecentEmote.COLUMN_NAME_LAST_USE + " TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n" +
 				");");
 		sql.execSQL("CREATE INDEX recent_emotes_hit_count_idx ON recent_emotes(hit_count DESC)");
 		sql.execSQL("CREATE INDEX recent_emotes_last_use_idx ON recent_emotes(last_use DESC)");

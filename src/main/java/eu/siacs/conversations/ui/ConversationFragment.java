@@ -5,13 +5,16 @@ import android.app.AlertDialog;
 import android.app.Fragment;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentSender.SendIntentException;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.support.annotation.Nullable;
 import android.support.v13.view.inputmethod.InputConnectionCompat;
 import android.support.v13.view.inputmethod.InputContentInfoCompat;
 import android.text.Editable;
@@ -52,9 +55,13 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.emotes.Emote;
+import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Blockable;
 import eu.siacs.conversations.entities.Contact;
@@ -84,6 +91,9 @@ import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.jid.Jid;
 import horse.vinylscratch.conversations.EmoticonBrowserActivity;
+import horse.vinylscratch.conversations.entities.EmoteDbHelper;
+import horse.vinylscratch.conversations.entities.RecentEmoteContract;
+import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote;
 
 public class ConversationFragment extends Fragment implements EditMessage.KeyboardListener {
 
@@ -97,6 +107,9 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	private TextView snackbarMessage;
 	private TextView snackbarAction;
 	private Toast messageLoaderToast;
+	private EmoteDbHelper emoteDbHelper = null;
+	private SQLiteDatabase emoteDb = null;
+
 	private OnClickListener clickToMuc = new OnClickListener() {
 
 		@Override
@@ -460,12 +473,37 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		}
 	}
 
+	private void markEmoteHit(String emote) {
+		emoteDb.execSQL("UPDATE recent_emotes SET hit_count = hit_count + 1, last_use = CURRENT_TIMESTAMP WHERE emote = ?;", new Object[]{emote});
+
+		ContentValues insertValues = new ContentValues(1);
+		insertValues.put(RecentEmote.COLUMN_NAME_EMOTE, emote);
+		emoteDb.insertWithOnConflict(RecentEmote.TABLE_NAME, null, insertValues, SQLiteDatabase.CONFLICT_IGNORE);
+	}
+	private void scanForOutgoingEmotes(String body) {
+		Pattern pattern = Pattern.compile(Emote.PATTERN);
+		Matcher matcher = pattern.matcher(body);
+		EmoticonService emoticonService = ((ConversationActivity) getActivity()).emoticonService();
+		emoteDb.beginTransaction();
+		try {
+			while (matcher.find()) {
+				String name = body.toString().substring(matcher.start(), matcher.end());
+				if (emoticonService.isEmote(name)) {
+					markEmoteHit(name);
+				}
+			}
+			emoteDb.setTransactionSuccessful();
+		} finally {
+			emoteDb.endTransaction();
+		}
+	}
 	private void sendMessage() {
 		final String body = mEditMessage.getText().toString();
 		final Conversation conversation = this.conversation;
 		if (body.length() == 0 || conversation == null) {
 			return;
 		}
+		scanForOutgoingEmotes(body);
 		final Message message;
 		if (conversation.getCorrectingMessage() == null) {
 			message = new Message(conversation, body, conversation.getNextEncryption());
@@ -532,6 +570,16 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	}
 
 	@Override
+	public void onCreate(@Nullable Bundle savedInstanceState) {
+		super.onCreate(savedInstanceState);
+
+		if (emoteDbHelper == null) {
+			emoteDbHelper = new EmoteDbHelper(getActivity());
+			emoteDb = emoteDbHelper.getWritableDatabase();
+		}
+	}
+
+	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 		view.setOnClickListener(null);
@@ -559,12 +607,9 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		viewEmotesButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-//				Intent i = new Intent()
-				Intent intent = new Intent(getContext(), EmoticonBrowserActivity.class);
+				Intent intent = new Intent(getActivity(), EmoticonBrowserActivity.class);
 
 				ConversationFragment.this.startActivityForResult(intent, EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE);
-//				if (emoteDialogFragment == null) return;
-//				emoteDialogFragment.show(activity.getSupportFragmentManager(), "emote_dialog");
 			}
 		});
 
@@ -1759,6 +1804,16 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				conversation.getAccount().getPgpDecryptionService().giveUpCurrentDecryption();
 			}
 		}
+	}
+
+	@Override
+	public void onDestroy() {
+		if (emoteDbHelper != null) {
+			emoteDbHelper.close();
+			emoteDbHelper = null;
+			emoteDb = null;
+		}
+		super.onDestroyView();
 	}
 
 	enum SendButtonAction {

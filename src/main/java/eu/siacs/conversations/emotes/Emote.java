@@ -4,6 +4,7 @@ import java.util.Collections;
 import java.util.List;
 
 public class Emote {
+	public static final String PATTERN = "(:[\\w\\-?]+:|:-?[\\w()]|\\([\\w*{}?]\\))";
 	private final String imageName;
 	private final int width;
 	private final int height;

@@ -107,6 +107,10 @@ public class EmoticonService extends Service {
 		return this.emotes.containsKey(name);
 	}
 
+	public Emote getEmoteInfo(String name) {
+		return this.emotes.get(name);
+	}
+
 	public Drawable getEmote(String name) {
 		Emote emote = this.emotes.get(name);
 
