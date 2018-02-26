@@ -60,7 +60,7 @@
             android:background="?attr/color_background_primary"
             android:contentDescription="View Emotes"
             android:src="@drawable/ic_insert_emoticon_black_36dp"
-            android:tint="@color/emote_button_tint"/>
+            android:tint="@color/emote_button_tint_light"/>
 
         <ImageButton
             android:id="@+id/textSendButton"

@@ -17,6 +17,7 @@ import android.os.SystemClock;
 import android.support.annotation.Nullable;
 import android.support.v13.view.inputmethod.InputConnectionCompat;
 import android.support.v13.view.inputmethod.InputContentInfoCompat;
+import android.support.v4.content.ContextCompat;
 import android.text.Editable;
 import android.text.InputType;
 import android.util.Log;
@@ -107,6 +108,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	private TextView snackbarMessage;
 	private TextView snackbarAction;
 	private Toast messageLoaderToast;
+	private ImageButton viewEmotesButton = null;
 	private EmoteDbHelper emoteDbHelper = null;
 	private SQLiteDatabase emoteDb = null;
 
@@ -481,6 +483,10 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		emoteDb.insertWithOnConflict(RecentEmote.TABLE_NAME, null, insertValues, SQLiteDatabase.CONFLICT_IGNORE);
 	}
 	private void scanForOutgoingEmotes(String body) {
+		if (emoteDb == null) {
+			Log.w(Config.LOGTAG, "emote logging database not found");
+			return;
+		}
 		Pattern pattern = Pattern.compile(Emote.PATTERN);
 		Matcher matcher = pattern.matcher(body);
 		EmoticonService emoticonService = ((ConversationActivity) getActivity()).emoticonService();
@@ -570,16 +576,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 	}
 
 	@Override
-	public void onCreate(@Nullable Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-
-		if (emoteDbHelper == null) {
-			emoteDbHelper = new EmoteDbHelper(getActivity());
-			emoteDb = emoteDbHelper.getWritableDatabase();
-		}
-	}
-
-	@Override
 	public View onCreateView(final LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
 		final View view = inflater.inflate(R.layout.fragment_conversation, container, false);
 		view.setOnClickListener(null);
@@ -603,7 +599,7 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		mSendButton = (ImageButton) view.findViewById(R.id.textSendButton);
 		mSendButton.setOnClickListener(this.mSendButtonListener);
 
-		final ImageButton viewEmotesButton = view.findViewById(R.id.open_emote_view);
+		viewEmotesButton = view.findViewById(R.id.open_emote_view);
 		viewEmotesButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -695,6 +691,15 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		registerForContextMenu(messagesView);
 
 		return view;
+	}
+
+	@Override
+	public void onStart() {
+		super.onStart();
+		if (emoteDbHelper == null) {
+			emoteDbHelper = new EmoteDbHelper(getActivity());
+			emoteDb = emoteDbHelper.getWritableDatabase();
+		}
 	}
 
 	private void quoteText(String text) {
@@ -1033,6 +1038,11 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				activity.xmppConnectionService.updateConversation(this.conversation);
 			}
 			updateChatState(this.conversation, msg);
+		}
+		if (emoteDbHelper != null) {
+			emoteDbHelper.close();
+			emoteDbHelper = null;
+			emoteDb = null;
 		}
 	}
 
@@ -1395,6 +1405,15 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		}
 		this.mSendButton.setTag(action);
 		this.mSendButton.setImageResource(getSendButtonImageResource(action, status));
+
+
+		updateEmoteButtonColor();
+	}
+
+	private void updateEmoteButtonColor() {
+		XmppActivity activity = (XmppActivity) getActivity();
+		int color = ContextCompat.getColor(getActivity(), activity.isDarkTheme() ? R.color.emote_button_tint_dark : R.color.emote_button_tint_light);
+		viewEmotesButton.setColorFilter(color);
 	}
 
 	protected void updateDateSeparators() {
@@ -1804,16 +1823,6 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 				conversation.getAccount().getPgpDecryptionService().giveUpCurrentDecryption();
 			}
 		}
-	}
-
-	@Override
-	public void onDestroy() {
-		if (emoteDbHelper != null) {
-			emoteDbHelper.close();
-			emoteDbHelper = null;
-			emoteDb = null;
-		}
-		super.onDestroyView();
 	}
 
 	enum SendButtonAction {
