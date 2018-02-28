@@ -1,6 +1,7 @@
 package eu.siacs.conversations.ui;
 
 import android.app.ActionBar;
+import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.os.Bundle;
@@ -14,7 +15,7 @@ import eu.siacs.conversations.utils.XmppUri;
 
 public class WelcomeActivity extends XmppActivity {
 
-	public static final String EXTRA_INVITEE = "eu.siacs.conversations.invitee";
+	public static final String EXTRA_INVITE_URI = "eu.siacs.conversations.invite_uri";
 
 	@Override
 	protected void refreshUiReal() {
@@ -58,7 +59,7 @@ public class WelcomeActivity extends XmppActivity {
 		createAccount.setOnClickListener(v -> {
 			final Intent intent = new Intent(WelcomeActivity.this, MagicCreateActivity.class);
 			intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
-			addInvitee(intent);
+			addInviteUri(intent);
 			startActivity(intent);
 		});
 		final Button useOwnProvider = findViewById(R.id.use_own_provider);
@@ -71,26 +72,33 @@ public class WelcomeActivity extends XmppActivity {
 			} else if (accounts.size() >= 1) {
 				intent = new Intent(WelcomeActivity.this, ManageAccountActivity.class);
 			}
-			addInvitee(intent);
+			addInviteUri(intent);
 			startActivity(intent);
 		});
 
 	}
 
-	public void addInvitee(Intent intent) {
-		addInvitee(intent, getIntent());
+	public void addInviteUri(Intent intent) {
+		addInviteUri(intent, getIntent());
 	}
 
-	public static void addInvitee(Intent intent, XmppUri uri) {
+	public static void addInviteUri(Intent intent, XmppUri uri) {
 		if (uri.isJidValid()) {
-			intent.putExtra(EXTRA_INVITEE, uri.getJid().toString());
+			intent.putExtra(EXTRA_INVITE_URI, uri.toString());
 		}
 	}
 
-	public static void addInvitee(Intent to, Intent from) {
-		if (from != null && from.hasExtra(EXTRA_INVITEE)) {
-			to.putExtra(EXTRA_INVITEE, from.getStringExtra(EXTRA_INVITEE));
+	public static void addInviteUri(Intent to, Intent from) {
+		if (from != null && from.hasExtra(EXTRA_INVITE_URI)) {
+			to.putExtra(EXTRA_INVITE_URI, from.getStringExtra(EXTRA_INVITE_URI));
 		}
+	}
+
+	public static void launch(Activity activity) {
+		Intent intent = new Intent(activity, WelcomeActivity.class);
+		intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NO_ANIMATION);
+		activity.startActivity(intent);
+		activity.overridePendingTransition(0,0);
 	}
 
 }

@@ -444,7 +444,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 					return;
 				}
 				status = Message.STATUS_RECEIVED;
-				if (conversation.findMessageWithRemoteId(remoteMsgId,counterpart) != null) {
+				if (remoteMsgId != null && conversation.findMessageWithRemoteId(remoteMsgId,counterpart) != null) {
 					return;
 				}
 			}
@@ -631,7 +631,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			}
 
 			if (query != null && query.getPagingOrder() == MessageArchiveService.PagingOrder.REVERSE) {
-				conversation.prepend(message);
+				conversation.prepend(query.getActualInThisQuery(),message);
 			} else {
 				conversation.add(message);
 			}
@@ -759,6 +759,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							mXmppConnectionService.getAvatarService().clear(conversation);
 							mXmppConnectionService.updateMucRosterUi();
 							mXmppConnectionService.updateConversationUi();
+							Contact contact = user.getContact();
 							if (!user.getAffiliation().ranks(MucOptions.Affiliation.MEMBER)) {
 								Jid jid = user.getRealJid();
 								List<Jid> cryptoTargets = conversation.getAcceptedCryptoTargets();
@@ -767,7 +768,11 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 									conversation.setAcceptedCryptoTargets(cryptoTargets);
 									mXmppConnectionService.updateConversation(conversation);
 								}
-							} else if (isNew && user.getRealJid() != null && account.getAxolotlService().hasEmptyDeviceList(user.getRealJid())) {
+							} else if (isNew
+									&& user.getRealJid() != null
+									&& conversation.getMucOptions().isPrivateAndNonAnonymous()
+									&& (contact == null || !contact.mutualPresenceSubscription())
+									&& account.getAxolotlService().hasEmptyDeviceList(user.getRealJid())) {
 								account.getAxolotlService().fetchDeviceIds(user.getRealJid());
 							}
 						}

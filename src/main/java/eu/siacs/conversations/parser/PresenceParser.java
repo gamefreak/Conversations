@@ -11,6 +11,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.PgpEngine;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.entities.Account;
+import eu.siacs.conversations.entities.Bookmark;
 import eu.siacs.conversations.entities.Contact;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.Message;
@@ -68,17 +69,23 @@ public class PresenceParser extends AbstractParser implements
 					if (item != null && !from.isBareJid()) {
 						mucOptions.setError(MucOptions.Error.NONE);
 						MucOptions.User user = parseItem(conversation, item, from);
-						if (codes.contains(MucOptions.STATUS_CODE_SELF_PRESENCE)
-								|| ((codes.isEmpty() || codes.contains(MucOptions.STATUS_CODE_ROOM_CREATED)) && jid.equals(item.getAttributeAsJid("jid")))) {
+						if (codes.contains(MucOptions.STATUS_CODE_SELF_PRESENCE) || (codes.contains(MucOptions.STATUS_CODE_ROOM_CREATED) && jid.equals(item.getAttributeAsJid("jid")))) {
 							if (mucOptions.setOnline()) {
 								mXmppConnectionService.getAvatarService().clear(mucOptions);
 							}
 							mucOptions.setSelf(user);
+
+							mXmppConnectionService.persistSelfNick(user);
 							invokeRenameListener(mucOptions, true);
 						}
 						boolean isNew = mucOptions.updateUser(user);
 						final AxolotlService axolotlService = conversation.getAccount().getAxolotlService();
-						if (isNew && user.getRealJid() != null && mucOptions.isPrivateAndNonAnonymous() && axolotlService.hasEmptyDeviceList(user.getRealJid())) {
+						Contact contact = user.getContact();
+						if (isNew
+								&& user.getRealJid() != null
+								&& mucOptions.isPrivateAndNonAnonymous()
+								&& (contact == null || !contact.mutualPresenceSubscription())
+								&& axolotlService.hasEmptyDeviceList(user.getRealJid())) {
 							axolotlService.fetchDeviceIds(user.getRealJid());
 						}
 						if (codes.contains(MucOptions.STATUS_CODE_ROOM_CREATED) && mucOptions.autoPushConfiguration()) {

@@ -107,9 +107,9 @@ public class XmppConnection implements Runnable {
 	private XmlReader tagReader;
 	private TagWriter tagWriter = new TagWriter();
 	private final Features features = new Features(this);
-	private boolean needsBinding = true;
 	private boolean shouldAuthenticate = true;
 	private boolean inSmacksSession = false;
+	private boolean isBound = false;
 	private Element streamFeatures;
 	private final HashMap<Jid, ServiceDiscoveryResult> disco = new HashMap<>();
 
@@ -273,11 +273,12 @@ public class XmppConnection implements Runnable {
 		Log.d(Config.LOGTAG, account.getJid().toBareJid().toString() + ": connecting");
 		features.encryptionEnabled = false;
 		inSmacksSession = false;
+		isBound = false;
 		this.attempt++;
 		this.verifiedHostname = null; //will be set if user entered hostname is being used or hostname was verified with dnssec
 		try {
 			Socket localSocket;
-			shouldAuthenticate = needsBinding = !account.isOptionSet(Account.OPTION_REGISTER);
+			shouldAuthenticate = !account.isOptionSet(Account.OPTION_REGISTER);
 			this.changeStatus(Account.State.CONNECTING);
 			final boolean useTor = mXmppConnectionService.useTorToConnect() || account.isOnion();
 			final boolean extended = mXmppConnectionService.showExtendedConnectionOptions();
@@ -602,6 +603,7 @@ public class XmppConnection implements Runnable {
 				tagWriter.writeStanzaAsync(r);
 			} else if (nextTag.isStart("resumed")) {
 				this.inSmacksSession = true;
+				this.isBound = true;
 				this.tagWriter.writeStanzaAsync(new RequestPacket(smVersion));
 				lastPacketReceived = SystemClock.elapsedRealtime();
 				final Element resumed = tagReader.readElement(nextTag);
@@ -875,22 +877,21 @@ public class XmppConnection implements Runnable {
 		}
 	}
 
-	private void processStreamFeatures(final Tag currentTag)
-			throws XmlPullParserException, IOException {
+	private void processStreamFeatures(final Tag currentTag) throws XmlPullParserException, IOException {
 		this.streamFeatures = tagReader.readElement(currentTag);
+		final boolean isSecure = features.encryptionEnabled || Config.ALLOW_NON_TLS_CONNECTIONS;
+		final boolean needsBinding = !isBound && !account.isOptionSet(Account.OPTION_REGISTER);
 		if (this.streamFeatures.hasChild("starttls") && !features.encryptionEnabled) {
 			sendStartTLS();
 		} else if (this.streamFeatures.hasChild("register") && account.isOptionSet(Account.OPTION_REGISTER)) {
-			if (features.encryptionEnabled || Config.ALLOW_NON_TLS_CONNECTIONS) {
+			if (isSecure) {
 				sendRegistryRequest();
 			} else {
 				throw new StateChangingException(Account.State.INCOMPATIBLE_SERVER);
 			}
 		} else if (!this.streamFeatures.hasChild("register") && account.isOptionSet(Account.OPTION_REGISTER)) {
 			throw new StateChangingException(Account.State.REGISTRATION_NOT_SUPPORTED);
-		} else if (this.streamFeatures.hasChild("mechanisms")
-				&& shouldAuthenticate
-				&& (features.encryptionEnabled || Config.ALLOW_NON_TLS_CONNECTIONS)) {
+		} else if (this.streamFeatures.hasChild("mechanisms") && shouldAuthenticate && isSecure) {
 			authenticate();
 		} else if (this.streamFeatures.hasChild("sm", "urn:xmpp:sm:" + smVersion) && streamId != null) {
 			if (Config.EXTENDED_SM_LOGGING) {
@@ -901,7 +902,7 @@ public class XmppConnection implements Runnable {
 			this.mWaitingForSmCatchup.set(true);
 			this.tagWriter.writeStanzaAsync(resume);
 		} else if (needsBinding) {
-			if (this.streamFeatures.hasChild("bind")) {
+			if (this.streamFeatures.hasChild("bind") && isSecure) {
 				sendBindRequest();
 			} else {
 				throw new StateChangingException(Account.State.INCOMPATIBLE_SERVER);
@@ -977,9 +978,9 @@ public class XmppConnection implements Runnable {
 					register.query("jabber:iq:register").addChild(username);
 					register.query().addChild(password);
 					register.setFrom(account.getJid().toBareJid());
-					sendUnmodifiedIqPacket(register, registrationResponseListener);
-				} else if (query.hasChild("x", "jabber:x:data")) {
-					final Data data = Data.parse(query.findChild("x", "jabber:x:data"));
+					sendUnmodifiedIqPacket(register, registrationResponseListener, true);
+				} else if (query.hasChild("x", Namespace.DATA)) {
+					final Data data = Data.parse(query.findChild("x", Namespace.DATA));
 					final Element blob = query.findChild("data", "urn:xmpp:bob");
 					final String id = packet.getId();
 					InputStream is;
@@ -1027,7 +1028,7 @@ public class XmppConnection implements Runnable {
 					throw new StateChangingError(Account.State.REGISTRATION_FAILED);
 				}
 			}
-		});
+		},true);
 	}
 
 	private void setAccountCreationFailed(String url) {
@@ -1067,10 +1068,10 @@ public class XmppConnection implements Runnable {
 			Log.d(Config.LOGTAG,account.getJid().toBareJid()+": interrupted while waiting for DB restore during bind");
 			return;
 		}
-		needsBinding = false;
 		clearIqCallbacks();
 		final IqPacket iq = new IqPacket(IqPacket.TYPE.SET);
-		iq.addChild("bind", Namespace.BIND).addChild("resource").setContent(account.getResource());
+		final String resource = Config.USE_RANDOM_RESOURCE_ON_EVERY_BIND ? nextRandomId() : account.getResource();
+		iq.addChild("bind", Namespace.BIND).addChild("resource").setContent(resource);
 		this.sendUnmodifiedIqPacket(iq, new OnIqPacketReceived() {
 			@Override
 			public void onIqPacketReceived(final Account account, final IqPacket packet) {
@@ -1079,6 +1080,7 @@ public class XmppConnection implements Runnable {
 				}
 				final Element bind = packet.findChild("bind");
 				if (bind != null && packet.getType() == IqPacket.TYPE.RESULT) {
+					isBound = true;
 					final Element jid = bind.findChild("jid");
 					if (jid != null && jid.getContent() != null) {
 						try {
@@ -1116,7 +1118,7 @@ public class XmppConnection implements Runnable {
 				}
 				throw new StateChangingError(Account.State.BIND_FAILURE);
 			}
-		});
+		},true);
 	}
 
 	private void clearIqCallbacks() {
@@ -1156,16 +1158,13 @@ public class XmppConnection implements Runnable {
 		Log.d(Config.LOGTAG, account.getJid().toBareJid() + ": sending legacy session to outdated server");
 		final IqPacket startSession = new IqPacket(IqPacket.TYPE.SET);
 		startSession.addChild("session", "urn:ietf:params:xml:ns:xmpp-session");
-		this.sendUnmodifiedIqPacket(startSession, new OnIqPacketReceived() {
-			@Override
-			public void onIqPacketReceived(Account account, IqPacket packet) {
-				if (packet.getType() == IqPacket.TYPE.RESULT) {
-					sendPostBindInitialization();
-				} else if (packet.getType() != IqPacket.TYPE.TIMEOUT) {
-					throw new StateChangingError(Account.State.SESSION_FAILURE);
-				}
+		this.sendUnmodifiedIqPacket(startSession, (account, packet) -> {
+			if (packet.getType() == IqPacket.TYPE.RESULT) {
+				sendPostBindInitialization();
+			} else if (packet.getType() != IqPacket.TYPE.TIMEOUT) {
+				throw new StateChangingError(Account.State.SESSION_FAILURE);
 			}
-		});
+		},true);
 	}
 
 	private void sendPostBindInitialization() {
@@ -1205,6 +1204,10 @@ public class XmppConnection implements Runnable {
 		if (hash != null && ver != null) {
 			discoveryResult = mXmppConnectionService.getCachedServiceDiscoveryResult(new Pair<>(hash, ver));
 		}
+		final boolean requestDiscoItemsFirst = !account.isOptionSet(Account.OPTION_LOGGED_IN_SUCCESSFULLY);
+		if (requestDiscoItemsFirst) {
+			sendServiceDiscoveryItems(account.getServer());
+		}
 		if (discoveryResult == null) {
 			sendServiceDiscoveryInfo(account.getServer());
 		} else {
@@ -1212,7 +1215,9 @@ public class XmppConnection implements Runnable {
 			disco.put(account.getServer(), discoveryResult);
 		}
 		sendServiceDiscoveryInfo(account.getJid().toBareJid());
-		sendServiceDiscoveryItems(account.getServer());
+		if (!requestDiscoItemsFirst) {
+			sendServiceDiscoveryItems(account.getServer());
+		}
 
 		if (!mWaitForDisco.get()) {
 			finalizeBind();
@@ -1366,15 +1371,15 @@ public class XmppConnection implements Runnable {
 	}
 
 	private String nextRandomId() {
-		return CryptoHelper.random(50, mXmppConnectionService.getRNG());
+		return CryptoHelper.random(10, mXmppConnectionService.getRNG());
 	}
 
 	public String sendIqPacket(final IqPacket packet, final OnIqPacketReceived callback) {
 		packet.setFrom(account.getJid());
-		return this.sendUnmodifiedIqPacket(packet, callback);
+		return this.sendUnmodifiedIqPacket(packet, callback, false);
 	}
 
-	public synchronized String sendUnmodifiedIqPacket(final IqPacket packet, final OnIqPacketReceived callback) {
+	public synchronized String sendUnmodifiedIqPacket(final IqPacket packet, final OnIqPacketReceived callback, boolean force) {
 		if (packet.getId() == null) {
 			packet.setAttribute("id", nextRandomId());
 		}
@@ -1383,7 +1388,7 @@ public class XmppConnection implements Runnable {
 				packetCallbacks.put(packet.getId(), new Pair<>(packet, callback));
 			}
 		}
-		this.sendPacket(packet);
+		this.sendPacket(packet,force);
 		return packet.getId();
 	}
 
@@ -1396,13 +1401,21 @@ public class XmppConnection implements Runnable {
 	}
 
 	private synchronized void sendPacket(final AbstractStanza packet) {
+		sendPacket(packet,false);
+	}
+
+	private synchronized void sendPacket(final AbstractStanza packet, final boolean force) {
 		if (stanzasSent == Integer.MAX_VALUE) {
 			resetStreamId();
 			disconnect(true);
 			return;
 		}
 		synchronized (this.mStanzaQueue) {
-			tagWriter.writeStanzaAsync(packet);
+			if (force || isBound) {
+				tagWriter.writeStanzaAsync(packet);
+			} else {
+				Log.d(Config.LOGTAG,account.getJid().toBareJid()+" do not write stanza to unbound stream "+packet.toString());
+			}
 			if (packet instanceof AbstractAcknowledgeableStanza) {
 				AbstractAcknowledgeableStanza stanza = (AbstractAcknowledgeableStanza) packet;
 
@@ -1415,7 +1428,7 @@ public class XmppConnection implements Runnable {
 
 				++stanzasSent;
 				this.mStanzaQueue.append(stanzasSent, stanza);
-				if (stanza instanceof MessagePacket && stanza.getId() != null && getFeatures().sm()) {
+				if (stanza instanceof MessagePacket && stanza.getId() != null && inSmacksSession) {
 					if (Config.EXTENDED_SM_LOGGING) {
 						Log.d(Config.LOGTAG, account.getJid().toBareJid() + ": requesting ack for message stanza #" + stanzasSent);
 					}

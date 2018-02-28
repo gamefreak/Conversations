@@ -184,7 +184,7 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 							}
 						}
 					} else if (packet.getType() == IqPacket.TYPE.RESULT && fin != null ) {
-						processFin(fin);
+						processFin(query, fin);
 					} else if (packet.getType() == IqPacket.TYPE.RESULT && query.isLegacy()) {
 						//do nothing
 					} else {
@@ -254,18 +254,15 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 	public void processFinLegacy(Element fin, Jid from) {
 		Query query = findQuery(fin.getAttribute("queryid"));
 		if (query != null && query.validFrom(from)) {
-			processFin(fin);
+			processFin(query, fin);
 		}
 	}
 
-	public void processFin(Element fin) {
-		Query query = findQuery(fin.getAttribute("queryid"));
-		if (query == null) {
-			return;
-		}
+	private void processFin(Query query, Element fin) {
 		boolean complete = fin.getAttributeAsBoolean("complete");
 		Element set = fin.findChild("set","http://jabber.org/protocol/rsm");
 		Element last = set == null ? null : set.findChild("last");
+		String count = set == null ? null : set.findChildContent("count");
 		Element first = set == null ? null : set.findChild("first");
 		Element relevant = query.getPagingOrder() == PagingOrder.NORMAL ? last : first;
 		boolean abort = (!query.isCatchup() && query.getTotalCount() >= Config.PAGE_SIZE) || query.getTotalCount() >= Config.MAM_MAX_MESSAGES;
@@ -273,9 +270,24 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 			query.getConversation().setFirstMamReference(first == null ? null : first.getContent());
 		}
 		if (complete || relevant == null || abort) {
-			final boolean done = (complete || query.getActualMessageCount() == 0) && !query.isCatchup();
+			boolean done;
+			if (query.isCatchup()) {
+				done = false;
+			} else {
+				if (count != null) {
+					try {
+						done = Integer.parseInt(count) <= query.getTotalCount();
+					} catch (NumberFormatException e) {
+						done = false;
+					}
+				} else {
+					done = query.getTotalCount() == 0;
+				}
+			}
+			done = done || (query.getActualMessageCount() == 0 && !query.isCatchup());
 			this.finalizeQuery(query, done);
-			Log.d(Config.LOGTAG,query.getAccount().getJid().toBareJid()+": finished mam after "+query.getTotalCount()+"("+query.getActualMessageCount()+") messages. messages left="+Boolean.toString(!done));
+
+			Log.d(Config.LOGTAG,query.getAccount().getJid().toBareJid()+": finished mam after "+query.getTotalCount()+"("+query.getActualMessageCount()+") messages. messages left="+Boolean.toString(!done)+" count="+count);
 			if (query.isCatchup() && query.getActualMessageCount() > 0) {
 				mXmppConnectionService.getNotificationService().finishBacklog(true,query.getAccount());
 			}
@@ -293,6 +305,26 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 				this.queries.add(nextQuery);
 			}
 		}
+	}
+
+	public void kill(Conversation conversation) {
+		synchronized (this.queries) {
+			for (Query q : queries) {
+				if (q.conversation == conversation) {
+					kill(q);
+				}
+			}
+		}
+	}
+
+	private void kill(Query query) {
+		Log.d(Config.LOGTAG,query.getAccount().getJid().toBareJid()+": killing mam query prematurely");
+		query.callback = null;
+		this.finalizeQuery(query,false);
+		if (query.isCatchup() && query.getActualMessageCount() > 0) {
+			mXmppConnectionService.getNotificationService().finishBacklog(true,query.getAccount());
+		}
+		this.processPostponed(query);
 	}
 
 	private void processPostponed(Query query) {
@@ -330,6 +362,7 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 	public class Query {
 		private int totalCount = 0;
 		private int actualCount = 0;
+		private int actualInThisQuery = 0;
 		private long start;
 		private long end;
 		private String queryId;
@@ -453,6 +486,7 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 		}
 
 		public void incrementActualMessageCount() {
+			this.actualInThisQuery++;
 			this.actualCount++;
 		}
 
@@ -462,6 +496,10 @@ public class MessageArchiveService implements OnAdvancedStreamFeaturesLoaded {
 
 		public int getActualMessageCount() {
 			return this.actualCount;
+		}
+
+		public int getActualInThisQuery() {
+			return this.actualInThisQuery;
 		}
 
 		public boolean validFrom(Jid from) {

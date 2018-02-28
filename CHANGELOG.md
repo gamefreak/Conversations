@@ -1,5 +1,14 @@
 # Changelog
 
+### Version 1.23.7
+* Improved MAM support + bug fixes
+
+### Version 1.23.6
+* Fixed crash on receiving invalid HTTP slot response
+
+### Version 1.23.5
+* improved self chat
+
 ### Version 1.23.4
 * keep screen on while playing audio
 * send delivery receipts after MAM catch-up

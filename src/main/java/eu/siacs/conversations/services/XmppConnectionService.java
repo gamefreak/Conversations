@@ -1449,15 +1449,15 @@ public class XmppConnectionService extends Service {
 								}
 								Conversation conversation = find(bookmark);
 								if (conversation != null) {
-									conversation.setBookmark(bookmark);
+									bookmark.setConversation(conversation);
 								} else if (bookmark.autojoin() && bookmark.getJid() != null && autojoin) {
 									conversation = findOrCreateConversation(account, bookmark.getJid(), true, true, false);
-									conversation.setBookmark(bookmark);
+									bookmark.setConversation(conversation);
 								}
 							}
 						}
 					}
-					account.setBookmarks(new ArrayList<>(bookmarks.values()));
+					account.setBookmarks(new CopyOnWriteArrayList<>(bookmarks.values()));
 				} else {
 					Log.d(Config.LOGTAG, account.getJid().toBareJid() + ": could not fetch bookmarks");
 				}
@@ -1819,6 +1819,7 @@ public class XmppConnectionService extends Service {
 		getNotificationService().clear(conversation);
 		conversation.setStatus(Conversation.STATUS_ARCHIVED);
 		synchronized (this.conversations) {
+			getMessageArchiveService().kill(conversation);
 			if (conversation.getMode() == Conversation.MODE_MULTI) {
 				if (conversation.getAccount().getStatus() == Account.State.ONLINE) {
 					Bookmark bookmark = conversation.getBookmark();
@@ -1859,37 +1860,39 @@ public class XmppConnectionService extends Service {
 	}
 
 	public void createAccountFromKey(final String alias, final OnAccountCreated callback) {
-		new Thread(new Runnable() {
-			@Override
-			public void run() {
-				try {
-					X509Certificate[] chain = KeyChain.getCertificateChain(XmppConnectionService.this, alias);
-					Pair<Jid, String> info = CryptoHelper.extractJidAndName(chain[0]);
-					if (info == null) {
-						callback.informUser(R.string.certificate_does_not_contain_jid);
-						return;
-					}
-					if (findAccountByJid(info.first) == null) {
-						Account account = new Account(info.first, "");
-						account.setPrivateKeyAlias(alias);
-						account.setOption(Account.OPTION_DISABLED, true);
-						account.setDisplayName(info.second);
-						createAccount(account);
-						callback.onAccountCreated(account);
-						if (Config.X509_VERIFICATION) {
-							try {
-								getMemorizingTrustManager().getNonInteractive(account.getJid().getDomainpart()).checkClientTrusted(chain, "RSA");
-							} catch (CertificateException e) {
-								callback.informUser(R.string.certificate_chain_is_not_trusted);
-							}
-						}
-					} else {
-						callback.informUser(R.string.account_already_exists);
-					}
-				} catch (Exception e) {
-					e.printStackTrace();
+		new Thread(() -> {
+			try {
+				final X509Certificate[] chain = KeyChain.getCertificateChain(this, alias);
+				final X509Certificate cert = chain != null && chain.length > 0 ? chain[0] : null;
+				if (cert == null) {
 					callback.informUser(R.string.unable_to_parse_certificate);
+					return;
 				}
+				Pair<Jid, String> info = CryptoHelper.extractJidAndName(cert);
+				if (info == null) {
+					callback.informUser(R.string.certificate_does_not_contain_jid);
+					return;
+				}
+				if (findAccountByJid(info.first) == null) {
+					Account account = new Account(info.first, "");
+					account.setPrivateKeyAlias(alias);
+					account.setOption(Account.OPTION_DISABLED, true);
+					account.setDisplayName(info.second);
+					createAccount(account);
+					callback.onAccountCreated(account);
+					if (Config.X509_VERIFICATION) {
+						try {
+							getMemorizingTrustManager().getNonInteractive(account.getJid().getDomainpart()).checkClientTrusted(chain, "RSA");
+						} catch (CertificateException e) {
+							callback.informUser(R.string.certificate_chain_is_not_trusted);
+						}
+					}
+				} else {
+					callback.informUser(R.string.account_already_exists);
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
+				callback.informUser(R.string.unable_to_parse_certificate);
 			}
 		}).start();
 
@@ -1901,6 +1904,10 @@ public class XmppConnectionService extends Service {
 			X509Certificate[] chain = KeyChain.getCertificateChain(XmppConnectionService.this, alias);
 			Log.d(Config.LOGTAG, account.getJid().toBareJid() + " loaded certificate chain");
 			Pair<Jid, String> info = CryptoHelper.extractJidAndName(chain[0]);
+			if (info == null) {
+				showErrorToastInUi(R.string.certificate_does_not_contain_jid);
+				return;
+			}
 			if (account.getJid().toBareJid().equals(info.first)) {
 				account.setPrivateKeyAlias(alias);
 				account.setDisplayName(info.second);
@@ -1967,19 +1974,11 @@ public class XmppConnectionService extends Service {
 				}
 			}
 			if (account.getXmppConnection() != null) {
-				new Thread(new Runnable() {
-					@Override
-					public void run() {
-						disconnect(account, true);
-					}
-				}).start();
+				new Thread(() -> disconnect(account, true)).start();
 			}
-			Runnable runnable = new Runnable() {
-				@Override
-				public void run() {
-					if (!databaseBackend.deleteAccount(account)) {
-						Log.d(Config.LOGTAG, account.getJid().toBareJid() + ": unable to delete account");
-					}
+			final Runnable runnable = () -> {
+				if (!databaseBackend.deleteAccount(account)) {
+					Log.d(Config.LOGTAG, account.getJid().toBareJid() + ": unable to delete account");
 				}
 			};
 			mDatabaseWriterExecutor.execute(runnable);
@@ -2367,7 +2366,11 @@ public class XmppConnectionService extends Service {
 							MucOptions.User user = AbstractParser.parseItem(conversation, child);
 							if (!user.realJidMatchesAccount()) {
 								boolean isNew = conversation.getMucOptions().updateUser(user);
-								if (isNew && user.getRealJid() != null && axolotlService.hasEmptyDeviceList(user.getRealJid())) {
+								Contact contact = user.getContact();
+								if (isNew
+										&& user.getRealJid() != null
+										&& (contact == null || !contact.mutualPresenceSubscription())
+										&& axolotlService.hasEmptyDeviceList(user.getRealJid())) {
 									axolotlService.fetchDeviceIds(user.getRealJid());
 								}
 							}
@@ -2432,6 +2435,22 @@ public class XmppConnectionService extends Service {
 		return false;
 	}
 
+	public void persistSelfNick(MucOptions.User self) {
+		final Conversation conversation = self.getConversation();
+		Jid full = self.getFullJid();
+		if (!full.equals(conversation.getJid())) {
+			Log.d(Config.LOGTAG,"nick changed. updating");
+			conversation.setContactJid(full);
+			databaseBackend.updateConversation(conversation);
+		}
+
+		Bookmark bookmark = conversation.getBookmark();
+		if (bookmark != null && !full.getResourcepart().equals(bookmark.getNick())) {
+			bookmark.setNick(full.getResourcepart());
+			pushBookmarks(bookmark.getAccount());
+		}
+	}
+
 	public boolean renameInMuc(final Conversation conversation, final String nick, final UiCallback<Conversation> callback) {
 		final MucOptions options = conversation.getMucOptions();
 		final Jid joinJid = options.createJoinJid(nick);
@@ -2444,13 +2463,6 @@ public class XmppConnectionService extends Service {
 
 				@Override
 				public void onSuccess() {
-					conversation.setContactJid(joinJid);
-					databaseBackend.updateConversation(conversation);
-					Bookmark bookmark = conversation.getBookmark();
-					if (bookmark != null) {
-						bookmark.setNick(nick);
-						pushBookmarks(bookmark.getAccount());
-					}
 					callback.success(conversation);
 				}
 
@@ -2496,7 +2508,10 @@ public class XmppConnectionService extends Service {
 		if (account.getStatus() == Account.State.ONLINE || now) {
 			sendPresencePacket(conversation.getAccount(), mPresenceGenerator.leave(conversation.getMucOptions()));
 			conversation.getMucOptions().setOffline();
-			conversation.deregisterWithBookmark();
+			Bookmark bookmark = conversation.getBookmark();
+			if (bookmark != null) {
+				bookmark.setConversation(null);
+			}
 			Log.d(Config.LOGTAG, conversation.getAccount().getJid().toBareJid() + ": leaving muc " + conversation.getJid());
 		} else {
 			account.pendingConferenceLeaves.add(conversation);
@@ -2606,7 +2621,7 @@ public class XmppConnectionService extends Service {
 							}
 						}
 					}
-					Element form = query.findChild("x", "jabber:x:data");
+					Element form = query.findChild("x", Namespace.DATA);
 					if (form != null) {
 						conversation.getMucOptions().updateFormData(Data.parse(form));
 					}
@@ -2636,7 +2651,7 @@ public class XmppConnectionService extends Service {
 				if (packet.getType() == IqPacket.TYPE.RESULT) {
 					Element pubsub = packet.findChild("pubsub", "http://jabber.org/protocol/pubsub#owner");
 					Element configuration = pubsub == null ? null : pubsub.findChild("configure");
-					Element x = configuration == null ? null : configuration.findChild("x", "jabber:x:data");
+					Element x = configuration == null ? null : configuration.findChild("x", Namespace.DATA);
 					if (x != null) {
 						Data data = Data.parse(x);
 						data.submit(options);
@@ -2668,7 +2683,7 @@ public class XmppConnectionService extends Service {
 			@Override
 			public void onIqPacketReceived(Account account, IqPacket packet) {
 				if (packet.getType() == IqPacket.TYPE.RESULT) {
-					Data data = Data.parse(packet.query().findChild("x", "jabber:x:data"));
+					Data data = Data.parse(packet.query().findChild("x", Namespace.DATA));
 					data.submit(options);
 					IqPacket set = new IqPacket(IqPacket.TYPE.SET);
 					set.setTo(conversation.getJid().toBareJid());
@@ -3598,7 +3613,7 @@ public class XmppConnectionService extends Service {
 		final XmppConnection connection = account.getXmppConnection();
 		if (connection != null) {
 			IqPacket request = mIqGenerator.generateCreateAccountWithCaptcha(account, id, data);
-			connection.sendUnmodifiedIqPacket(request, connection.registrationResponseListener);
+			connection.sendUnmodifiedIqPacket(request, connection.registrationResponseListener,true);
 		}
 	}
 
@@ -3980,7 +3995,7 @@ public class XmppConnectionService extends Service {
 		bookmark.setAutojoin(getPreferences().getBoolean("autojoin", getResources().getBoolean(R.bool.autojoin)));
 		account.getBookmarks().add(bookmark);
 		pushBookmarks(account);
-		conversation.setBookmark(bookmark);
+		bookmark.setConversation(conversation);
 	}
 
 	public boolean verifyFingerprints(Contact contact, List<XmppUri.Fingerprint> fingerprints) {
