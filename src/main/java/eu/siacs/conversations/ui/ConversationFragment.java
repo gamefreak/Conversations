@@ -1407,13 +1407,15 @@ public class ConversationFragment extends Fragment implements EditMessage.Keyboa
 		this.mSendButton.setImageResource(getSendButtonImageResource(action, status));
 
 
-		updateEmoteButtonColor();
+		updateEmoteButton();
 	}
 
-	private void updateEmoteButtonColor() {
+	private void updateEmoteButton() {
 		XmppActivity activity = (XmppActivity) getActivity();
 		int color = ContextCompat.getColor(getActivity(), activity.isDarkTheme() ? R.color.emote_button_tint_dark : R.color.emote_button_tint_light);
 		viewEmotesButton.setColorFilter(color);
+		EmoticonService emoticonService = activity.emoticonService();
+		viewEmotesButton.setVisibility(emoticonService != null && emoticonService.hasPack() ? View.VISIBLE : View.INVISIBLE);
 	}
 
 	protected void updateDateSeparators() {

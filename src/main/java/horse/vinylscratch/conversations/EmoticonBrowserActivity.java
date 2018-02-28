@@ -92,6 +92,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 		private List<Emote> getSortedEmotes() {
 			if (this.emoticonService == null) return new ArrayList<>();
+			if (!this.emoticonService.hasPack()) return new ArrayList<>();
 			if (this.mode == SortMode.ALL) {
 				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
 				Collections.sort(theEmotes, new Comparator<Emote>() {
@@ -116,7 +117,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		}
 
 		private void applyFilter() {
-			if (this.emoticonService == null) {
+			if (this.emoticonService == null || !this.emoticonService.hasPack()) {
 				this.emotes.clear();
 			} else if (this.searchFilter == null || this.searchFilter.trim().isEmpty()) {
 				this.emotes.clear();
