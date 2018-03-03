@@ -2,6 +2,9 @@ package eu.siacs.conversations.ui;
 
 import android.app.AlertDialog;
 import android.app.FragmentManager;
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -17,6 +20,7 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceManager;
 import android.preference.PreferenceScreen;
 import android.provider.MediaStore;
+import android.text.format.Formatter;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -81,6 +85,63 @@ public class SettingsActivity extends XmppActivity implements
 
 	}
 
+	class LocalDownloadPackTask extends DownloadPackTask {
+		static final int NOTIFICATION_ID = 0x8be86803;
+		private NotificationManager notificationManager = null;
+		private Notification.Builder builder = null;
+
+		private Context context;
+		private final File packFile;
+		private ListPreference activeEmotePackPreference;
+		LocalDownloadPackTask(Context context, File packFile, ListPreference activeEmotePackPreference) {
+			this.context = context;
+			this.packFile = packFile;
+			this.activeEmotePackPreference = activeEmotePackPreference;
+		}
+
+
+		@Override
+		protected void onPreExecute() {
+			super.onPreExecute();
+			notificationManager = (NotificationManager) SettingsActivity.this.getSystemService(Context.NOTIFICATION_SERVICE);
+			builder = new Notification.Builder(SettingsActivity.this);
+			builder.setContentTitle("Downloading ponymotes...")
+					.setSmallIcon(R.drawable.ic_action_download);
+
+			notificationManager.notify(NOTIFICATION_ID, builder.getNotification());
+			if (packFile.exists()) {
+				Log.i("preferences", "deleting existing emote pack");
+				packFile.delete();
+			}
+		}
+
+		// downloaded, total
+		@Override
+		protected void onProgressUpdate(Integer... values) {
+			super.onProgressUpdate(values);
+			builder.setProgress(values[1], values[0], false)
+			.setContentText(String.format("%s of %s downloaded",
+					Formatter.formatFileSize(context, values[0]),
+					Formatter.formatFileSize(context, values[1])));
+			notificationManager.notify(NOTIFICATION_ID, builder.getNotification());
+		}
+
+		@Override
+		protected void onPostExecute(Boolean success) {
+			super.onPostExecute(success);
+			if (success) {
+				activeEmotePackPreference.setValue(packFile.getAbsolutePath());
+				notificationManager.cancel(NOTIFICATION_ID);
+			} else {
+				notificationManager.notify(NOTIFICATION_ID, new Notification.Builder(context)
+						.setSmallIcon(android.R.drawable.stat_notify_error)
+						.setContentTitle("Emote pack download failed")
+						.getNotification());
+			}
+		}
+	}
+
+
 	@Override
 	public void onStart() {
 		super.onStart();
@@ -135,24 +196,9 @@ public class SettingsActivity extends XmppActivity implements
 
 					final File packFile = new File(dir, DownloadPackTask.PONYPACK_FILENAME);
 					activeEmotePackPreference.setValue(null);
-					new DownloadPackTask() {
-						@Override
-						protected void onPreExecute() {
-							super.onPreExecute();
-							if (packFile.exists()) {
-								Log.i("preferences", "deleting existing emote pack");
-								packFile.delete();
-							}
-						}
 
-						@Override
-						protected void onPostExecute(Boolean success) {
-							super.onPostExecute(success);
-							if (success) {
-								activeEmotePackPreference.setValue(packFile.getAbsolutePath());
-							}
-						}
-					}.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, packFile.getAbsolutePath());
+					DownloadPackTask downloadPackTask=  new LocalDownloadPackTask(SettingsActivity.this, packFile, activeEmotePackPreference);
+					downloadPackTask.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, packFile.getAbsolutePath());
 					return false;
 				}
 			});

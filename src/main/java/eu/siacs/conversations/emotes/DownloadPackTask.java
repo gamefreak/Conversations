@@ -15,7 +15,7 @@ import javax.net.ssl.HttpsURLConnection;
 
 import eu.siacs.conversations.Config;
 
-public class DownloadPackTask extends AsyncTask<String, Void, Boolean> {
+public class DownloadPackTask extends AsyncTask<String, Integer, Boolean> {
 	public static final String PONYPACK_DOWNLOAD_URL = "https://emotes.cardboardbox.be/output/Ponypack-conversations.zip";
 	public static final String PONYPACK_FILENAME = "ponypack.zip";
 
@@ -41,7 +41,8 @@ public class DownloadPackTask extends AsyncTask<String, Void, Boolean> {
 					reads++;
 					if (bytesRead <= 0) break;
 					if (reads % 256 == 0) {
-						Log.v("emote downloader", String.format("emote downloader: %,d bytes recieved", totalBytesReceved));
+						Log.v("emote downloader", String.format("emote downloader: %,d bytes received", totalBytesReceved));
+						this.publishProgress(totalBytesReceved, con.getContentLength());
 					}
 					outStream.write(buffer, 0, bytesRead);
 				} while (true);
