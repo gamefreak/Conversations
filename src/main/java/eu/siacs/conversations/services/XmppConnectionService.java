@@ -985,6 +985,7 @@ public class XmppConnectionService extends Service {
 		ExceptionHelper.init(getApplicationContext());
 		PRNGFixes.apply();
 
+		startService(new Intent(this, EmoticonService.class));
 		bindService(new Intent(this, EmoticonService.class), new ServiceConnection() {
 			@Override
 			public void onServiceConnected(ComponentName componentName, IBinder iBinder) {

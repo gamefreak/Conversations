@@ -206,6 +206,20 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	private EmoteDbHelper dbHelper = null;
 
 
+	private ServiceConnection emoteServiceConnection = new ServiceConnection() {
+		@Override
+		public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
+			emoticonService = ((EmoticonService.Binder) iBinder).getService();
+
+			emoteAdapter.setEmoticonService(emoticonService);
+		}
+
+		@Override
+		public void onServiceDisconnected(ComponentName componentName) {
+			emoticonService = null;
+			emoteAdapter.setEmoticonService(null);
+		}
+	};;
 	private EmoticonService emoticonService = null;
 	private EmoteAdapter emoteAdapter = null;
 
@@ -270,27 +284,13 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				return true;
 			}
 		});
-
-
-		bindService(new Intent(this, EmoticonService.class), new ServiceConnection() {
-			@Override
-			public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-				emoticonService = ((EmoticonService.Binder) iBinder).getService();
-
-				emoteAdapter.setEmoticonService(emoticonService);
-			}
-
-			@Override
-			public void onServiceDisconnected(ComponentName componentName) {
-				emoticonService = null;
-				emoteAdapter.setEmoticonService(null);
-			}
-		}, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
 	public void onStart() {
 		super.onStart();
+		startService(new Intent(this, EmoticonService.class));
+		bindService(new Intent(this, EmoticonService.class), emoteServiceConnection, Context.BIND_AUTO_CREATE);
 		SortMode mode = SortMode.valueOf(getPreferences().getString(PREF_SORT_MODE, SortMode.ALL.name()));
 		modeSpinner.setSelection(mode.ordinal());
 	}
@@ -298,6 +298,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	@Override
 	public void onStop() {
 		super.onStop();
+		unbindService(emoteServiceConnection);
 		SharedPreferences.Editor editor = getPreferences().edit();
 		editor.putString(PREF_SORT_MODE, emoteAdapter.getMode().name());
 		editor.apply();
@@ -314,6 +315,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
+		if (emoteAdapter != null) emoteAdapter.setEmoticonService(null);
 		if (dbHelper != null) dbHelper.close();
 	}
 
