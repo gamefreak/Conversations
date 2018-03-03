@@ -344,6 +344,9 @@
             android:summary="@string/pref_never_send_crash_summary"
             android:title="@string/pref_never_send_crash"/>
     </PreferenceCategory>
+    <Preference android:key="check_for_updates"
+                android:title="Check for Updates"
+                android:summary="Manually check GitHub for updates." />
     <eu.siacs.conversations.ui.AboutPreference
         android:summary="@string/pref_about_conversations_summary"
         android:title="@string/title_activity_about"/>

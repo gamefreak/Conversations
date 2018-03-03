@@ -41,6 +41,7 @@ import eu.siacs.conversations.services.ExportLogsService;
 import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.jid.InvalidJidException;
 import eu.siacs.conversations.xmpp.jid.Jid;
+import horse.vinylscratch.conversations.VersionCheckTask;
 
 public class SettingsActivity extends XmppActivity implements
 		OnSharedPreferenceChangeListener {
@@ -322,6 +323,13 @@ public class SettingsActivity extends XmppActivity implements
 				deleteOmemoIdentities();
 				return true;
 			}
+		});
+
+		final Preference checkForUpdatesPreference = mSettingsFragment.findPreference("check_for_updates");
+		checkForUpdatesPreference.setOnPreferenceClickListener(preference -> {
+			VersionCheckTask task = new VersionCheckTask(this);
+			task.execute();
+			return true;
 		});
 	}
 
