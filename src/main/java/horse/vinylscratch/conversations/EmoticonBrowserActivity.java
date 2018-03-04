@@ -14,8 +14,10 @@ import android.os.IBinder;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Log;
+import android.view.Menu;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.PopupMenu;
 import android.widget.SearchView;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -246,6 +248,25 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				emoteClicked(emote);
 			}
 		});
+		grid.setOnItemLongClickListener((parent, view, position, id) -> {
+			EmoticonBrowserActivity activity = EmoticonBrowserActivity.this;
+			Emote emote = (Emote) parent.getAdapter().getItem(position);
+			if (emote.getAliases().size() < 2) {
+				return false;
+			}
+			PopupMenu popupMenu = new PopupMenu(activity, view);
+			popupMenu.setOnMenuItemClickListener(item -> {
+				EmoticonBrowserActivity.this.emoteClicked((String)item.getTitle());
+				return true;
+			});
+			Menu menu = popupMenu.getMenu();
+			for (String alias : emote.getAliases()) {
+				menu.add(alias);
+			}
+			popupMenu.show();
+
+			return true;
+		});
 
 		ActionBar actionBar = getActionBar();
 		actionBar.setCustomView(R.layout.emoticon_browser_toolbar);
@@ -305,9 +326,13 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	}
 
 	private void emoteClicked(Emote emote) {
-		Log.i(TAG, "emote clicked: " + emote.getImageName());
+		emoteClicked(emote.getAliases().get(0));
+	}
+
+	private void emoteClicked(String emote) {
+		Log.i(TAG, "emote clicked: " + emote);
 		Intent response = new Intent();
-		response.putExtra("emote", emote.getAliases().get(0));
+		response.putExtra("emote", emote);
 		setResult(RESULT_OK, response);
 		finish();
 	}
