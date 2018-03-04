@@ -98,11 +98,10 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 				.setContentTitle("Conversations update available")
 				.setContentText(String.format("Version %s available for download.", version))
 				.setContentIntent(pi)
-				.setColor(tv.data)
 				.setOngoing(false)
 				.setAutoCancel(true);
 
-		notificationManager.notify(7, builder.build());
+		notificationManager.notify(7, builder.getNotification());
 	}
 
 	public static int compareVersions(String v1s, String v2s) {
