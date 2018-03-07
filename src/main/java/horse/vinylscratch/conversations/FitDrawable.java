@@ -32,7 +32,7 @@ public class FitDrawable extends Drawable {
 		matrix.setRectToRect(src, dst, Matrix.ScaleToFit.CENTER);
 
 		canvas.save();
-		canvas.setMatrix(matrix);
+		canvas.concat(matrix);
 		image.draw(canvas);
 		canvas.restore();
 	}
