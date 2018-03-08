@@ -9,6 +9,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.drawable.Drawable;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -28,6 +29,7 @@ import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -166,15 +168,21 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		@NonNull
 		@Override
 		public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
+			LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+			View emoteView = convertView != null ? convertView : inflater.inflate(R.layout.emote_preview, parent, false);
+			ImageView imageView = emoteView.findViewById(R.id.image);
+
 			Emote emoticon = getEmote(position);
-			Drawable image = emoticonService.getEmote(emoticon.getAliases().get(0));
+			Drawable image = emoticonService.tryGetEmote(emoticon.getAliases().get(0));
+			if (image == null) {
+				AsyncTask<Void, Void, Drawable> task = new AsyncEmoteLoader(imageView, emoticon.getAliases().get(0), emoticonService);
+				task.executeOnExecutor(emoticonService().getExecutor());
+
+				image = emoticonService.makePlaceholder(emoticon);
+			}
 
 			image = new FitDrawable(image);
 
-
-			LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			View emoteView = convertView != null ? convertView : inflater.inflate(R.layout.emote_preview, parent, false);
-			ImageView imageView = (ImageView) emoteView.findViewById(R.id.image);
 			TextView textView = (TextView) emoteView.findViewById(R.id.label);
 			imageView.setImageDrawable(image);
 			textView.setText(emoticon.getAliases().get(0));
@@ -351,5 +359,38 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	protected void onBackendConnected() {
 
+	}
+}
+
+
+class AsyncEmoteLoader extends AsyncTask<Void, Void, Drawable> {
+	private WeakReference<ImageView> view;
+	private WeakReference<EmoticonService> emoticonService;
+	private String emoteName;
+
+	AsyncEmoteLoader(ImageView view, String emoteName, EmoticonService emoticonService) {
+		this.view = new WeakReference<>(view);
+		this.emoteName = emoteName;
+		this.emoticonService = new WeakReference<>(emoticonService);
+	}
+
+	@Override
+	protected Drawable doInBackground(Void... voids) {
+		EmoticonService service = emoticonService.get();
+		if (service != null) {
+			return service.getEmote(emoteName);
+		} else {
+			return null;
+		}
+	}
+
+	@Override
+	protected void onPostExecute(Drawable drawable) {
+		super.onPostExecute(drawable);
+		if (drawable == null) return;
+		ImageView v = this.view.get();
+		if (v != null) {
+			v.setImageDrawable(new FitDrawable(drawable));
+		}
 	}
 }
