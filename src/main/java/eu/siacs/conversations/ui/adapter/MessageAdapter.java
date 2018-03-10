@@ -55,6 +55,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
 import eu.siacs.conversations.emotes.Emote;
+import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.DownloadableFile;
@@ -81,6 +82,7 @@ import eu.siacs.conversations.utils.StylingHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.mam.MamReference;
+import horse.vinylscratch.conversations.AsyncEmoteLoaderBase;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
 
@@ -461,7 +463,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			}
 		}
 		if (!neededEmotes.isEmpty()) {
-			EmoteLoaderTask  task = new EmoteLoaderTask(this);
+			EmoteLoaderTask  task = new EmoteLoaderTask(activity.emoticonService(), this);
 			task.executeOnExecutor(activity.emoticonService().getExecutor(), neededEmotes.toArray(new String[0]));
 		}
 		return true;
@@ -1085,20 +1087,12 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		public RelativeLayout audioPlayer;
 	}
 
-	class EmoteLoaderTask extends AsyncTask<String, Void, Drawable[]> {
+	class EmoteLoaderTask extends AsyncEmoteLoaderBase {
 		private final WeakReference<ArrayAdapter<?>> targetAdapter;
 
-		EmoteLoaderTask(ArrayAdapter<?> targetAdapter) {
-			this.targetAdapter = new WeakReference<ArrayAdapter<?>>(targetAdapter);
-		}
-
-		@Override
-		protected Drawable[] doInBackground(String... emotes) {
-			Drawable[] drawables = new Drawable[emotes.length];
-			for (int i = 0; i < emotes.length; i++) {
-				drawables[i] = activity.emoticonService().getEmote(emotes[i]);
-			}
-			return drawables;
+		EmoteLoaderTask(EmoticonService emoticonService, ArrayAdapter<?> targetAdapter) {
+			super(emoticonService);
+			this.targetAdapter = new WeakReference<>(targetAdapter);
 		}
 
 		@Override

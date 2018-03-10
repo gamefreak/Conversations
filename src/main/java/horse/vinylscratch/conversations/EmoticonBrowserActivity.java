@@ -175,8 +175,8 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			Emote emoticon = getEmote(position);
 			Drawable image = emoticonService.tryGetEmote(emoticon.getAliases().get(0));
 			if (image == null) {
-				AsyncTask<Void, Void, Drawable> task = new AsyncEmoteLoader(imageView, emoticon.getAliases().get(0), emoticonService);
-				task.executeOnExecutor(emoticonService().getExecutor());
+				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, imageView);
+				task.executeOnExecutor(emoticonService().getExecutor(),  emoticon.getAliases().get(0));
 
 				image = emoticonService.makePlaceholder(emoticon);
 			}
@@ -362,35 +362,21 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	}
 }
 
-
-class AsyncEmoteLoader extends AsyncTask<Void, Void, Drawable> {
+class AsyncEmoteLoader extends AsyncEmoteLoaderBase {
 	private WeakReference<ImageView> view;
-	private WeakReference<EmoticonService> emoticonService;
-	private String emoteName;
 
-	AsyncEmoteLoader(ImageView view, String emoteName, EmoticonService emoticonService) {
+	AsyncEmoteLoader(EmoticonService emoticonService, ImageView view) {
+		super(emoticonService);
 		this.view = new WeakReference<>(view);
-		this.emoteName = emoteName;
-		this.emoticonService = new WeakReference<>(emoticonService);
 	}
 
 	@Override
-	protected Drawable doInBackground(Void... voids) {
-		EmoticonService service = emoticonService.get();
-		if (service != null) {
-			return service.getEmote(emoteName);
-		} else {
-			return null;
-		}
-	}
-
-	@Override
-	protected void onPostExecute(Drawable drawable) {
+	protected void onPostExecute(Drawable[] drawable) {
 		super.onPostExecute(drawable);
-		if (drawable == null) return;
+		if (drawable == null || drawable[0] == null) return;
 		ImageView v = this.view.get();
 		if (v != null) {
-			v.setImageDrawable(new FitDrawable(drawable));
+			v.setImageDrawable(new FitDrawable(drawable[0]));
 		}
 	}
 }
