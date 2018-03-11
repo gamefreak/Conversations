@@ -29,6 +29,10 @@ public class Emote {
 		return this.height;
 	}
 
+	public String getFirstAlias() {
+		return this.aliases.isEmpty() ? this.getImageName() : this.aliases.get(0);
+	}
+
 	public List<String> getAliases() {
 		return this.aliases;
 	}

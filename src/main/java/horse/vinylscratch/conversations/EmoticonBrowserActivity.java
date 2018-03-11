@@ -102,7 +102,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				Collections.sort(theEmotes, new Comparator<Emote>() {
 					@Override
 					public int compare(Emote left, Emote right) {
-						return left.getAliases().get(0).compareTo(right.getAliases().get(0));
+						return left.getFirstAlias().compareTo(right.getFirstAlias());
 					}
 				});
 				return theEmotes;

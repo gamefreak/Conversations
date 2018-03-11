@@ -10,12 +10,12 @@
               android:paddingBottom="@dimen/emote_list_item_spacing_half">
     <ImageView
         android:id="@+id/image"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:minWidth="64dip" android:maxWidth="127dip"
-        android:minHeight="64dip" android:maxHeight="128dip"
-        android:scaleType="matrix"
-        android:adjustViewBounds="false"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:minHeight="64dip"
+        android:minWidth="64dip"
+        android:scaleType="fitCenter"
+        android:adjustViewBounds="true"
     />
     <TextView
         android:id="@+id/label"
