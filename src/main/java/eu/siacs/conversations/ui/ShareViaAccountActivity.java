@@ -1,13 +1,11 @@
 package eu.siacs.conversations.ui;
 
-import android.app.ActionBar;
-import android.content.Intent;
 import android.os.Bundle;
+import android.support.v7.app.ActionBar;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -16,8 +14,7 @@ import eu.siacs.conversations.R;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.ui.adapter.AccountAdapter;
-import eu.siacs.conversations.xmpp.jid.InvalidJidException;
-import eu.siacs.conversations.xmpp.jid.Jid;
+import rocks.xmpp.addr.Jid;
 
 public class ShareViaAccountActivity extends XmppActivity {
 	public static final String EXTRA_CONTACT = "contact";
@@ -33,7 +30,7 @@ public class ShareViaAccountActivity extends XmppActivity {
 			accountList.clear();
 			accountList.addAll(xmppConnectionService.getAccounts());
 		}
-		ActionBar actionBar = getActionBar();
+		ActionBar actionBar = getSupportActionBar();
 		if (actionBar != null) {
 			actionBar.setHomeButtonEnabled(this.accountList.size() > 0);
 			actionBar.setDisplayHomeAsUpEnabled(this.accountList.size() > 0);
@@ -45,8 +42,9 @@ public class ShareViaAccountActivity extends XmppActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.manage_accounts);
-
+		setContentView(R.layout.activity_manage_accounts);
+		setSupportActionBar(findViewById(R.id.toolbar));
+		configureActionBar(getSupportActionBar());
 		accountListView = (ListView) findViewById(R.id.account_list);
 		this.mAccountAdapter = new AccountAdapter(this, accountList, false);
 		accountListView.setAdapter(this.mAccountAdapter);
@@ -59,11 +57,11 @@ public class ShareViaAccountActivity extends XmppActivity {
 				final String body = getIntent().getStringExtra(EXTRA_BODY);
 
 				try {
-					final Jid contact = Jid.fromString(getIntent().getStringExtra(EXTRA_CONTACT));
+					final Jid contact = Jid.of(getIntent().getStringExtra(EXTRA_CONTACT));
 					final Conversation conversation = xmppConnectionService.findOrCreateConversation(
 							account, contact, false, false);
 					switchToConversation(conversation, body, false);
-				} catch (InvalidJidException e) {
+				} catch (IllegalArgumentException e) {
 					// ignore error
 				}
 
@@ -90,11 +88,11 @@ public class ShareViaAccountActivity extends XmppActivity {
 			final Account account = xmppConnectionService.getAccounts().get(0);
 
 			try {
-				final Jid contact = Jid.fromString(getIntent().getStringExtra(EXTRA_CONTACT));
+				final Jid contact = Jid.of(getIntent().getStringExtra(EXTRA_CONTACT));
 				final Conversation conversation = xmppConnectionService.findOrCreateConversation(
 						account, contact, false, false);
 				switchToConversation(conversation, body, false);
-			} catch (InvalidJidException e) {
+			} catch (IllegalArgumentException e) {
 				// ignore error
 			}
 

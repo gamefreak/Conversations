@@ -1,5 +1,18 @@
 # Changelog
 
+### Version 2.0.0
+* OMEMO by default for everything but public group chats
+* Integrate QR code scanner (requires camera permission)
+* Removed support for OTR
+* Removed support for customizable resources
+* Removed slide out panel for conversation overview
+* Add ability to change status message
+* Highlight irregular unicode code blocks in Jabber IDs
+* Conversations now requires Android 4.4+
+
+### Version 1.23.8
+* bug fixes
+
 ### Version 1.23.7
 * Improved MAM support + bug fixes
 

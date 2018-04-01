@@ -18,9 +18,8 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Element;
-import eu.siacs.conversations.xmpp.jid.InvalidJidException;
-import eu.siacs.conversations.xmpp.jid.Jid;
 import eu.siacs.conversations.xmpp.pep.Avatar;
+import rocks.xmpp.addr.Jid;
 
 public class Contact implements ListItem, Blockable {
 	public static final String TABLENAME = "contacts";
@@ -93,8 +92,8 @@ public class Contact implements ListItem, Blockable {
 	public static Contact fromCursor(final Cursor cursor) {
 		final Jid jid;
 		try {
-			jid = Jid.fromString(cursor.getString(cursor.getColumnIndex(JID)), true);
-		} catch (final InvalidJidException e) {
+			jid = Jid.of(cursor.getString(cursor.getColumnIndex(JID)));
+		} catch (final IllegalArgumentException e) {
 			// TODO: Borked DB... handle this somehow?
 			return null;
 		}
@@ -134,19 +133,10 @@ public class Contact implements ListItem, Blockable {
 			return this.serverName;
 		} else if (this.presenceName != null && !this.presenceName.isEmpty() && mutualPresenceSubscription() ) {
 			return this.presenceName;
-		} else if (jid.hasLocalpart()) {
+		} else if (jid.getLocal() != null) {
 			return JidHelper.localPartOrFallback(jid);
 		} else {
-			return jid.getDomainpart();
-		}
-	}
-
-	@Override
-	public String getDisplayJid() {
-		if (jid != null) {
-			return jid.toString();
-		} else {
-			return null;
+			return jid.getDomain();
 		}
 	}
 
@@ -210,7 +200,7 @@ public class Contact implements ListItem, Blockable {
 			values.put(ACCOUNT, accountUuid);
 			values.put(SYSTEMNAME, systemName);
 			values.put(SERVERNAME, serverName);
-			values.put(JID, jid.toPreppedString());
+			values.put(JID, jid.toString());
 			values.put(OPTIONS, subscription);
 			values.put(SYSTEMACCOUNT, systemAccount);
 			values.put(PHOTOURI, photoUri);
@@ -308,46 +298,6 @@ public class Contact implements ListItem, Blockable {
 			}
 		}
 		return groups;
-	}
-
-	public ArrayList<String> getOtrFingerprints() {
-		synchronized (this.keys) {
-			final ArrayList<String> fingerprints = new ArrayList<String>();
-			try {
-				if (this.keys.has("otr_fingerprints")) {
-					final JSONArray prints = this.keys.getJSONArray("otr_fingerprints");
-					for (int i = 0; i < prints.length(); ++i) {
-						final String print = prints.isNull(i) ? null : prints.getString(i);
-						if (print != null && !print.isEmpty()) {
-							fingerprints.add(prints.getString(i).toLowerCase(Locale.US));
-						}
-					}
-				}
-			} catch (final JSONException ignored) {
-
-			}
-			return fingerprints;
-		}
-	}
-	public boolean addOtrFingerprint(String print) {
-		synchronized (this.keys) {
-			if (getOtrFingerprints().contains(print)) {
-				return false;
-			}
-			try {
-				JSONArray fingerprints;
-				if (!this.keys.has("otr_fingerprints")) {
-					fingerprints = new JSONArray();
-				} else {
-					fingerprints = this.keys.getJSONArray("otr_fingerprints");
-				}
-				fingerprints.put(print);
-				this.keys.put("otr_fingerprints", fingerprints);
-				return true;
-			} catch (final JSONException ignored) {
-				return false;
-			}
-		}
 	}
 
 	public long getPgpKeyId() {
@@ -457,8 +407,8 @@ public class Contact implements ListItem, Blockable {
 				another.getDisplayName());
 	}
 
-	public Jid getServer() {
-		return getJid().toDomainJid();
+	public String getServer() {
+		return getJid().getDomain();
 	}
 
 	public boolean setAvatar(Avatar avatar) {
@@ -477,30 +427,6 @@ public class Contact implements ListItem, Blockable {
 		return avatar == null ? null : avatar.getFilename();
 	}
 
-	public boolean deleteOtrFingerprint(String fingerprint) {
-		synchronized (this.keys) {
-			boolean success = false;
-			try {
-				if (this.keys.has("otr_fingerprints")) {
-					JSONArray newPrints = new JSONArray();
-					JSONArray oldPrints = this.keys
-							.getJSONArray("otr_fingerprints");
-					for (int i = 0; i < oldPrints.length(); ++i) {
-						if (!oldPrints.getString(i).equals(fingerprint)) {
-							newPrints.put(oldPrints.getString(i));
-						} else {
-							success = true;
-						}
-					}
-					this.keys.put("otr_fingerprints", newPrints);
-				}
-				return success;
-			} catch (JSONException e) {
-				return false;
-			}
-		}
-	}
-
 	public boolean mutualPresenceSubscription() {
 		return getOption(Options.FROM) && getOption(Options.TO);
 	}
@@ -512,20 +438,20 @@ public class Contact implements ListItem, Blockable {
 
 	@Override
 	public boolean isDomainBlocked() {
-		return getAccount().isBlocked(this.getJid().toDomainJid());
+		return getAccount().isBlocked(Jid.ofDomain(this.getJid().getDomain()));
 	}
 
 	@Override
 	public Jid getBlockedJid() {
 		if (isDomainBlocked()) {
-			return getJid().toDomainJid();
+			return Jid.ofDomain(getJid().getDomain());
 		} else {
 			return getJid();
 		}
 	}
 
 	public boolean isSelf() {
-		return account.getJid().toBareJid().equals(getJid().toBareJid());
+		return account.getJid().asBareJid().equals(getJid().asBareJid());
 	}
 
 	public void setCommonName(String cn) {

@@ -1,14 +1,12 @@
 package eu.siacs.conversations.ui;
 
-import android.app.ActionBar;
-import android.app.AlertDialog;
 import android.content.ActivityNotFoundException;
-import android.content.DialogInterface;
-import android.content.DialogInterface.OnClickListener;
 import android.content.Intent;
 import android.os.Bundle;
 import android.security.KeyChain;
 import android.security.KeyChainAliasCallback;
+import android.support.v7.app.ActionBar;
+import android.support.v7.app.AlertDialog;
 import android.util.Pair;
 import android.view.ContextMenu;
 import android.view.ContextMenu.ContextMenuInfo;
@@ -21,6 +19,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListView;
 import android.widget.Toast;
 
+import org.openintents.openpgp.util.OpenPgpApi;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,11 +31,9 @@ import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.services.XmppConnectionService.OnAccountUpdate;
 import eu.siacs.conversations.ui.adapter.AccountAdapter;
+import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.xmpp.XmppConnection;
-import eu.siacs.conversations.xmpp.jid.InvalidJidException;
-import eu.siacs.conversations.xmpp.jid.Jid;
-
-import org.openintents.openpgp.util.OpenPgpApi;
+import rocks.xmpp.addr.Jid;
 
 public class ManageAccountActivity extends XmppActivity implements OnAccountUpdate, KeyChainAliasCallback, XmppConnectionService.OnAccountCreated {
 
@@ -62,7 +60,7 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 			accountList.clear();
 			accountList.addAll(xmppConnectionService.getAccounts());
 		}
-		ActionBar actionBar = getActionBar();
+		ActionBar actionBar = getSupportActionBar();
 		if (actionBar != null) {
 			actionBar.setHomeButtonEnabled(this.accountList.size() > 0);
 			actionBar.setDisplayHomeAsUpEnabled(this.accountList.size() > 0);
@@ -76,14 +74,15 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 
 		super.onCreate(savedInstanceState);
 
-		setContentView(R.layout.manage_accounts);
-
+		setContentView(R.layout.activity_manage_accounts);
+		setSupportActionBar(findViewById(R.id.toolbar));
+		configureActionBar(getSupportActionBar());
 		if (savedInstanceState != null) {
 			String jid = savedInstanceState.getString(STATE_SELECTED_ACCOUNT);
 			if (jid != null) {
 				try {
-					this.selectedAccountJid = Jid.fromString(jid);
-				} catch (InvalidJidException e) {
+					this.selectedAccountJid = Jid.of(jid);
+				} catch (IllegalArgumentException e) {
 					this.selectedAccountJid = null;
 				}
 			}
@@ -115,7 +114,7 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 	@Override
 	public void onSaveInstanceState(final Bundle savedInstanceState) {
 		if (selectedAccount != null) {
-			savedInstanceState.putString(STATE_SELECTED_ACCOUNT, selectedAccount.getJid().toBareJid().toString());
+			savedInstanceState.putString(STATE_SELECTED_ACCOUNT, selectedAccount.getJid().asBareJid().toString());
 		}
 		super.onSaveInstanceState(savedInstanceState);
 	}
@@ -130,14 +129,12 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 		if (this.selectedAccount.isEnabled()) {
 			menu.findItem(R.id.mgmt_account_enable).setVisible(false);
 			menu.findItem(R.id.mgmt_account_announce_pgp).setVisible(Config.supportOpenPgp());
-			menu.findItem(R.id.mgmt_account_change_presence).setVisible(manuallyChangePresence());
 		} else {
 			menu.findItem(R.id.mgmt_account_disable).setVisible(false);
 			menu.findItem(R.id.mgmt_account_announce_pgp).setVisible(false);
 			menu.findItem(R.id.mgmt_account_publish_avatar).setVisible(false);
-			menu.findItem(R.id.mgmt_account_change_presence).setVisible(false);
 		}
-		menu.setHeaderTitle(this.selectedAccount.getJid().toBareJid().toString());
+		menu.setHeaderTitle(this.selectedAccount.getJid().asBareJid().toString());
 	}
 
 	@Override
@@ -196,9 +193,6 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 			case R.id.mgmt_account_announce_pgp:
 				publishOpenPGPPublicKey(selectedAccount);
 				return true;
-			case R.id.mgmt_account_change_presence:
-				changePresence(selectedAccount);
-				return true;
 			default:
 				return super.onContextItemSelected(item);
 		}
@@ -206,6 +200,9 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
+		if (MenuDoubleTabUtil.shouldIgnoreTap()) {
+			return false;
+		}
 		switch (item.getItemId()) {
 			case R.id.action_add_account:
 				startActivity(new Intent(getApplicationContext(),
@@ -245,12 +242,6 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 		} else {
 			return super.onNavigateUp();
 		}
-	}
-
-	private void changePresence(Account account) {
-		Intent intent = new Intent(this, SetPresenceActivity.class);
-		intent.putExtra(SetPresenceActivity.EXTRA_ACCOUNT,account.getJid().toBareJid().toString());
-		startActivity(intent);
 	}
 
 	public void onClickTglAccountState(Account account, boolean enable) {
@@ -401,7 +392,7 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
 	@Override
 	public void onAccountCreated(Account account) {
 		Intent intent = new Intent(this, EditAccountActivity.class);
-		intent.putExtra("jid", account.getJid().toBareJid().toString());
+		intent.putExtra("jid", account.getJid().asBareJid().toString());
 		intent.putExtra("init", true);
 		startActivity(intent);
 	}

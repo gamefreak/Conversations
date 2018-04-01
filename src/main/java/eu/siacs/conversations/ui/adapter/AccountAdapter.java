@@ -6,11 +6,12 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
+import android.support.v7.widget.SwitchCompat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
-import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -23,7 +24,7 @@ import eu.siacs.conversations.R;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.ui.ManageAccountActivity;
 import eu.siacs.conversations.ui.XmppActivity;
-import eu.siacs.conversations.ui.widget.Switch;
+import eu.siacs.conversations.ui.util.Color;
 import eu.siacs.conversations.utils.UIHelper;
 
 public class AccountAdapter extends ArrayAdapter<Account> {
@@ -51,14 +52,14 @@ public class AccountAdapter extends ArrayAdapter<Account> {
 					.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 			view = inflater.inflate(R.layout.account_row, parent, false);
 		}
-		TextView jid = (TextView) view.findViewById(R.id.account_jid);
+		TextView jid = view.findViewById(R.id.account_jid);
 		if (Config.DOMAIN_LOCK != null) {
-			jid.setText(account.getJid().getLocalpart());
+			jid.setText(account.getJid().getLocal());
 		} else {
-			jid.setText(account.getJid().toBareJid().toString());
+			jid.setText(account.getJid().asBareJid().toString());
 		}
-		TextView statusView = (TextView) view.findViewById(R.id.account_status);
-		ImageView imageView = (ImageView) view.findViewById(R.id.account_image);
+		TextView statusView = view.findViewById(R.id.account_status);
+		ImageView imageView = view.findViewById(R.id.account_image);
 		loadAvatar(account,imageView);
 		statusView.setText(getContext().getString(account.getStatus().getReadableId()));
 		switch (account.getStatus()) {
@@ -67,26 +68,24 @@ public class AccountAdapter extends ArrayAdapter<Account> {
 				break;
 			case DISABLED:
 			case CONNECTING:
-				statusView.setTextColor(activity.getSecondaryTextColor());
+				statusView.setTextColor(Color.get(activity,android.R.attr.textColorSecondary));
 				break;
 			default:
 				statusView.setTextColor(activity.getWarningTextColor());
 				break;
 		}
-		final Switch tglAccountState = (Switch) view.findViewById(R.id.tgl_account_status);
+		final SwitchCompat tglAccountState = view.findViewById(R.id.tgl_account_status);
 		final boolean isDisabled = (account.getStatus() == Account.State.DISABLED);
-		tglAccountState.setChecked(!isDisabled,false);
+		tglAccountState.setOnCheckedChangeListener(null);
+		tglAccountState.setChecked(!isDisabled);
 		if (this.showStateButton) {
 			tglAccountState.setVisibility(View.VISIBLE);
 		} else {
 			tglAccountState.setVisibility(View.GONE);
 		}
-		tglAccountState.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
-			@Override
-			public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
-				if (b == isDisabled && activity instanceof ManageAccountActivity) {
-					((ManageAccountActivity) activity).onClickTglAccountState(account,b);
-				}
+		tglAccountState.setOnCheckedChangeListener((compoundButton, b) -> {
+			if (b == isDisabled && activity instanceof ManageAccountActivity) {
+				((ManageAccountActivity) activity).onClickTglAccountState(account,b);
 			}
 		});
 		return view;
@@ -102,7 +101,8 @@ public class AccountAdapter extends ArrayAdapter<Account> {
 
 		@Override
 		protected Bitmap doInBackground(Account... params) {
-			return activity.avatarService().get(params[0], activity.getPixel(48), isCancelled());
+			this.account = params[0];
+			return activity.avatarService().get(this.account, activity.getPixel(48), isCancelled());
 		}
 
 		@Override
@@ -125,7 +125,7 @@ public class AccountAdapter extends ArrayAdapter<Account> {
 				imageView.setImageBitmap(bm);
 				imageView.setBackgroundColor(0x00000000);
 			} else {
-				imageView.setBackgroundColor(UIHelper.getColorForName(account.getJid().toBareJid().toString()));
+				imageView.setBackgroundColor(UIHelper.getColorForName(account.getJid().asBareJid().toString()));
 				imageView.setImageDrawable(null);
 				final BitmapWorkerTask task = new BitmapWorkerTask(imageView);
 				final AsyncDrawable asyncDrawable = new AsyncDrawable(activity.getResources(), null, task);

@@ -100,8 +100,6 @@
   <string name="no_pgp_keys">لم يتم العثور على أية مفاتيح OpenPGP</string>
   <string name="contacts_have_no_pgp_keys">Conversations::لا يستطيع تشفير الرساله\n\n<small>من فضلك أخبر صديقك بتنصيب تطبيق OpenPGP.</small></string>
   <string name="pref_general">عام</string>
-  <string name="pref_xmpp_resource">الريسورس</string>
-  <string name="pref_xmpp_resource_summary">الإسم الذي يقوم جهازك بالتعريف عن نفسه</string>
   <string name="pref_accept_files">ضبط استقبال الملفات</string>
   <string name="pref_accept_files_summary">اقبل تلقائيا الملفات أقل من</string>
   <string name="pref_attachments">الملفات المرفقة</string>
@@ -124,7 +122,6 @@
   <string name="openpgp_error">لقد قام أوبن كي تشاين بالإبلاغ عن وجود خطأ</string>
   <string name="accept">قبول</string>
   <string name="error">حدث خطأ ما</string>
-  <string name="pref_grant_presence_updates">منح تحديثات الظهور</string>
   <string name="your_account">حسابك</string>
   <string name="send_presence_updates">ارسال تحديثات الظهور</string>
   <string name="receive_presence_updates">تحصل على تحديثات حالة الحضور</string>
@@ -159,7 +156,6 @@
   <string name="mgmt_account_publish_pgp">أنشر المفتاح العمومي OpenPGP</string>
   <string name="unpublish_pgp">حذف مفتاح OpenPGP العمومي</string>
   <string name="openpgp_has_been_published">لقد تم نشر مفتاح OpenPGP العمومي.</string>
-  <string name="republish_pgp_keys">تذكر إعادة نشر مفاتيح OpenPGP العمومية الخاصة بك !</string>
   <string name="mgmt_account_enable">تفعيل الحساب</string>
   <string name="mgmt_account_are_you_sure">هل أنت متأكد ؟</string>
   <string name="mgmt_account_delete_confirm_text">إذا قمت حذفت حسابك، فسوف تفقد سجل محادثاتك بالكامل</string>
@@ -270,8 +266,6 @@
   <string name="title_pref_quiet_hours_end_time">وقت النهاية</string>
   <string name="title_pref_enable_quiet_hours">تفعيل ساعات السكون</string>
   <string name="pref_quiet_hours_summary">سوف تكتم التنبيهات إبان ساعات السكون</string>
-  <string name="pref_use_larger_font">زيادة حجم الخط</string>
-  <string name="pref_use_larger_font_summary">إستخدم خطوطا كبيرة الحجم في التطبيق</string>
   <string name="pref_use_indicate_received">طلب تقارير تسليم الرسائل</string>
   <string name="pref_expert_options_other">أخرى</string>
   <string name="pref_conference_name">إسم مجموعة المحادثة</string>
@@ -302,6 +296,7 @@
   <string name="shared_secret_secret">السر المشترك</string>
   <string name="confirm">تأكيد</string>
   <string name="in_progress">جاري الاتصال</string>
+  <string name="respond">رد</string>
   <string name="secrets_do_not_match">الأسرار غير متطابقة</string>
   <string name="try_again">حاول مرة أخرى</string>
   <string name="finish">انهاء</string>
@@ -337,7 +332,7 @@
   <string name="copy_omemo_clipboard_description">انسخ بصمة OMEMO إلى الحافظة</string>
   <string name="regenerate_omemo_key">إعادة إنشاء مفتاح أوميمو OMEMO</string>
   <string name="clear_other_devices">حذف أجهزة</string>
-  <string name="error_trustkeys_title">خطأ</string>
+  <string name="error_trustkeys_title">لقد طرأ هناك خطأ</string>
   <string name="fetching_history_from_server">جلب المحفوظات من السرفر</string>
   <string name="no_more_history_on_server">لا مزيد من المحفوظات بالسرفر</string>
   <string name="updating">جاري التحديث..</string>
@@ -378,11 +373,8 @@
   <string name="moderated">تحت الرقابة</string>
   <string name="you_are_not_participating">لست مشتركا في المجموعة</string>
   <string name="never">أبداً</string>
-  <string name="thirty_minutes">30 دقيقة</string>
-  <string name="one_hour">ساعة</string>
-  <string name="two_hours">ساعتين</string>
-  <string name="eight_hours">8 ساعات</string>
   <string name="until_further_notice">حتى إشعار آخر</string>
+  <string name="snooze">إغفاء</string>
   <string name="reply">الرد</string>
   <string name="mark_as_read">إعتباره كمقروء</string>
   <string name="pref_enter_is_send">أدخل للإرسال</string>
@@ -429,7 +421,6 @@
   <string name="choose_quick_action">إختر حركة سريعة</string>
   <string name="search_for_contacts_or_groups">إبحث عن أصدقاء أو مجموعات</string>
   <string name="send_private_message">إبعث برسالة على الخاص</string>
-  <string name="user_has_left_conference">غادر %s فريق المحادثة</string>
   <string name="username">إسم المستخدم</string>
   <string name="username_hint">إسم المستخدم</string>
   <string name="invalid_username">إسم المستخدم هذا ليس صالحاً</string>
@@ -440,7 +431,6 @@
   <string name="account_status_tor_unavailable">شبكة طور غير متاحة</string>
   <string name="account_status_host_unknown">هذا السيرفر غير مسؤول عن إسم النطاق</string>
   <string name="server_info_broken">مكسر</string>
-  <string name="pref_presence_settings">الحضور</string>
   <string name="pref_away_when_screen_off">غائب عند إطفاء الشاشة</string>
   <string name="pref_dnd_on_silent_mode">\"لا تزعجني\" في وضع السكوت</string>
   <string name="pref_show_connection_options">إعدادات الربط الموسعة</string>
@@ -474,7 +464,6 @@
   </plurals>
   <string name="load_more_messages">أظهر أكثر</string>
   <string name="shared_text_with_x">شارك النص عبر %s</string>
-  <string name="no_storage_permission">تطبيق Conversations بحاجة إلى النفاذ إلى مساحة التخزين الخارجية</string>
   <string name="sync_with_contacts">المزامنة مع جهات الإتصال</string>
   <string name="certificate_information">معلومات حول الشهادة</string>
   <string name="certificate_subject">الموضوع</string>
@@ -504,13 +493,10 @@
   <string name="security_error_invalid_file_access">خطأ في الأمان : نفاذ غير سليم إلى ملف</string>
   <string name="no_application_to_share_uri">تعذر العثور على تطبيق يُمكنُ بواسطته مشاركة الرابط</string>
   <string name="share_uri_with">شارك الرابط مع ...</string>
-  <string name="welcome_text">XMPP هو مزود بروتوكول مستقل. يمكنك استخدام هذا العميل مع أي خادم إكس أم بي بي اخترته. و لراحتك جعلنا من السهل إنشاء حساب على conversations.im¹؛ مزود خدمة يتناسب خصيصا للاستخدام مع تطبيق المحادثات Conversations.</string>
   <string name="your_full_jid_will_be">سوف تكون هويتك الكاملة على جابر كالتالي : %s</string>
   <string name="create_account">إنشاء حساب</string>
   <string name="use_own_provider">إستخدم مزودي الخاص</string>
   <string name="pick_your_username">إختر إسم المستخدم</string>
-  <string name="pref_manually_change_presence">غيِّر يدويًا صفة الحضور</string>
-  <string name="pref_manually_change_presence_summary">إضغط على صورتك الرمزية لتغيير وضع حضورك</string>
   <string name="change_presence">تعديل الحضور</string>
   <string name="status_message">نص حالة الحضور</string>
   <string name="all_accounts_on_this_device">تعيينه لكل الحسابات على هذا الجهاز</string>
@@ -547,6 +533,7 @@
   <string name="type_phone">هاتف نقال</string>
   <string name="type_tablet">لوحة مفاتيحية</string>
   <string name="type_web">متصفح الواب</string>
+  <string name="type_console">الواجهة الطرفية</string>
   <string name="payment_required">مطلوب منك الدفع</string>
   <string name="missing_internet_permission">ينقص تصريح الإتصال بالإنترنت</string>
   <string name="me">أنا</string>
@@ -578,13 +565,57 @@
   <string name="pref_clean_private_storage">تفريغ مساحة التخرين الخاصة</string>
   <string name="i_followed_this_link_from_a_trusted_source">لقد إتبعتُ هذا الرابط عبر مصدر موثوق</string>
   <string name="verify_omemo_keys">قم بفحص مفاتيح أو مي مو OMEMO</string>
-  <string name="show_inactive_devices">أظهر الأجهزة المعطلة</string>
-  <string name="hide_inactive_devices">قم بإخفاء الأجهزة المعطلة</string>
+  <string name="show_inactive_devices">إظهار غير الناشطين</string>
+  <string name="hide_inactive_devices">إخفاء المستخدمين غير الناشطين</string>
   <string name="distrust_omemo_key">إبطال الثقة مع هذا الجهاز</string>
-  <string name="timeout_24_hours">24 ساعة</string>
-  <string name="timeout_7_days">7 أيام</string>
-  <string name="timeout_30_days">30 يوماً</string>
-  <string name="timeout_6_months">6 أشهر</string>
+  <plurals name="seconds">
+    <item quantity="zero">%d ثانية</item>
+    <item quantity="one">%d ثانية</item>
+    <item quantity="two">%d ثانيتين</item>
+    <item quantity="few">%d ثواني</item>
+    <item quantity="many">%d ثواني</item>
+    <item quantity="other">%d ثواني</item>
+  </plurals>
+  <plurals name="minutes">
+    <item quantity="zero">%d دقيقة</item>
+    <item quantity="one">%d دقيقة</item>
+    <item quantity="two">%d دقيقتين</item>
+    <item quantity="few">%d دقائق</item>
+    <item quantity="many">%d دقائق</item>
+    <item quantity="other">%d دقائق</item>
+  </plurals>
+  <plurals name="hours">
+    <item quantity="zero">%d ساعة</item>
+    <item quantity="one">%d ساعة</item>
+    <item quantity="two">%d ساعتين</item>
+    <item quantity="few">%d ساعات</item>
+    <item quantity="many">%d ساعات</item>
+    <item quantity="other">%d ساعات</item>
+  </plurals>
+  <plurals name="days">
+    <item quantity="zero">%d يوم</item>
+    <item quantity="one">%d يوم</item>
+    <item quantity="two">%d يومين</item>
+    <item quantity="few">%d أيام</item>
+    <item quantity="many">%d أيام</item>
+    <item quantity="other">%d أيام</item>
+  </plurals>
+  <plurals name="weeks">
+    <item quantity="zero">%d أسبوع</item>
+    <item quantity="one">%d أسبوع</item>
+    <item quantity="two">%d أسبوعين</item>
+    <item quantity="few">%d أسابيع</item>
+    <item quantity="many">%d أسابيع</item>
+    <item quantity="other">%d أسابيع</item>
+  </plurals>
+  <plurals name="months">
+    <item quantity="zero">%d شهر</item>
+    <item quantity="one">%d شهر</item>
+    <item quantity="two">%d شهرين</item>
+    <item quantity="few">%d أشهر</item>
+    <item quantity="many">%dأشهر</item>
+    <item quantity="other">%d أشهر</item>
+  </plurals>
   <string name="pref_automatically_delete_messages">الحذف الآلي للرسائل</string>
   <string name="encrypting_message">تشفير الرسالة</string>
   <string name="transcoding_video">ضغط الفيديو</string>
@@ -609,4 +640,12 @@
   <string name="copy_to_clipboard">النسخ إلى الحافظة</string>
   <string name="message_copied_to_clipboard">تم نسخ الرسالة إلى الحافظة</string>
   <string name="message">رسالة</string>
+  <string name="huawei_protected_apps">التطبيقات المُؤمَّنَة</string>
+  <string name="mtm_accept_cert">تقبُّل الشهادات المجهولة ؟</string>
+  <string name="mtm_cert_details">تفاصيل الشهادة :</string>
+  <string name="mtm_notification">التحقق مِن الشهادة</string>
+  <string name="once">مرة واحدة</string>
+  <string name="pref_scroll_to_bottom">السحب إلى أسفل</string>
+  <string name="disable_encryption">تعطيل التعمية</string>
+  <string name="disable_now">تعطيله حالًا</string>
 </resources>

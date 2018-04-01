@@ -1,15 +1,17 @@
 package eu.siacs.conversations.xml;
 
+import android.support.annotation.NonNull;
 import android.util.Log;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
+import java.util.Locale;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.utils.XmlHelper;
-import eu.siacs.conversations.xmpp.jid.InvalidJidException;
-import eu.siacs.conversations.xmpp.jid.Jid;
+import rocks.xmpp.addr.Jid;
 
 public class Element {
 	private final String name;
@@ -65,6 +67,29 @@ public class Element {
 	public String findChildContent(String name) {
 		Element element = findChild(name);
 		return element == null ? null : element.getContent();
+	}
+
+	public String findInternationalizedChildContent(String name) {
+		return findInternationalizedChildContent(name, Locale.getDefault().getLanguage());
+	}
+
+	public String findInternationalizedChildContent(String name,@NonNull String language) {
+		HashMap<String,String> contents = new HashMap<>();
+		for(Element child : this.children) {
+			if (name.equals(child.getName())) {
+				String lang = child.getAttribute("xml:lang");
+				String content = child.getContent();
+				if (content != null) {
+					if (language.equals(lang)) {
+						return content;
+					} else {
+						contents.put(lang, content);
+					}
+				}
+			}
+		}
+
+		return contents.get(null);
 	}
 
 	public Element findChild(String name, String xmlns) {
@@ -126,9 +151,8 @@ public class Element {
 		final String jid = this.getAttribute(name);
 		if (jid != null && !jid.isEmpty()) {
 			try {
-				return Jid.fromString(jid);
-			} catch (final InvalidJidException e) {
-				Log.e(Config.LOGTAG, "could not parse jid " + jid);
+				return Jid.ofEscaped(jid);
+			} catch (final IllegalArgumentException e) {
 				return null;
 			}
 		}

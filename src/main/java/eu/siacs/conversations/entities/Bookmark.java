@@ -1,6 +1,7 @@
 package eu.siacs.conversations.entities;
 
 import android.content.Context;
+import android.support.annotation.NonNull;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -9,15 +10,17 @@ import java.util.Locale;
 
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Element;
-import eu.siacs.conversations.xmpp.jid.Jid;
+import rocks.xmpp.addr.Jid;
 
 public class Bookmark extends Element implements ListItem {
 
 	private Account account;
 	private WeakReference<Conversation> conversation;
+	private Jid jid;
 
 	public Bookmark(final Account account, final Jid jid) {
 		super("conference");
+		this.jid = jid;
 		this.setAttribute("jid", jid.toString());
 		this.account = account;
 	}
@@ -31,6 +34,7 @@ public class Bookmark extends Element implements ListItem {
 		Bookmark bookmark = new Bookmark(account);
 		bookmark.setAttributes(element.getAttributes());
 		bookmark.setChildren(element.getChildren());
+		bookmark.jid =  bookmark.getAttributeAsJid("jid");
 		return bookmark;
 	}
 
@@ -43,7 +47,7 @@ public class Bookmark extends Element implements ListItem {
 	}
 
 	@Override
-	public int compareTo(final ListItem another) {
+	public int compareTo(final @NonNull ListItem another) {
 		return this.getDisplayName().compareToIgnoreCase(
 				another.getDisplayName());
 	}
@@ -52,30 +56,20 @@ public class Bookmark extends Element implements ListItem {
 	public String getDisplayName() {
 		final Conversation c = getConversation();
 		if (c != null) {
-			return c.getName();
+			return c.getName().toString();
 		} else if (getBookmarkName() != null
 				&& !getBookmarkName().trim().isEmpty()) {
 			return getBookmarkName().trim();
 		} else {
 			Jid jid = this.getJid();
-			String name = jid != null ? jid.getLocalpart() : getAttribute("jid");
+			String name = jid != null ? jid.getLocal() : getAttribute("jid");
 			return name != null ? name : "";
 		}
 	}
 
 	@Override
-	public String getDisplayJid() {
-		Jid jid = getJid();
-		if (jid != null) {
-			return jid.toString();
-		} else {
-			return getAttribute("jid"); //fallback if jid wasn't parsable
-		}
-	}
-
-	@Override
 	public Jid getJid() {
-		return this.getAttributeAsJid("jid");
+		return this.jid;
 	}
 
 	@Override

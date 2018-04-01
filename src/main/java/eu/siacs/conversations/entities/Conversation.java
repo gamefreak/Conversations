@@ -3,18 +3,13 @@ package eu.siacs.conversations.entities;
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.support.annotation.NonNull;
-
-import net.java.otr4j.OtrException;
-import net.java.otr4j.crypto.OtrCryptoException;
-import net.java.otr4j.session.SessionID;
-import net.java.otr4j.session.SessionImpl;
-import net.java.otr4j.session.SessionStatus;
+import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.security.interfaces.DSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -28,9 +23,8 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
-import eu.siacs.conversations.xmpp.jid.InvalidJidException;
-import eu.siacs.conversations.xmpp.jid.Jid;
 import eu.siacs.conversations.xmpp.mam.MamReference;
+import rocks.xmpp.addr.Jid;
 
 
 public class Conversation extends AbstractEntity implements Blockable, Comparable<Conversation> {
@@ -54,13 +48,14 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public static final String ATTRIBUTE_MUTED_TILL = "muted_till";
 	public static final String ATTRIBUTE_ALWAYS_NOTIFY = "always_notify";
 	public static final String ATTRIBUTE_LAST_CLEAR_HISTORY = "last_clear_history";
-	public static final String ATTRIBUTE_NEXT_MESSAGE = "next_message";
-
-	private static final String ATTRIBUTE_CRYPTO_TARGETS = "crypto_targets";
-
-	private static final String ATTRIBUTE_NEXT_ENCRYPTION = "next_encryption";
 	static final String ATTRIBUTE_MUC_PASSWORD = "muc_password";
-
+	private static final String ATTRIBUTE_NEXT_MESSAGE = "next_message";
+	private static final String ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP = "next_message_timestamp";
+	private static final String ATTRIBUTE_CRYPTO_TARGETS = "crypto_targets";
+	private static final String ATTRIBUTE_NEXT_ENCRYPTION = "next_encryption";
+	protected final ArrayList<Message> messages = new ArrayList<>();
+	public AtomicBoolean messagesLoaded = new AtomicBoolean(true);
+	protected Account account = null;
 	private String draftMessage;
 	private String name;
 	private String contactUuid;
@@ -69,30 +64,59 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private int status;
 	private long created;
 	private int mode;
-
 	private JSONObject attributes = new JSONObject();
-
 	private Jid nextCounterpart;
-
-	protected final ArrayList<Message> messages = new ArrayList<>();
-	protected Account account = null;
-
-	private transient SessionImpl otrSession;
-
-	private transient String otrFingerprint = null;
-	private Smp mSmp = new Smp();
-
 	private transient MucOptions mucOptions = null;
-
-	private byte[] symmetricKey;
-
 	private boolean messagesLeftOnServer = true;
 	private ChatState mOutgoingChatState = Config.DEFAULT_CHATSTATE;
 	private ChatState mIncomingChatState = Config.DEFAULT_CHATSTATE;
-	private String mLastReceivedOtrMessageId = null;
 	private String mFirstMamReference = null;
 	private Message correctingMessage;
-	public AtomicBoolean messagesLoaded = new AtomicBoolean(true);
+
+	public Conversation(final String name, final Account account, final Jid contactJid,
+	                    final int mode) {
+		this(java.util.UUID.randomUUID().toString(), name, null, account
+						.getUuid(), contactJid, System.currentTimeMillis(),
+				STATUS_AVAILABLE, mode, "");
+		this.account = account;
+	}
+
+	public Conversation(final String uuid, final String name, final String contactUuid,
+	                    final String accountUuid, final Jid contactJid, final long created, final int status,
+	                    final int mode, final String attributes) {
+		this.uuid = uuid;
+		this.name = name;
+		this.contactUuid = contactUuid;
+		this.accountUuid = accountUuid;
+		this.contactJid = contactJid;
+		this.created = created;
+		this.status = status;
+		this.mode = mode;
+		try {
+			this.attributes = new JSONObject(attributes == null ? "" : attributes);
+		} catch (JSONException e) {
+			this.attributes = new JSONObject();
+		}
+	}
+
+	public static Conversation fromCursor(Cursor cursor) {
+		Jid jid;
+		try {
+			jid = Jid.of(cursor.getString(cursor.getColumnIndex(CONTACTJID)));
+		} catch (final IllegalArgumentException e) {
+			// Borked DB..
+			jid = null;
+		}
+		return new Conversation(cursor.getString(cursor.getColumnIndex(UUID)),
+				cursor.getString(cursor.getColumnIndex(NAME)),
+				cursor.getString(cursor.getColumnIndex(CONTACT)),
+				cursor.getString(cursor.getColumnIndex(ACCOUNT)),
+				jid,
+				cursor.getLong(cursor.getColumnIndex(CREATED)),
+				cursor.getInt(cursor.getColumnIndex(STATUS)),
+				cursor.getInt(cursor.getColumnIndex(MODE)),
+				cursor.getString(cursor.getColumnIndex(ATTRIBUTES)));
+	}
 
 	public boolean hasMessagesLeftOnServer() {
 		return messagesLeftOnServer;
@@ -101,7 +125,6 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public void setHasMessagesLeftOnServer(boolean value) {
 		this.messagesLeftOnServer = value;
 	}
-
 
 	public Message getFirstUnreadMessage() {
 		Message first = null;
@@ -118,7 +141,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public Message findUnsentMessageWithUuid(String uuid) {
-		synchronized(this.messages) {
+		synchronized (this.messages) {
 			for (final Message message : this.messages) {
 				final int s = message.getStatus();
 				if ((s == Message.STATUS_UNSEND || s == Message.STATUS_WAITING) && message.getUuid().equals(uuid)) {
@@ -131,7 +154,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void findWaitingMessages(OnMessageFound onMessageFound) {
 		synchronized (this.messages) {
-			for(Message message : this.messages) {
+			for (Message message : this.messages) {
 				if (message.getStatus() == Message.STATUS_WAITING) {
 					onMessageFound.onMessageFound(message);
 				}
@@ -141,7 +164,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void findUnreadMessages(OnMessageFound onMessageFound) {
 		synchronized (this.messages) {
-			for(Message message : this.messages) {
+			for (Message message : this.messages) {
 				if (!message.isRead()) {
 					onMessageFound.onMessageFound(message);
 				}
@@ -155,7 +178,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				if ((message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE)
 						&& message.getEncryption() != Message.ENCRYPTION_PGP) {
 					onMessageFound.onMessageFound(message);
-						}
+				}
 			}
 		}
 	}
@@ -238,7 +261,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				if (message.getType() != Message.TYPE_IMAGE
 						&& message.getStatus() == Message.STATUS_UNSEND) {
 					onMessageFound.onMessageFound(message);
-						}
+				}
 			}
 		}
 	}
@@ -258,11 +281,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public Message findMessageWithRemoteIdAndCounterpart(String id, Jid counterpart, boolean received, boolean carbon) {
 		synchronized (this.messages) {
-			for(int i = this.messages.size() - 1; i >= 0; --i) {
+			for (int i = this.messages.size() - 1; i >= 0; --i) {
 				Message message = messages.get(i);
 				if (counterpart.equals(message.getCounterpart())
 						&& ((message.getStatus() == Message.STATUS_RECEIVED) == received)
-						&& (carbon == message.isCarbon() || received) ) {
+						&& (carbon == message.isCarbon() || received)) {
 					if (id.equals(message.getRemoteMsgId()) && !message.isFileOrImage() && !message.treatAsDownloadable()) {
 						return message;
 					} else {
@@ -287,7 +310,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public Message findMessageWithRemoteId(String id, Jid counterpart) {
 		synchronized (this.messages) {
-			for(Message message : this.messages) {
+			for (Message message : this.messages) {
 				if (counterpart.equals(message.getCounterpart())
 						&& (id.equals(message.getRemoteMsgId()) || id.equals(message.getUuid()))) {
 					return message;
@@ -299,7 +322,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public boolean hasMessageWithCounterpart(Jid counterpart) {
 		synchronized (this.messages) {
-			for(Message message : this.messages) {
+			for (Message message : this.messages) {
 				if (counterpart.equals(message.getCounterpart())) {
 					return true;
 				}
@@ -313,7 +336,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 			messages.clear();
 			messages.addAll(this.messages);
 		}
-		for(Iterator<Message> iterator = messages.iterator(); iterator.hasNext();) {
+		for (Iterator<Message> iterator = messages.iterator(); iterator.hasNext(); ) {
 			if (iterator.next().wasMergedIntoPrevious()) {
 				iterator.remove();
 			}
@@ -335,33 +358,25 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return getContact().getBlockedJid();
 	}
 
-	public String getLastReceivedOtrMessageId() {
-		return this.mLastReceivedOtrMessageId;
-	}
-
-	public void setLastReceivedOtrMessageId(String id) {
-		this.mLastReceivedOtrMessageId = id;
-	}
-
 	public int countMessages() {
 		synchronized (this.messages) {
 			return this.messages.size();
 		}
 	}
 
-	public void setFirstMamReference(String reference) {
-		this.mFirstMamReference = reference;
-	}
-
 	public String getFirstMamReference() {
 		return this.mFirstMamReference;
 	}
 
-	public void setLastClearHistory(long time,String reference) {
+	public void setFirstMamReference(String reference) {
+		this.mFirstMamReference = reference;
+	}
+
+	public void setLastClearHistory(long time, String reference) {
 		if (reference != null) {
 			setAttribute(ATTRIBUTE_LAST_CLEAR_HISTORY, String.valueOf(time) + ":" + reference);
 		} else {
-			setAttribute(ATTRIBUTE_LAST_CLEAR_HISTORY, String.valueOf(time));
+			setAttribute(ATTRIBUTE_LAST_CLEAR_HISTORY, time);
 		}
 	}
 
@@ -371,7 +386,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public List<Jid> getAcceptedCryptoTargets() {
 		if (mode == MODE_SINGLE) {
-			return Collections.singletonList(getJid().toBareJid());
+			return Collections.singletonList(getJid().asBareJid());
 		} else {
 			return getJidListAttribute(ATTRIBUTE_CRYPTO_TARGETS);
 		}
@@ -396,53 +411,25 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	@Override
 	public int compareTo(@NonNull Conversation another) {
-		final Message left = getLatestMessage();
-		final Message right = another.getLatestMessage();
-		if (left.getTimeSent() > right.getTimeSent()) {
-			return -1;
-		} else if (left.getTimeSent() < right.getTimeSent()) {
-			return 1;
-		} else {
-			return 0;
-		}
+		return Long.compare(another.getSortableTime(), getSortableTime());
 	}
 
-	public void setDraftMessage(String draftMessage) {
-		this.draftMessage = draftMessage;
+	private long getSortableTime() {
+		Draft draft = getDraft();
+		long messageTime = getLatestMessage().getTimeSent();
+		if (draft == null) {
+			return messageTime;
+		} else {
+			return Math.max(messageTime, draft.getTimestamp());
+		}
 	}
 
 	public String getDraftMessage() {
 		return draftMessage;
 	}
 
-	public interface OnMessageFound {
-		void onMessageFound(final Message message);
-	}
-
-	public Conversation(final String name, final Account account, final Jid contactJid,
-			final int mode) {
-		this(java.util.UUID.randomUUID().toString(), name, null, account
-				.getUuid(), contactJid, System.currentTimeMillis(),
-				STATUS_AVAILABLE, mode, "");
-		this.account = account;
-	}
-
-	public Conversation(final String uuid, final String name, final String contactUuid,
-			final String accountUuid, final Jid contactJid, final long created, final int status,
-			final int mode, final String attributes) {
-		this.uuid = uuid;
-		this.name = name;
-		this.contactUuid = contactUuid;
-		this.accountUuid = accountUuid;
-		this.contactJid = contactJid;
-		this.created = created;
-		this.status = status;
-		this.mode = mode;
-		try {
-			this.attributes = new JSONObject(attributes == null ? "" : attributes);
-		} catch (JSONException e) {
-			this.attributes = new JSONObject();
-		}
+	public void setDraftMessage(String draftMessage) {
+		this.draftMessage = draftMessage;
 	}
 
 	public boolean isRead() {
@@ -452,7 +439,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public List<Message> markRead() {
 		final List<Message> unread = new ArrayList<>();
 		synchronized (this.messages) {
-			for(Message message : this.messages) {
+			for (Message message : this.messages) {
 				if (!message.isRead()) {
 					message.markRead();
 					unread.add(message);
@@ -489,7 +476,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		}
 	}
 
-	public String getName() {
+	public CharSequence getName() {
 		if (getMode() == MODE_MULTI) {
 			final String subject = getMucOptions().getSubject();
 			Bookmark bookmark = getBookmark();
@@ -503,11 +490,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				if (generatedName != null) {
 					return generatedName;
 				} else {
-					return getJid().getUnescapedLocalpart();
+					return getJid().getLocal();
 				}
 			}
 		} else if (isWithStranger()) {
-			return contactJid.toBareJid().toString();
+			return contactJid;
 		} else {
 			return this.getContact().getDisplayName();
 		}
@@ -521,12 +508,12 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return this.account;
 	}
 
-	public Contact getContact() {
-		return this.account.getRoster().getContact(this.contactJid);
-	}
-
 	public void setAccount(final Account account) {
 		this.account = account;
+	}
+
+	public Contact getContact() {
+		return this.account.getRoster().getContact(this.contactJid);
 	}
 
 	@Override
@@ -536,6 +523,10 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public int getStatus() {
 		return this.status;
+	}
+
+	public void setStatus(int status) {
+		this.status = status;
 	}
 
 	public long getCreated() {
@@ -548,35 +539,12 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		values.put(NAME, name);
 		values.put(CONTACT, contactUuid);
 		values.put(ACCOUNT, accountUuid);
-		values.put(CONTACTJID, contactJid.toPreppedString());
+		values.put(CONTACTJID, contactJid.toString());
 		values.put(CREATED, created);
 		values.put(STATUS, status);
 		values.put(MODE, mode);
 		values.put(ATTRIBUTES, attributes.toString());
 		return values;
-	}
-
-	public static Conversation fromCursor(Cursor cursor) {
-		Jid jid;
-		try {
-			jid = Jid.fromString(cursor.getString(cursor.getColumnIndex(CONTACTJID)), true);
-		} catch (final InvalidJidException e) {
-			// Borked DB..
-			jid = null;
-		}
-		return new Conversation(cursor.getString(cursor.getColumnIndex(UUID)),
-				cursor.getString(cursor.getColumnIndex(NAME)),
-				cursor.getString(cursor.getColumnIndex(CONTACT)),
-				cursor.getString(cursor.getColumnIndex(ACCOUNT)),
-				jid,
-				cursor.getLong(cursor.getColumnIndex(CREATED)),
-				cursor.getInt(cursor.getColumnIndex(STATUS)),
-				cursor.getInt(cursor.getColumnIndex(MODE)),
-				cursor.getString(cursor.getColumnIndex(ATTRIBUTES)));
-	}
-
-	public void setStatus(int status) {
-		this.status = status;
 	}
 
 	public int getMode() {
@@ -585,110 +553,6 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void setMode(int mode) {
 		this.mode = mode;
-	}
-
-	public SessionImpl startOtrSession(String presence, boolean sendStart) {
-		if (this.otrSession != null) {
-			return this.otrSession;
-		} else {
-			final SessionID sessionId = new SessionID(this.getJid().toBareJid().toString(),
-					presence,
-					"xmpp");
-			this.otrSession = new SessionImpl(sessionId, getAccount().getOtrService());
-			try {
-				if (sendStart) {
-					this.otrSession.startSession();
-					return this.otrSession;
-				}
-				return this.otrSession;
-			} catch (OtrException e) {
-				return null;
-			}
-		}
-
-	}
-
-	public SessionImpl getOtrSession() {
-		return this.otrSession;
-	}
-
-	public void resetOtrSession() {
-		this.otrFingerprint = null;
-		this.otrSession = null;
-		this.mSmp.hint = null;
-		this.mSmp.secret = null;
-		this.mSmp.status = Smp.STATUS_NONE;
-	}
-
-	public Smp smp() {
-		return mSmp;
-	}
-
-	public boolean startOtrIfNeeded() {
-		if (this.otrSession != null && this.otrSession.getSessionStatus() != SessionStatus.ENCRYPTED) {
-			try {
-				this.otrSession.startSession();
-				return true;
-			} catch (OtrException e) {
-				this.resetOtrSession();
-				return false;
-			}
-		} else {
-			return true;
-		}
-	}
-
-	public boolean endOtrIfNeeded() {
-		if (this.otrSession != null) {
-			if (this.otrSession.getSessionStatus() == SessionStatus.ENCRYPTED) {
-				try {
-					this.otrSession.endSession();
-					this.resetOtrSession();
-					return true;
-				} catch (OtrException e) {
-					this.resetOtrSession();
-					return false;
-				}
-			} else {
-				this.resetOtrSession();
-				return false;
-			}
-		} else {
-			return false;
-		}
-	}
-
-	public boolean hasValidOtrSession() {
-		return this.otrSession != null;
-	}
-
-	public synchronized String getOtrFingerprint() {
-		if (this.otrFingerprint == null) {
-			try {
-				if (getOtrSession() == null || getOtrSession().getSessionStatus() != SessionStatus.ENCRYPTED) {
-					return null;
-				}
-				DSAPublicKey remotePubKey = (DSAPublicKey) getOtrSession().getRemotePublicKey();
-				this.otrFingerprint = getAccount().getOtrService().getFingerprint(remotePubKey).toLowerCase(Locale.US);
-			} catch (final OtrCryptoException | UnsupportedOperationException ignored) {
-				return null;
-			}
-		}
-		return this.otrFingerprint;
-	}
-
-	public boolean verifyOtrFingerprint() {
-		final String fingerprint = getOtrFingerprint();
-		if (fingerprint != null) {
-			getContact().addOtrFingerprint(fingerprint);
-			return true;
-		} else {
-			return false;
-		}
-	}
-
-	public boolean isOtrFingerprintVerified() {
-		return getContact().getOtrFingerprints().contains(getOtrFingerprint());
 	}
 
 	/**
@@ -717,48 +581,29 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		this.contactJid = jid;
 	}
 
-	public void setNextCounterpart(Jid jid) {
-		this.nextCounterpart = jid;
-	}
-
 	public Jid getNextCounterpart() {
 		return this.nextCounterpart;
 	}
 
+	public void setNextCounterpart(Jid jid) {
+		this.nextCounterpart = jid;
+	}
+
 	public int getNextEncryption() {
-		return fixAvailableEncryption(this.getIntAttribute(ATTRIBUTE_NEXT_ENCRYPTION, getDefaultEncryption()));
-	}
-
-	private int fixAvailableEncryption(int selectedEncryption) {
-		switch(selectedEncryption) {
-			case Message.ENCRYPTION_NONE:
-				return Config.supportUnencrypted() ? selectedEncryption : getDefaultEncryption();
-			case Message.ENCRYPTION_AXOLOTL:
-				return Config.supportOmemo() ? selectedEncryption : getDefaultEncryption();
-			case Message.ENCRYPTION_OTR:
-				return Config.supportOtr() ? selectedEncryption : getDefaultEncryption();
-			case Message.ENCRYPTION_PGP:
-			case Message.ENCRYPTION_DECRYPTED:
-			case Message.ENCRYPTION_DECRYPTION_FAILED:
-				return Config.supportOpenPgp() ? Message.ENCRYPTION_PGP : getDefaultEncryption();
-			default:
-				return getDefaultEncryption();
-		}
-	}
-
-	private int getDefaultEncryption() {
+		final int defaultEncryption;
 		AxolotlService axolotlService = account.getAxolotlService();
-		if (Config.supportUnencrypted()) {
-			return Message.ENCRYPTION_NONE;
-		} else if (Config.supportOmemo()
-				&& (axolotlService != null && axolotlService.isConversationAxolotlCapable(this) || !Config.multipleEncryptionChoices())) {
-			return Message.ENCRYPTION_AXOLOTL;
-		} else if (Config.supportOtr() && mode == MODE_SINGLE) {
-			return Message.ENCRYPTION_OTR;
-		} else if (Config.supportOpenPgp()) {
-			return Message.ENCRYPTION_PGP;
+		if (contactJid.asBareJid().equals(Config.BUG_REPORTS)) {
+			defaultEncryption = Message.ENCRYPTION_NONE;
+		} else if (axolotlService != null && axolotlService.isConversationAxolotlCapable(this)) {
+			defaultEncryption = Message.ENCRYPTION_AXOLOTL;
 		} else {
-			return Message.ENCRYPTION_NONE;
+			defaultEncryption = Message.ENCRYPTION_NONE;
+		}
+		int encryption = this.getIntAttribute(ATTRIBUTE_NEXT_ENCRYPTION, defaultEncryption);
+		if (encryption == Message.ENCRYPTION_OTR || encryption < 0) {
+			return defaultEncryption;
+		} else {
+			return encryption;
 		}
 	}
 
@@ -771,22 +616,25 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return nextMessage == null ? "" : nextMessage;
 	}
 
-	public boolean smpRequested() {
-		return smp().status == Smp.STATUS_CONTACT_REQUESTED;
+	public @Nullable
+	Draft getDraft() {
+		long timestamp = getLongAttribute(ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP, 0);
+		if (timestamp > getLatestMessage().getTimeSent()) {
+			String message = getAttribute(ATTRIBUTE_NEXT_MESSAGE);
+			if (!TextUtils.isEmpty(message) && timestamp != 0) {
+				return new Draft(message, timestamp);
+			}
+		}
+		return null;
 	}
 
 	public boolean setNextMessage(String message) {
 		boolean changed = !getNextMessage().equals(message);
 		this.setAttribute(ATTRIBUTE_NEXT_MESSAGE, message);
+		if (changed) {
+			this.setAttribute(ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP, TextUtils.isEmpty(message) ? 0 : System.currentTimeMillis());
+		}
 		return changed;
-	}
-
-	public void setSymmetricKey(byte[] key) {
-		this.symmetricKey = key;
-	}
-
-	public byte[] getSymmetricKey() {
-		return this.symmetricKey;
 	}
 
 	public Bookmark getBookmark() {
@@ -832,18 +680,18 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		final MamReference lastClear = getLastClearHistory();
 		MamReference lastReceived = new MamReference(0);
 		synchronized (this.messages) {
-			for(int i = this.messages.size() - 1; i >= 0; --i) {
+			for (int i = this.messages.size() - 1; i >= 0; --i) {
 				final Message message = this.messages.get(i);
 				if (message.getType() == Message.TYPE_PRIVATE) {
 					continue; //it's unsafe to use private messages as anchor. They could be coming from user archive
 				}
 				if (message.getStatus() == Message.STATUS_RECEIVED || message.isCarbon() || message.getServerMsgId() != null) {
-					lastReceived = new MamReference(message.getTimeSent(),message.getServerMsgId());
+					lastReceived = new MamReference(message.getTimeSent(), message.getServerMsgId());
 					break;
 				}
 			}
 		}
-		return MamReference.max(lastClear,lastReceived);
+		return MamReference.max(lastClear, lastReceived);
 	}
 
 	public void setMutedTill(long value) {
@@ -856,6 +704,10 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public boolean alwaysNotify() {
 		return mode == MODE_SINGLE || getBooleanAttribute(ATTRIBUTE_ALWAYS_NOTIFY, Config.ALWAYS_NOTIFY_BY_DEFAULT || isPrivateAndNonAnonymous());
+	}
+
+	private boolean setAttribute(String key, long value) {
+		return setAttribute(key, Long.toString(value));
 	}
 
 	public boolean setAttribute(String key, String value) {
@@ -871,8 +723,8 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public boolean setAttribute(String key, List<Jid> jids) {
 		JSONArray array = new JSONArray();
-		for(Jid jid : jids) {
-			array.put(jid.toBareJid().toString());
+		for (Jid jid : jids) {
+			array.put(jid.asBareJid().toString());
 		}
 		synchronized (this.attributes) {
 			try {
@@ -902,8 +754,8 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				JSONArray array = this.attributes.getJSONArray(key);
 				for (int i = 0; i < array.length(); ++i) {
 					try {
-						list.add(Jid.fromString(array.getString(i)));
-					} catch (InvalidJidException e) {
+						list.add(Jid.of(array.getString(i)));
+					} catch (IllegalArgumentException e) {
 						//ignored
 					}
 				}
@@ -957,7 +809,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void prepend(int offset, Message message) {
 		synchronized (this.messages) {
-			this.messages.add(Math.min(offset,this.messages.size()),message);
+			this.messages.add(Math.min(offset, this.messages.size()), message);
 		}
 	}
 
@@ -970,7 +822,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void expireOldMessages(long timestamp) {
 		synchronized (this.messages) {
-			for(ListIterator<Message> iterator = this.messages.listIterator(); iterator.hasNext();) {
+			for (ListIterator<Message> iterator = this.messages.listIterator(); iterator.hasNext(); ) {
 				if (iterator.next().getTimeSent() < timestamp) {
 					iterator.remove();
 				}
@@ -981,16 +833,13 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public void sort() {
 		synchronized (this.messages) {
-			Collections.sort(this.messages, new Comparator<Message>() {
-				@Override
-				public int compare(Message left, Message right) {
-					if (left.getTimeSent() < right.getTimeSent()) {
-						return -1;
-					} else if (left.getTimeSent() > right.getTimeSent()) {
-						return 1;
-					} else {
-						return 0;
-					}
+			Collections.sort(this.messages, (left, right) -> {
+				if (left.getTimeSent() < right.getTimeSent()) {
+					return -1;
+				} else if (left.getTimeSent() > right.getTimeSent()) {
+					return 1;
+				} else {
+					return 0;
 				}
 			});
 			untieMessages();
@@ -998,7 +847,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	private void untieMessages() {
-		for(Message message : this.messages) {
+		for (Message message : this.messages) {
 			message.untie();
 		}
 	}
@@ -1006,7 +855,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public int unreadCount() {
 		synchronized (this.messages) {
 			int count = 0;
-			for(int i = this.messages.size() - 1; i >= 0; --i) {
+			for (int i = this.messages.size() - 1; i >= 0; --i) {
 				if (this.messages.get(i).isRead()) {
 					return count;
 				}
@@ -1019,7 +868,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public int receivedMessagesCount() {
 		int count = 0;
 		synchronized (this.messages) {
-			for(Message message : messages) {
+			for (Message message : messages) {
 				if (message.getStatus() == Message.STATUS_RECEIVED) {
 					++count;
 				}
@@ -1031,7 +880,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private int sentMessagesCount() {
 		int count = 0;
 		synchronized (this.messages) {
-			for(Message message : messages) {
+			for (Message message : messages) {
 				if (message.getStatus() != Message.STATUS_RECEIVED) {
 					++count;
 				}
@@ -1042,20 +891,30 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public boolean isWithStranger() {
 		return mode == MODE_SINGLE
-				&& !getJid().equals(account.getJid().toDomainJid())
+				&& !getJid().equals(Jid.ofDomain(account.getJid().getDomain()))
 				&& !getContact().showInRoster()
 				&& sentMessagesCount() == 0;
 	}
 
-	public class Smp {
-		public static final int STATUS_NONE = 0;
-		public static final int STATUS_CONTACT_REQUESTED = 1;
-		public static final int STATUS_WE_REQUESTED = 2;
-		public static final int STATUS_FAILED = 3;
-		public static final int STATUS_VERIFIED = 4;
+	public interface OnMessageFound {
+		void onMessageFound(final Message message);
+	}
 
-		public String secret = null;
-		public String hint = null;
-		public int status = 0;
+	public static class Draft {
+		private final String message;
+		private final long timestamp;
+
+		private Draft(String message, long timestamp) {
+			this.message = message;
+			this.timestamp = timestamp;
+		}
+
+		public long getTimestamp() {
+			return timestamp;
+		}
+
+		public String getMessage() {
+			return message;
+		}
 	}
 }
