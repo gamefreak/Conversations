@@ -37,6 +37,7 @@ import java.util.List;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.emotes.Emote;
 import eu.siacs.conversations.emotes.EmoticonService;
+import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.ui.XmppActivity;
 import horse.vinylscratch.conversations.entities.EmoteDbHelper;
 import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote;
@@ -208,6 +209,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	}
 
 
+	public static final String ACTION_PICK_EMOTE = "pick_emote";
 	static final String TAG = "EmoteBrowserActivity";
 	public static final int REQUEST_CHOOSE_EMOTE = 0x7dd3a842;
 	static final String PREF_SORT_MODE = "SORT_MODE";
@@ -234,6 +236,9 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	private GridView grid = null;
 	private Spinner modeSpinner = null;
+
+	private String uuid = null;
+	private Conversation mConversation = null;
 
 
 	@Override
@@ -331,7 +336,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	@Override
 	protected void onBackendConnected() {
-
+		if (getIntent().getAction().equals(ACTION_PICK_EMOTE)) {
+			this.uuid = getIntent().getExtras().getString("uuid");
+		}
+		if (uuid != null) {
+			this.mConversation = xmppConnectionService.findConversationByUuid(uuid);
+		}
 	}
 
 	private void emoteClicked(Emote emote) {
@@ -340,9 +350,9 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	private void emoteClicked(String emote) {
 		Log.i(TAG, "emote clicked: " + emote);
-		Intent response = new Intent();
-		response.putExtra("emote", emote);
-		setResult(RESULT_OK, response);
+		if (mConversation != null) {
+			switchToConversation(mConversation, emote, false);
+		}
 		finish();
 	}
 

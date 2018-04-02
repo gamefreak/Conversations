@@ -789,12 +789,6 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 					Log.d(Config.LOGTAG, "lost take photo uri. unable to to attach");
 				}
 				break;
-			case EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE:
-				String emoteText = data.getStringExtra("emote");
-				if (emoteText != null) {
-					this.appendText(emoteText);
-				}
-				break;
 			case ATTACHMENT_CHOICE_CHOOSE_FILE:
 			case ATTACHMENT_CHOICE_RECORD_VIDEO:
 			case ATTACHMENT_CHOICE_RECORD_VOICE:
@@ -991,8 +985,9 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 
 		binding.openEmoteView.setOnClickListener(v -> {
 			Intent intent = new Intent(getActivity(), EmoticonBrowserActivity.class);
-
-			ConversationFragment.this.startActivityForResult(intent, EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE);
+			intent.setAction(EmoticonBrowserActivity.ACTION_PICK_EMOTE);
+			intent.putExtra("uuid", conversation.getUuid());
+			startActivity(intent);
 		});
 
 		return binding.getRoot();
