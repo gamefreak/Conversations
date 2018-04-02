@@ -76,7 +76,7 @@ android {
         archivesBaseName += "-$versionName"
         applicationId "horse.vinylscratch.conversations"
         resValue "string", "applicationId", applicationId
-        resValue "string", "app_name", "Conversations"
+        resValue "string", "app_name", "Ponversations"
     }
 
     dataBinding {
