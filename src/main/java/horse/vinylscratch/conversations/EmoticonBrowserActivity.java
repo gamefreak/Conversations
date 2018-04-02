@@ -1,6 +1,5 @@
 package horse.vinylscratch.conversations;
 
-import android.app.ActionBar;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
@@ -187,7 +186,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			imageView.setImageDrawable(image);
 			textView.setText(emoticon.getAliases().get(0));
 			// tried setting it in the XML but it was crashing for some reason
-			textView.setTextColor(EmoticonBrowserActivity.this.getPrimaryTextColor());
+//			textView.setTextColor(EmoticonBrowserActivity.this.getPrimaryTextColor());
 			return emoteView;
 		}
 
@@ -276,13 +275,10 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			return true;
 		});
 
-		ActionBar actionBar = getActionBar();
-		actionBar.setCustomView(R.layout.emoticon_browser_toolbar);
-		actionBar.setDisplayOptions(ActionBar.DISPLAY_HOME_AS_UP | ActionBar.DISPLAY_SHOW_CUSTOM);
+		setSupportActionBar(findViewById(R.id.toolbar));
+		configureActionBar(getSupportActionBar());
 
-		View actionBarView = actionBar.getCustomView();
-
-		modeSpinner = actionBarView.findViewById(R.id.spinner);
+		modeSpinner = this.findViewById(R.id.spinner);
 		ArrayAdapter<SortMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, SortMode.values());
 		modeSpinner.setAdapter(adapter);
 		modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -299,7 +295,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		});
 
 
-		SearchView searchField = actionBarView.findViewById(R.id.search_view);
+		SearchView searchField = this.findViewById(R.id.search_view);
 		searchField.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
 			@Override
 			public boolean onQueryTextSubmit(String query) {
@@ -333,6 +329,11 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		editor.apply();
 	}
 
+	@Override
+	protected void onBackendConnected() {
+
+	}
+
 	private void emoteClicked(Emote emote) {
 		emoteClicked(emote.getAliases().get(0));
 	}
@@ -357,9 +358,6 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	}
 
-	protected void onBackendConnected() {
-
-	}
 }
 
 class AsyncEmoteLoader extends AsyncEmoteLoaderBase {

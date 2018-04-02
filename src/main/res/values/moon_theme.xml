@@ -15,31 +15,14 @@
 
 
 	<style name="ConversationsTheme.Moon" parent="ConversationsTheme">
-		<item name="android:actionBarStyle">@style/ConversationsActionBar.Moon</item>
+        <item name="colorPrimary">@color/blue900_dark</item>
+        <item name="colorPrimaryDark">@color/blue800</item>
 		<item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
 	</style>
+
 	<style name="ConversationsTheme.Moon.Dark" parent="ConversationsTheme.Dark">
-		<item name="android:actionBarStyle">@style/ConversationsActionBar.Moon</item>
+        <item name="colorPrimary">@color/blue900_dark</item>
+        <item name="colorPrimaryDark">@color/blue800</item>
 		<item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
-	</style>
-
-	<style name="ConversationsActionBar.Moon" parent="ConversationsActionBar">
-		<item name="android:background">@color/blue900_dark</item>
-		<item name="android:backgroundStacked">@color/blue800</item>
-	</style>
-
-	<style name="ConversationsTheme.Moon.LargerText" parent="ConversationsTheme.Moon">
-		<item name="TextSizeInfo">14sp</item>
-		<item name="TextSizeBody">16sp</item>
-		<item name="IconSize">20sp</item>
-		<item name="TextSeparation">6sp</item>
-		<item name="TextSizeHeadline">22sp</item>
-	</style>
-	<style name="ConversationsTheme.Moon.Dark.LargerText" parent="ConversationsTheme.Moon.Dark">
-		<item name="TextSizeInfo">14sp</item>
-		<item name="TextSizeBody">16sp</item>
-		<item name="IconSize">20sp</item>
-		<item name="TextSeparation">6sp</item>
-		<item name="TextSizeHeadline">22sp</item>
 	</style>
 </resources>

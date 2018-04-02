@@ -32,9 +32,11 @@ package eu.siacs.conversations.ui;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlarmManager;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.app.FragmentTransaction;
+import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
 import android.content.Context;
 import android.content.Intent;
@@ -43,6 +45,7 @@ import android.databinding.DataBindingUtil;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
@@ -75,6 +78,7 @@ import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
 import eu.siacs.conversations.utils.ExceptionHelper;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
+import horse.vinylscratch.conversations.UpdateCheckReceiver;
 
 import static eu.siacs.conversations.ui.ConversationFragment.REQUEST_DECRYPT_PGP;
 
@@ -119,7 +123,7 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 	}
 
 	@Override
-	void onBackendConnected() {
+	protected void onBackendConnected() {
 		if (performRedirectIfNecessary(true)) {
 			return;
 		}
@@ -382,6 +386,11 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 			pendingViewIntent.push(intent);
 			setIntent(createLauncherIntent(this));
 		}
+
+		AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
+		Intent alarmIntent = new Intent(this, UpdateCheckReceiver.class);
+		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, "UPDATE_CHECK".hashCode(), alarmIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+		alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 60 * 1000, AlarmManager.INTERVAL_DAY, pendingIntent);
 	}
 
 	@Override

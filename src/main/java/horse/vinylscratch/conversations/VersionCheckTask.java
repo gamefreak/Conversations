@@ -94,7 +94,7 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 		Notification.Builder builder = new Notification.Builder(context);
 		TypedValue tv = new TypedValue();
 		context.getTheme().resolveAttribute(R.attr.colorPrimary, tv, true);
-		builder.setSmallIcon(R.drawable.ic_action_download)
+		builder.setSmallIcon(R.drawable.ic_file_download_white_24dp)
 				.setContentTitle("Conversations update available")
 				.setContentText(String.format("Version %s available for download.", version))
 				.setContentIntent(pi)

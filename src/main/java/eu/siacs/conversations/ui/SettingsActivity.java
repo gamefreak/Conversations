@@ -109,7 +109,7 @@ public class SettingsActivity extends XmppActivity implements
 			notificationManager = (NotificationManager) SettingsActivity.this.getSystemService(Context.NOTIFICATION_SERVICE);
 			builder = new Notification.Builder(SettingsActivity.this);
 			builder.setContentTitle("Downloading ponymotes...")
-					.setSmallIcon(R.drawable.ic_action_download);
+					.setSmallIcon(R.drawable.ic_file_download_white_24dp);
 
 			notificationManager.notify(NOTIFICATION_ID, builder.getNotification());
 			if (packFile.exists()) {

@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="ConversationsTheme.Moon" parent="ConversationsTheme">
-        <!--<item name="android:colorPrimary">#001bab</item>-->
-        <item name="android:colorPrimary">@color/blue900</item>
-        <item name="android:colorPrimaryDark">@color/blue900_dark</item>
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+
         <item name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
     </style>
     <style name="ConversationsTheme.Moon.Dark" parent="ConversationsTheme.Dark">
-        <item name="android:colorPrimary">@color/blue900</item>
-        <item name="android:colorPrimaryDark">@color/blue900_dark</item>
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
         <item name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
     </style>
 </resources>

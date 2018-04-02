@@ -110,7 +110,6 @@ import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import rocks.xmpp.addr.Jid;
 import horse.vinylscratch.conversations.EmoticonBrowserActivity;
 import horse.vinylscratch.conversations.entities.EmoteDbHelper;
-import horse.vinylscratch.conversations.entities.RecentEmoteContract;
 import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote;
 
 import static eu.siacs.conversations.ui.XmppActivity.EXTRA_ACCOUNT;
@@ -155,7 +154,6 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 	private Toast messageLoaderToast;
 	private ConversationsActivity activity;
 	private boolean reInitRequiredOnStart = true;
-	private ImageButton viewEmotesButton = null;
 	private EmoteDbHelper emoteDbHelper = null;
 	private SQLiteDatabase emoteDb = null;
 
@@ -655,7 +653,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 		}
 		Pattern pattern = Pattern.compile(Emote.PATTERN);
 		Matcher matcher = pattern.matcher(body);
-		EmoticonService emoticonService = ((ConversationActivity) getActivity()).emoticonService();
+		EmoticonService emoticonService = ((ConversationsActivity) getActivity()).emoticonService();
 		emoteDb.beginTransaction();
 		try {
 			while (matcher.find()) {
@@ -791,6 +789,12 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 					Log.d(Config.LOGTAG, "lost take photo uri. unable to to attach");
 				}
 				break;
+			case EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE:
+				String emoteText = data.getStringExtra("emote");
+				if (emoteText != null) {
+					this.appendText(emoteText);
+				}
+				break;
 			case ATTACHMENT_CHOICE_CHOOSE_FILE:
 			case ATTACHMENT_CHOICE_RECORD_VIDEO:
 			case ATTACHMENT_CHOICE_RECORD_VOICE:
@@ -878,20 +882,6 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 		final MenuItem menuInviteContact = menu.findItem(R.id.action_invite);
 		final MenuItem menuMute = menu.findItem(R.id.action_mute);
 		final MenuItem menuUnmute = menu.findItem(R.id.action_unmute);
-
-		viewEmotesButton = view.findViewById(R.id.open_emote_view);
-		viewEmotesButton.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				Intent intent = new Intent(getActivity(), EmoticonBrowserActivity.class);
-
-				ConversationFragment.this.startActivityForResult(intent, EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE);
-			}
-		});
-
-		snackbar = (RelativeLayout) view.findViewById(R.id.snackbar);
-		snackbarMessage = (TextView) view.findViewById(R.id.snackbar_message);
-		snackbarAction = (TextView) view.findViewById(R.id.snackbar_action);
 
 		if (conversation != null) {
 			if (conversation.getMode() == Conversation.MODE_MULTI) {
@@ -999,17 +989,15 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 
 		registerForContextMenu(binding.messagesView);
 
+		binding.openEmoteView.setOnClickListener(v -> {
+			Intent intent = new Intent(getActivity(), EmoticonBrowserActivity.class);
+
+			ConversationFragment.this.startActivityForResult(intent, EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE);
+		});
+
 		return binding.getRoot();
 	}
 
-	@Override
-	public void onStart() {
-		super.onStart();
-		if (emoteDbHelper == null) {
-			emoteDbHelper = new EmoteDbHelper(getActivity());
-			emoteDb = emoteDbHelper.getWritableDatabase();
-		}
-	}
 
 	private void quoteText(String text) {
 		if (binding.textinput.isEnabled()) {
@@ -1795,6 +1783,12 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 		} else {
 			Log.d(Config.LOGTAG, "skipped reinit on start");
 		}
+
+
+		if (emoteDbHelper == null) {
+			emoteDbHelper = new EmoteDbHelper(getActivity());
+			emoteDb = emoteDbHelper.getWritableDatabase();
+		}
 	}
 
 	@Override
@@ -2150,9 +2144,9 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 	private void updateEmoteButton() {
 		XmppActivity activity = (XmppActivity) getActivity();
 		int color = ContextCompat.getColor(getActivity(), activity.isDarkTheme() ? R.color.emote_button_tint_dark : R.color.emote_button_tint_light);
-		viewEmotesButton.setColorFilter(color);
+		binding.openEmoteView.setColorFilter(color);
 		EmoticonService emoticonService = activity.emoticonService();
-		viewEmotesButton.setVisibility(emoticonService != null && emoticonService.hasPack() ? View.VISIBLE : View.INVISIBLE);
+		binding.openEmoteView.setVisibility(emoticonService != null && emoticonService.hasPack() ? View.VISIBLE : View.INVISIBLE);
 	}
 
 	protected void updateDateSeparators() {
@@ -2528,18 +2522,6 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 			lastCompletionLength = 0;
 		}
 		return true;
-	}
-	@Override
-	public void onActivityResult(int requestCode, int resultCode,
-								 final Intent data) {
-		if (resultCode == Activity.RESULT_OK) {
-			if (requestCode == EmoticonBrowserActivity.REQUEST_CHOOSE_EMOTE) {
-				String emoteText = data.getStringExtra("emote");
-				if (emoteText != null) {
-					this.appendText(emoteText);
-				}
-			}
-		}
 	}
 
 	private void startPendingIntent(PendingIntent pendingIntent, int requestCode) {
