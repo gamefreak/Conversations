@@ -198,27 +198,26 @@ public class SettingsActivity extends XmppActivity implements
 		boolean removeVoice = new Intent(MediaStore.Audio.Media.RECORD_SOUND_ACTION).resolveActivity(getPackageManager()) == null;
 
 		final ListPreference activeEmotePackPreference = (ListPreference)mSettingsFragment.findPreference(ACTIVE_EMOTE_PACK);
-		activeEmotePackPreference.setEntries(new String[]{"None"});
-		activeEmotePackPreference.setDefaultValue("");
-		activeEmotePackPreference.setEntryValues(new String[]{""});
+		if (activeEmotePackPreference != null) {
+			activeEmotePackPreference.setEntries(new String[]{"None"});
+			activeEmotePackPreference.setDefaultValue("");
+			activeEmotePackPreference.setEntryValues(new String[]{""});
 
 
-		final Preference downloadPonymotesPreference = mSettingsFragment.findPreference("download_ponymotes");
-		if (downloadPonymotesPreference != null) {
-			downloadPonymotesPreference.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
-				@Override
-				public boolean onPreferenceClick(Preference preference) {
+			final Preference downloadPonymotesPreference = mSettingsFragment.findPreference("download_ponymotes");
+			if (downloadPonymotesPreference != null) {
+				downloadPonymotesPreference.setOnPreferenceClickListener(preference -> {
 					File dir = emoticonService().getPackDirectory();
 					if (!dir.exists()) dir.mkdir();
 
 					final File packFile = new File(dir, DownloadPackTask.PONYPACK_FILENAME);
 					activeEmotePackPreference.setValue(null);
 
-					DownloadPackTask downloadPackTask=  new LocalDownloadPackTask(SettingsActivity.this, packFile, activeEmotePackPreference);
+					DownloadPackTask downloadPackTask = new LocalDownloadPackTask(SettingsActivity.this, packFile, activeEmotePackPreference);
 					downloadPackTask.execute(DownloadPackTask.PONYPACK_DOWNLOAD_URL, packFile.getAbsolutePath());
 					return false;
-				}
-			});
+				});
+			}
 		}
 
 		ListPreference quickAction = (ListPreference) mSettingsFragment.findPreference("quick_action");
@@ -321,11 +320,13 @@ public class SettingsActivity extends XmppActivity implements
 		}
 
 		final Preference checkForUpdatesPreference = mSettingsFragment.findPreference("check_for_updates");
-		checkForUpdatesPreference.setOnPreferenceClickListener(preference -> {
-			VersionCheckTask task = new VersionCheckTask(this);
-			task.execute();
-			return true;
-		});
+		if (checkForUpdatesPreference != null) {
+			checkForUpdatesPreference.setOnPreferenceClickListener(preference -> {
+				VersionCheckTask task = new VersionCheckTask(this);
+				task.execute();
+				return true;
+			});
+		}
 	}
 
 	private boolean isCallable(final Intent i) {
