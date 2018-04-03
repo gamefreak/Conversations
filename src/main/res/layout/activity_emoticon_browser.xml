@@ -15,9 +15,7 @@
                                        android:minHeight="?attr/actionBarSize"
                                        android:elevation="6dp"
                                        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-                                       app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
-                                       android:layout_gravity="fill_horizontal"
-                                       android:gravity="fill_horizontal">
+                                       app:popupTheme="@style/ThemeOverlay.AppCompat.Light">
         <LinearLayout android:orientation="horizontal"
                       android:minHeight="?attr/actionBarSize"
                       android:layout_width="match_parent"
@@ -25,7 +23,8 @@
             <Spinner
                 android:id="@+id/spinner"
                 android:layout_width="wrap_content"
-                android:layout_height="match_parent" />
+                android:layout_height="match_parent"
+                android:entries="@array/emote_sort_options"/>
             <Space
                 android:id="@+id/space_x"
                 android:layout_width="0dp"

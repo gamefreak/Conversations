@@ -13,6 +13,12 @@
 	<color name="bubble_blue_bg">#4b559c</color>
 	<color name="bubble_blue_dark_bg">#2f3661</color>
 
+    <string-array name="emote_sort_options">
+        <item>All</item>
+        <item>Most Used</item>
+        <item>Recent</item>
+    </string-array>
+
 
 	<style name="ConversationsTheme.Moon" parent="ConversationsTheme">
         <item name="colorPrimary">@color/blue900_dark</item>

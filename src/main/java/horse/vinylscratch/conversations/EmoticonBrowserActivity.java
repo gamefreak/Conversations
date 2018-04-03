@@ -44,7 +44,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	enum SortMode {
 		ALL("All"),
 		FREQUENT("Most Used"),
-		RECENT("Recently Used");
+		RECENT("Recent");
 
 		final private String label;
 
