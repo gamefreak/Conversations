@@ -1,12 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<layout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    >
+<LinearLayout
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical">
-    <include android:id="@+id/toolbar" layout="@layout/emoticon_browser_toolbar" />
+    <android.support.v7.widget.Toolbar android:id="@+id/toolbar"
+                                       android:layout_width="match_parent"
+                                       android:layout_height="wrap_content"
+                                       android:background="?attr/colorPrimary"
+                                       android:minHeight="?attr/actionBarSize"
+                                       android:elevation="6dp"
+                                       android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+                                       app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+                                       android:layout_gravity="fill_horizontal"
+                                       android:gravity="fill_horizontal">
+        <LinearLayout android:orientation="horizontal"
+                      android:minHeight="?attr/actionBarSize"
+                      android:layout_width="match_parent"
+                      android:layout_height="wrap_content">
+            <Spinner
+                android:id="@+id/spinner"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent" />
+            <Space
+                android:id="@+id/space_x"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"/>
+            <SearchView
+                android:id="@+id/search_view"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:inputType="text|textNoSuggestions|textFilter" />
+        </LinearLayout>
+    </android.support.v7.widget.Toolbar>
     <horse.vinylscratch.conversations.AutoColumnSizingGridView
         android:id="@+id/emote_grid"
         android:layout_width="match_parent"
@@ -14,3 +45,4 @@
         android:numColumns="auto_fit"
         tools:listitem="@layout/emote_preview"/>
 </LinearLayout>
+</layout>

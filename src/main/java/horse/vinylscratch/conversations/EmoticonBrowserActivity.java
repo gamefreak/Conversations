@@ -7,8 +7,8 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.databinding.DataBindingUtil;
 import android.graphics.drawable.Drawable;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
@@ -19,22 +19,19 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.PopupMenu;
 import android.widget.SearchView;
-import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
-import android.widget.GridView;
 import android.widget.ImageView;
-import android.widget.Spinner;
-import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.databinding.ActivityEmoticonBrowserBinding;
+import eu.siacs.conversations.databinding.EmotePreviewBinding;
 import eu.siacs.conversations.emotes.Emote;
 import eu.siacs.conversations.emotes.EmoticonService;
 import eu.siacs.conversations.entities.Conversation;
@@ -99,12 +96,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			if (!this.emoticonService.hasPack()) return new ArrayList<>();
 			if (this.mode == SortMode.ALL) {
 				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
-				Collections.sort(theEmotes, new Comparator<Emote>() {
-					@Override
-					public int compare(Emote left, Emote right) {
-						return left.getFirstAlias().compareTo(right.getFirstAlias());
-					}
-				});
+				Collections.sort(theEmotes, (left, right) -> left.getFirstAlias().compareTo(right.getFirstAlias()));
 				return theEmotes;
 			} else {
 				String sortBy = (this.mode == SortMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
@@ -168,14 +160,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		@NonNull
 		@Override
 		public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-			LayoutInflater inflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-			View emoteView = convertView != null ? convertView : inflater.inflate(R.layout.emote_preview, parent, false);
-			ImageView imageView = emoteView.findViewById(R.id.image);
+			EmotePreviewBinding  binding= convertView != null ? DataBindingUtil.getBinding(convertView) : DataBindingUtil.inflate(getLayoutInflater(), R.layout.emote_preview, parent, false);
 
 			Emote emoticon = getEmote(position);
 			Drawable image = emoticonService.tryGetEmote(emoticon.getAliases().get(0));
 			if (image == null) {
-				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, imageView);
+				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, binding.image);
 				task.executeOnExecutor(emoticonService().getExecutor(),  emoticon.getAliases().get(0));
 
 				image = emoticonService.makePlaceholder(emoticon);
@@ -183,12 +173,11 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 			image = new FitDrawable(image);
 
-			TextView textView = (TextView) emoteView.findViewById(R.id.label);
-			imageView.setImageDrawable(image);
-			textView.setText(emoticon.getAliases().get(0));
+			binding.image.setImageDrawable(image);
+			binding.label.setText(emoticon.getAliases().get(0));
 			// tried setting it in the XML but it was crashing for some reason
-//			textView.setTextColor(EmoticonBrowserActivity.this.getPrimaryTextColor());
-			return emoteView;
+//			binding.label.setTextColor(EmoticonBrowserActivity.this.getPrimaryTextColor());
+			return binding.getRoot();
 		}
 
 		public void setSearchFilter(String newText) {
@@ -211,9 +200,8 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	public static final String ACTION_PICK_EMOTE = "pick_emote";
 	static final String TAG = "EmoteBrowserActivity";
-	public static final int REQUEST_CHOOSE_EMOTE = 0x7dd3a842;
 	static final String PREF_SORT_MODE = "SORT_MODE";
-
+	private ActivityEmoticonBrowserBinding binding;
 	private EmoteDbHelper dbHelper = null;
 
 
@@ -234,9 +222,6 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	private EmoticonService emoticonService = null;
 	private EmoteAdapter emoteAdapter = null;
 
-	private GridView grid = null;
-	private Spinner modeSpinner = null;
-
 	private String uuid = null;
 	private Conversation mConversation = null;
 
@@ -244,23 +229,19 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_emoticon_browser);
+		this.binding = DataBindingUtil.setContentView(this, R.layout.activity_emoticon_browser);
 
 		setTitle("");
 
-		grid = (GridView) findViewById(R.id.emote_grid);
-
 		this.dbHelper = new EmoteDbHelper(this);
 		emoteAdapter = new EmoteAdapter(this, this.dbHelper.getReadableDatabase());
-		grid.setAdapter(emoteAdapter);
-		grid.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-			@Override
-			public void onItemClick(AdapterView<?> adapterView, View view, int position, long id) {
-				Emote emote = emoteAdapter.getEmote(position);
-				emoteClicked(emote);
-			}
+
+		binding.emoteGrid.setAdapter(emoteAdapter);
+		binding.emoteGrid.setOnItemClickListener((adapterView, view, position, id) -> {
+			Emote emote = emoteAdapter.getEmote(position);
+			emoteClicked(emote);
 		});
-		grid.setOnItemLongClickListener((parent, view, position, id) -> {
+		binding.emoteGrid.setOnItemLongClickListener((parent, view, position, id) -> {
 			EmoticonBrowserActivity activity = EmoticonBrowserActivity.this;
 			Emote emote = (Emote) parent.getAdapter().getItem(position);
 			if (emote.getAliases().size() < 2) {
@@ -280,13 +261,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			return true;
 		});
 
-		setSupportActionBar(findViewById(R.id.toolbar));
+		setSupportActionBar(binding.toolbar);
 		configureActionBar(getSupportActionBar());
 
-		modeSpinner = this.findViewById(R.id.spinner);
 		ArrayAdapter<SortMode> adapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_dropdown_item, SortMode.values());
-		modeSpinner.setAdapter(adapter);
-		modeSpinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+		binding.spinner.setAdapter(adapter);
+		binding.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
 			@Override
 			public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
 				SortMode newMode = (SortMode) adapterView.getItemAtPosition(position);
@@ -322,7 +302,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		startService(new Intent(this, EmoticonService.class));
 		bindService(new Intent(this, EmoticonService.class), emoteServiceConnection, Context.BIND_AUTO_CREATE);
 		SortMode mode = SortMode.valueOf(getPreferences().getString(PREF_SORT_MODE, SortMode.ALL.name()));
-		modeSpinner.setSelection(mode.ordinal());
+		binding.spinner.setSelection(mode.ordinal());
 	}
 
 	@Override
