@@ -91,17 +91,17 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 		}
 
-		private List<Emote> getSortedEmotes() {
+		private List<Emote> getSortedEmotes(SortMode mode) {
 			if (this.emoticonService == null) return new ArrayList<>();
 			if (!this.emoticonService.hasPack()) return new ArrayList<>();
-			if (this.mode == SortMode.ALL) {
+			if (mode == SortMode.ALL) {
 				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
 				Collections.sort(theEmotes, (left, right) -> left.getFirstAlias().compareTo(right.getFirstAlias()));
 				return theEmotes;
 			} else {
-				String sortBy = (this.mode == SortMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
+				String sortBy = (mode == SortMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
 				Cursor cursor = db.query(RecentEmote.TABLE_NAME, new String[]{RecentEmote.COLUMN_NAME_EMOTE}, null,  null, null, null, sortBy);
-				List emotes = new ArrayList<Emote>();
+				List<Emote> emotes = new ArrayList<>();
 				while(cursor.moveToNext()) {
 					String emoteName = cursor.getString(cursor.getColumnIndexOrThrow(RecentEmote.COLUMN_NAME_EMOTE));
 					Emote emote = this.emoticonService.getEmoteInfo(emoteName);
@@ -117,12 +117,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				this.emotes.clear();
 			} else if (this.searchFilter == null || this.searchFilter.trim().isEmpty()) {
 				this.emotes.clear();
-				this.emotes.addAll(getSortedEmotes());
+				this.emotes.addAll(getSortedEmotes(this.mode));
 			} else {
 				this.emotes.clear();
 
 				String filter = this.searchFilter.toLowerCase();
-				for (Emote emote : this.getSortedEmotes()) {
+				for (Emote emote : this.getSortedEmotes(SortMode.ALL)) {
 					for (String alias : emote.getAliases()) {
 						if (alias.toLowerCase().contains(filter)) {
 							this.emotes.add(emote);
