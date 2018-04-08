@@ -21,6 +21,4 @@
 	<!-- scanner -->
 	<dimen name="scan_laser_width">4dp</dimen>
 	<dimen name="scan_dot_size">8dp</dimen>
-    <dimen name="emote_list_item_spacing">16dp</dimen>
-    <dimen name="emote_list_item_spacing_half">8dp</dimen>
 </resources>

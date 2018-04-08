@@ -30,6 +30,4 @@
 
 	<!-- scanner -->
 	<color name="scan_result_dots">#c04CAF50</color>
-    <color name="emote_button_tint_light">#ff5d5d5d</color>
-    <color name="emote_button_tint_dark">#ffbdc0c0</color>
 </resources>

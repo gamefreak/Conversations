@@ -735,10 +735,4 @@
 	<string name="disable_encryption_message">Are you sure you want to disable OMEMO encryption for this conversation?\nThis will allow your server administrator to read your messages, but it might be the only way to communicate with people using outdated clients.</string>
 	<string name="disable_now">Disable now</string>
     <string name="draft">Draft:</string>
-	<string name="pref_download_ponymotes">Download Ponymotes</string>
-	<string name="pref_download_ponymotes_summary">Download the latest version of the Ponysquad emote pack.</string>
-	<string name="pref_select_pack">Select emote pack</string>
-	<string name="pref_select_pack_summary">Select emote pack to use.</string>
-	<string name="pref_theme_moon">Cobalt</string>
-	<string name="pref_theme_moon_dark">Cobalt Dark</string>
 </resources>

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="pref_download_ponymotes">Download Ponymotes</string>
+    <string name="pref_download_ponymotes_summary">Download the latest version of the Ponysquad emote pack.</string>
+    <string name="pref_select_pack">Select emote pack</string>
+    <string name="pref_select_pack_summary">Select emote pack to use.</string>
+    <string name="pref_theme_moon">Cobalt</string>
+    <string name="pref_theme_moon_dark">Cobalt Dark</string>
+</resources>

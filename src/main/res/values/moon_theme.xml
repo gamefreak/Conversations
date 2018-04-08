@@ -13,6 +13,13 @@
 	<color name="bubble_blue_bg">#4b559c</color>
 	<color name="bubble_blue_dark_bg">#2f3661</color>
 
+    <color name="emote_button_tint_light">#ff5d5d5d</color>
+    <color name="emote_button_tint_dark">#ffbdc0c0</color>
+
+    <dimen name="emote_list_item_spacing">16dp</dimen>
+    <dimen name="emote_list_item_spacing_half">8dp</dimen>
+
+
     <string-array name="emote_sort_options">
         <item>All</item>
         <item>Most Used</item>
