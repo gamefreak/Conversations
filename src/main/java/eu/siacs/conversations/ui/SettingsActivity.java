@@ -321,6 +321,7 @@ public class SettingsActivity extends XmppActivity implements
 
 		final Preference checkForUpdatesPreference = mSettingsFragment.findPreference("check_for_updates");
 		if (checkForUpdatesPreference != null) {
+			checkForUpdatesPreference.setEnabled(VersionCheckTask.CHECKING_ENABLED);
 			checkForUpdatesPreference.setOnPreferenceClickListener(preference -> {
 				VersionCheckTask task = new VersionCheckTask(this);
 				task.execute();

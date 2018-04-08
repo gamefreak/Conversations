@@ -79,6 +79,7 @@ import eu.siacs.conversations.ui.util.PendingItem;
 import eu.siacs.conversations.utils.ExceptionHelper;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
 import horse.vinylscratch.conversations.UpdateCheckReceiver;
+import horse.vinylscratch.conversations.VersionCheckTask;
 
 import static eu.siacs.conversations.ui.ConversationFragment.REQUEST_DECRYPT_PGP;
 
@@ -387,10 +388,12 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 			setIntent(createLauncherIntent(this));
 		}
 
-		AlarmManager alarmManager = (AlarmManager)getSystemService(Context.ALARM_SERVICE);
-		Intent alarmIntent = new Intent(this, UpdateCheckReceiver.class);
-		PendingIntent pendingIntent = PendingIntent.getBroadcast(this, "UPDATE_CHECK".hashCode(), alarmIntent, PendingIntent.FLAG_CANCEL_CURRENT);
-		alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 60 * 1000, AlarmManager.INTERVAL_DAY, pendingIntent);
+		if (VersionCheckTask.CHECKING_ENABLED) {
+			AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+			Intent alarmIntent = new Intent(this, UpdateCheckReceiver.class);
+			PendingIntent pendingIntent = PendingIntent.getBroadcast(this, "UPDATE_CHECK".hashCode(), alarmIntent, PendingIntent.FLAG_CANCEL_CURRENT);
+			alarmManager.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime() + 60 * 1000, AlarmManager.INTERVAL_DAY, pendingIntent);
+		}
 	}
 
 	@Override

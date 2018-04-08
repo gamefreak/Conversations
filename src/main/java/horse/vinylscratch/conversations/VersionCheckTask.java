@@ -27,6 +27,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 
 public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
+	public static final boolean CHECKING_ENABLED = true;
 	public static final String TAG = "UpdateChecker";
 	public static final String UPDATE_URL = "https://api.github.com/repos/gamefreak/Conversations/releases/latest";
 	public static final String APK_CONTENT_TYPE = "application/vnd.android.package-archive";
