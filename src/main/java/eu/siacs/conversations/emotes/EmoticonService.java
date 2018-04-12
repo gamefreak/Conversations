@@ -128,7 +128,7 @@ public class EmoticonService extends Service {
 		RectShape shape = new RectShape();
 		DisplayMetrics metrics = getResources().getDisplayMetrics();
 		ShapeDrawable sd = new ShapeDrawable(shape);
-		sd.getPaint().setColor(0xff0000ff);
+		sd.getPaint().setColor(0x000000ff);
 		sd.getPaint().setStyle(Paint.Style.FILL);
 		sd.setBounds(
 				0,
