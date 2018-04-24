@@ -93,16 +93,24 @@
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:layout_marginBottom="32dp">
-                            <TextView
+                            <eu.siacs.conversations.ui.widget.CollapsibleTextView
                                 android:id="@+id/muc_topic"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentLeft="true"
                                 android:layout_toLeftOf="@+id/edit_topic_button"
                                 android:text="@string/example_topic"
+                                app:collapsed="true"
+                                app:lineLimit="5"
                                 android:autoLink="all"
                                 android:textIsSelectable="true"
                                 android:textAppearance="@style/TextAppearance.Conversations.Body1" />
+                            <ImageButton
+                                android:id="@+id/toggle_topic_button"
+                                android:src="@android:drawable/ic_input_add"
+                                android:layout_below="@id/muc_topic"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"/>
                             <ImageButton
                                 android:id="@+id/edit_topic_button"
                                 android:layout_width="wrap_content"

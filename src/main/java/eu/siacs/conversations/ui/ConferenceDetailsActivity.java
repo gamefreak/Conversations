@@ -46,6 +46,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.services.XmppConnectionService.OnConversationUpdate;
 import eu.siacs.conversations.services.XmppConnectionService.OnMucRosterUpdate;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
+import eu.siacs.conversations.ui.widget.CollapsibleTextView;
 import eu.siacs.conversations.utils.UIHelper;
 import rocks.xmpp.addr.Jid;
 
@@ -274,6 +275,25 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 			if (mConversation != null && mConversation.getMucOptions().canChangeSubject()) {
 				editTopic(this.onSubjectEdited);
 			}
+		});
+		this.binding.mucTopic.setStateListener(new CollapsibleTextView.StateListener() {
+			@Override
+			public void onOverflowStateChanged(boolean hasOverflow) {
+				binding.toggleTopicButton.setVisibility(hasOverflow ? View.VISIBLE : View.GONE);
+			}
+
+			@Override
+			public void onCollapse() {
+				binding.toggleTopicButton.setImageResource(android.R.drawable.ic_input_add);
+			}
+
+			@Override
+			public void onExpand() {
+				binding.toggleTopicButton.setImageResource(android.R.drawable.ic_delete);
+			}
+		});
+		this.binding.toggleTopicButton.setOnClickListener((view) -> {
+			binding.mucTopic.toggle();
 		});
 		this.mAdvancedMode = getPreferences().getBoolean("advanced_muc_mode", false);
 		this.binding.mucInfoMore.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);

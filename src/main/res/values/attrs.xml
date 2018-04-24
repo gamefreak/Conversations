@@ -83,6 +83,11 @@
         <attr name="backgroundColor" format="reference|color"/>
     </declare-styleable>
 
+    <declare-styleable name="CollapsibleTextView">
+        <attr name="lineLimit" format="reference|integer"/>
+        <attr name="collapsed" format="reference|boolean"/>
+    </declare-styleable>
+
     <attr name="popupOverlayStyle" format="reference"/>
 
 </resources>
