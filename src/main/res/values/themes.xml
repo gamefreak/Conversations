@@ -78,6 +78,8 @@
         <item type="reference" name="icon_share">@drawable/ic_share_white_24dp</item>
         <item type="reference" name="icon_scan_qr_code">@drawable/ic_qr_code_scan_white_24dp</item>
         <item type="reference" name="icon_scroll_down">@drawable/ic_scroll_to_end_black</item>
+        <item type="reference" name="icon_expand_more">@drawable/ic_expand_more_black_24dp</item>
+        <item type="reference" name="icon_expand_less">@drawable/ic_expand_less_black_24dp</item>
 
         <item type="reference" name="icon_gps_not_fixed">@drawable/ic_gps_not_fixed_black_24dp</item>
         <item type="reference" name="icon_gps_fixed">@drawable/ic_gps_fixed_black_24dp</item>
@@ -168,6 +170,8 @@
         <item type="reference" name="icon_share">@drawable/ic_share_white_24dp</item>
         <item type="reference" name="icon_scan_qr_code">@drawable/ic_qr_code_scan_white_24dp</item>
         <item type="reference" name="icon_scroll_down">@drawable/ic_scroll_to_end_white</item>
+        <item type="reference" name="icon_expand_more">@drawable/ic_expand_more_white_24dp</item>
+        <item type="reference" name="icon_expand_less">@drawable/ic_expand_less_white_24dp</item>
 
         <item type="reference" name="icon_gps_not_fixed">@drawable/ic_gps_not_fixed_white_24dp</item>
         <item type="reference" name="icon_gps_fixed">@drawable/ic_gps_fixed_white_24dp</item>

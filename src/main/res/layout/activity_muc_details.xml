@@ -107,8 +107,11 @@
                                 android:textAppearance="@style/TextAppearance.Conversations.Body1" />
                             <ImageButton
                                 android:id="@+id/toggle_topic_button"
-                                android:src="@android:drawable/ic_input_add"
+                                android:src="?attr/icon_expand_more"
                                 android:layout_below="@id/muc_topic"
+                                android:alpha="?attr/icon_alpha"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:padding="@dimen/image_button_padding"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"/>
                             <ImageButton

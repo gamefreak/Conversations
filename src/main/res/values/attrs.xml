@@ -65,6 +65,8 @@
     <attr name="icon_scan_qr_code" format="reference"/>
     <attr name="icon_enable_undecided_device" format="reference"/>
     <attr name="icon_scroll_down" format="reference"/>
+    <attr name="icon_expand_more" format="reference"/>
+    <attr name="icon_expand_less" format="reference"/>
 
     <attr name="icon_gps_not_fixed" format="reference"/>
     <attr name="icon_gps_fixed" format="reference"/>

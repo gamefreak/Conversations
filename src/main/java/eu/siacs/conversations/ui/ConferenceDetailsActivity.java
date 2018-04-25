@@ -284,12 +284,12 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 
 			@Override
 			public void onCollapse() {
-				binding.toggleTopicButton.setImageResource(android.R.drawable.ic_input_add);
+				binding.toggleTopicButton.setImageResource(getThemeResource(R.attr.icon_expand_more, R.drawable.ic_expand_more_black_24dp));
 			}
 
 			@Override
 			public void onExpand() {
-				binding.toggleTopicButton.setImageResource(android.R.drawable.ic_delete);
+				binding.toggleTopicButton.setImageResource(getThemeResource(R.attr.icon_expand_less, R.drawable.ic_expand_less_black_24dp));
 			}
 		});
 		this.binding.toggleTopicButton.setOnClickListener((view) -> {
