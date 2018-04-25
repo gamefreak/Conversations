@@ -565,7 +565,9 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		this.binding.detailsAccount.setText(getString(R.string.using_account, account));
 		this.binding.yourPhoto.setImageBitmap(avatarService().get(mConversation.getAccount(), getPixel(48)));
 		setTitle(mConversation.getName());
-		this.binding.mucTopic.setText(mucOptions.getSubject());
+		// clearFocus/setTextKeepState is needed to prevent the view from jumping to the top when setText is called (noticable in rooms with long member lists)
+		this.binding.mucTopic.clearFocus();
+		this.binding.mucTopic.setTextKeepState(mucOptions.getSubject());
 		this.binding.editTopicButton.setVisibility(mConversation.getMucOptions().canChangeSubject() ? View.VISIBLE : View.GONE);
 		this.binding.mucJabberid.setText(mConversation.getJid().asBareJid().toString());
 		this.binding.mucYourNick.setText(mucOptions.getActualNick());
