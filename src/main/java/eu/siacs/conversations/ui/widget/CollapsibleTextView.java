@@ -50,17 +50,27 @@ public class CollapsibleTextView extends android.support.v7.widget.AppCompatText
 	private int lineLimit = DEFAULT_MAX_LINES;
 
 
+	private int getCollapsedHeight() {
+		return lineLimit * getLineHeight();
+	}
 
 	@Override
 	protected void onLayout(boolean changed, int left, int top, int right, int bottom) {
 		super.onLayout(changed, left, top, right, bottom);
-//	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
-//		super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-		if (!hasLayoutYet) {
-			if (isCollapsed) doCollapse(); else doExpand();
+		if (!hasLayoutYet && getLayout() != null) {
+			if (isCollapsed) {
+				if (this.stateListener != null) stateListener.onCollapse();
+				setMaxHeight(getCollapsedHeight());
+			} else {
+				if (this.stateListener != null) stateListener.onExpand();
+				setMaxHeight(Integer.MAX_VALUE);
+			}
 			hasLayoutYet = true;
+
+			hasOverflow = getLayout().getLineCount() > lineLimit;
+			if (this.stateListener != null) stateListener.onOverflowStateChanged(hasOverflow);
 		}
-		int height = getLayout().getHeight();
+
 		int lines = getLayout().getLineCount();
 		if (lines > lineLimit && !hasOverflow) {
 			hasOverflow = true;
@@ -92,8 +102,7 @@ public class CollapsibleTextView extends android.support.v7.widget.AppCompatText
 		Layout layout = getLayout();
 		if (layout == null) return;
 
-		int height = layout.getLineTop(Math.min(layout.getLineCount(),  lineLimit));
-
+		int height = getCollapsedHeight();
 		ObjectAnimator.ofInt(this, "maxHeight", getHeight(), height).start();
 	}
 	public void collapse() {
