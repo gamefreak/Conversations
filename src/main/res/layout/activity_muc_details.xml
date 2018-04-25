@@ -108,7 +108,8 @@
                             <ImageButton
                                 android:id="@+id/toggle_topic_button"
                                 android:src="?attr/icon_expand_more"
-                                android:layout_below="@id/muc_topic"
+                                android:layout_below="@id/edit_topic_button"
+                                android:layout_alignParentRight="true"
                                 android:alpha="?attr/icon_alpha"
                                 android:background="?attr/selectableItemBackgroundBorderless"
                                 android:padding="@dimen/image_button_padding"
