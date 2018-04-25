@@ -89,43 +89,44 @@
                                 android:src="?attr/icon_edit_body"/>
                         </RelativeLayout>
 
-                        <RelativeLayout
+                        <LinearLayout
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:orientation="horizontal"
                             android:layout_marginBottom="32dp">
                             <eu.siacs.conversations.ui.widget.CollapsibleTextView
                                 android:id="@+id/muc_topic"
-                                android:layout_width="wrap_content"
+                                android:layout_width="0dp"
                                 android:layout_height="wrap_content"
-                                android:layout_alignParentLeft="true"
-                                android:layout_toLeftOf="@+id/edit_topic_button"
+                                android:layout_weight="1"
                                 android:text="@string/example_topic"
                                 app:collapsed="true"
                                 app:lineLimit="5"
                                 android:autoLink="all"
                                 android:textIsSelectable="true"
                                 android:textAppearance="@style/TextAppearance.Conversations.Body1" />
-                            <ImageButton
-                                android:id="@+id/toggle_topic_button"
-                                android:src="?attr/icon_expand_more"
-                                android:layout_below="@id/edit_topic_button"
-                                android:layout_alignParentRight="true"
-                                android:alpha="?attr/icon_alpha"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:padding="@dimen/image_button_padding"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"/>
-                            <ImageButton
-                                android:id="@+id/edit_topic_button"
+                            <LinearLayout
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignParentRight="true"
-                                android:layout_centerVertical="false"
-                                android:alpha="?attr/icon_alpha"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:padding="@dimen/image_button_padding"
-                                android:src="?attr/icon_edit_body"/>
-                        </RelativeLayout>
+                                android:orientation="vertical">
+                                <ImageButton
+                                    android:id="@+id/edit_topic_button"
+                                    android:alpha="?attr/icon_alpha"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:padding="@dimen/image_button_padding"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:src="?attr/icon_edit_body"/>
+                                <ImageButton
+                                    android:id="@+id/toggle_topic_button"
+                                    android:src="?attr/icon_expand_more"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:alpha="?attr/icon_alpha"
+                                    android:background="?attr/selectableItemBackgroundBorderless"
+                                    android:padding="@dimen/image_button_padding"/>
+                            </LinearLayout>
+                        </LinearLayout>
 
                         <RelativeLayout
                             android:id="@+id/muc_settings"

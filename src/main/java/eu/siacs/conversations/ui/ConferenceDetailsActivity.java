@@ -279,7 +279,8 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		this.binding.mucTopic.setStateListener(new CollapsibleTextView.StateListener() {
 			@Override
 			public void onOverflowStateChanged(boolean hasOverflow) {
-				binding.toggleTopicButton.setVisibility(hasOverflow ? View.VISIBLE : View.GONE);
+				// for some reason this would sometimes fail to update properly otherwise
+				binding.toggleTopicButton.post(() -> binding.toggleTopicButton.setVisibility(binding.mucTopic.hasOveflow() ? View.VISIBLE : View.GONE));
 			}
 
 			@Override
