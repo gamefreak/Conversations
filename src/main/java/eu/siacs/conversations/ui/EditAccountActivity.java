@@ -64,6 +64,7 @@ import eu.siacs.conversations.ui.adapter.KnownHostsAdapter;
 import eu.siacs.conversations.ui.adapter.PresenceTemplateAdapter;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
+import eu.siacs.conversations.ui.util.SoftKeyboardUtils;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.utils.XmppUri;
@@ -157,7 +158,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 					startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url.toString())));
 					return;
 				} catch (ActivityNotFoundException e) {
-					Toast.makeText(EditAccountActivity.this, R.string.application_found_to_open_website, Toast.LENGTH_SHORT);
+					Toast.makeText(EditAccountActivity.this, R.string.application_found_to_open_website, Toast.LENGTH_SHORT).show();
 					return;
 				}
 			}
@@ -169,7 +170,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 				} else {
 					jid = Jid.of(binding.accountJid.getText().toString());
 				}
-			} catch (final IllegalArgumentException e) {
+			} catch (final NullPointerException | IllegalArgumentException e) {
 				if (mUsernameMode) {
 					mAccountJidLayout.setError(getString(R.string.invalid_username));
 				} else {
@@ -312,7 +313,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 			xmppConnectionService.deleteAccount(mAccount);
 		}
 
-		if (xmppConnectionService.getAccounts().size() == 0) {
+		if (xmppConnectionService.getAccounts().size() == 0 && Config.MAGIC_CREATE_DOMAIN != null) {
 			Intent intent = new Intent(EditAccountActivity.this, WelcomeActivity.class);
 			WelcomeActivity.addInviteUri(intent, getIntent());
 			startActivity(intent);
@@ -389,7 +390,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 
 	protected void finishInitialSetup(final Avatar avatar) {
 		runOnUiThread(() -> {
-			hideKeyboard();
+			SoftKeyboardUtils.hideSoftKeyboard(EditAccountActivity.this);
 			final Intent intent;
 			final XmppConnection connection = mAccount.getXmppConnection();
 			final boolean wasFirstAccount = xmppConnectionService != null && xmppConnectionService.getAccounts().size() == 1;
@@ -754,7 +755,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 	}
 
 	private String getUserModeDomain() {
-		if (mAccount != null) {
+		if (mAccount != null && mAccount.getJid().getDomain() != null) {
 			return mAccount.getJid().getDomain();
 		} else {
 			return Config.DOMAIN_LOCK;

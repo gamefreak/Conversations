@@ -1,5 +1,6 @@
 package eu.siacs.conversations.ui;
 
+import android.preference.CheckBoxPreference;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AlertDialog;
 import android.app.FragmentManager;
@@ -36,11 +37,13 @@ import java.util.List;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.emotes.DownloadPackTask;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.ExportLogsService;
 import eu.siacs.conversations.services.MemorizingTrustManager;
 import eu.siacs.conversations.ui.util.Color;
+import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.TimeframeUtils;
 import rocks.xmpp.addr.Jid;
 import horse.vinylscratch.conversations.VersionCheckTask;
@@ -58,6 +61,7 @@ public class SettingsActivity extends XmppActivity implements
 	public static final String BROADCAST_LAST_ACTIVITY = "last_activity";
 	public static final String THEME = "theme";
 	public static final String SHOW_DYNAMIC_TAGS = "show_dynamic_tags";
+	public static final String OMEMO_SETTING = "omemo";
 
 	public static final String ACTIVE_EMOTE_PACK = "active_emote_pack";
 	public static final String ENABLE_GIF_EMOTES = "enable_gif_emotes";
@@ -150,6 +154,8 @@ public class SettingsActivity extends XmppActivity implements
 		super.onStart();
 		PreferenceManager.getDefaultSharedPreferences(this).registerOnSharedPreferenceChangeListener(this);
 
+		changeOmemoSettingSummary();
+
 		if (Config.FORCE_ORBOT) {
 			PreferenceCategory connectionOptions = (PreferenceCategory) mSettingsFragment.findPreference("connection_options");
 			PreferenceScreen expert = (PreferenceScreen) mSettingsFragment.findPreference("expert");
@@ -159,6 +165,14 @@ public class SettingsActivity extends XmppActivity implements
 		}
 
 		PreferenceScreen mainPreferenceScreen = (PreferenceScreen) mSettingsFragment.findPreference("main_screen");
+
+		PreferenceCategory attachmentsCategory = (PreferenceCategory) mSettingsFragment.findPreference("attachments");
+		CheckBoxPreference locationPlugin = (CheckBoxPreference) mSettingsFragment.findPreference("use_share_location_plugin");
+		if (attachmentsCategory != null && locationPlugin != null) {
+			if (!GeoHelper.isLocationPluginInstalled(this)) {
+				attachmentsCategory.removePreference(locationPlugin);
+			}
+		}
 
 		//this feature is only available on Huawei Android 6.
 		PreferenceScreen huaweiPreferenceScreen = (PreferenceScreen) mSettingsFragment.findPreference("huawei");
@@ -330,6 +344,26 @@ public class SettingsActivity extends XmppActivity implements
 		}
 	}
 
+	private void changeOmemoSettingSummary() {
+		ListPreference omemoPreference = (ListPreference) mSettingsFragment.findPreference(OMEMO_SETTING);
+		if (omemoPreference != null) {
+			String value = omemoPreference.getValue();
+			switch (value) {
+				case "always":
+					omemoPreference.setSummary(R.string.pref_omemo_setting_summary_always);
+					break;
+				case "default_on":
+					omemoPreference.setSummary(R.string.pref_omemo_setting_summary_default_on);
+					break;
+				case "default_off":
+					omemoPreference.setSummary(R.string.pref_omemo_setting_summary_default_off);
+					break;
+			}
+		} else {
+			Log.d(Config.LOGTAG,"unable to find preference named "+OMEMO_SETTING);
+		}
+	}
+
 	private boolean isCallable(final Intent i) {
 		return i != null && getPackageManager().queryIntentActivities(i, PackageManager.MATCH_DEFAULT_ONLY).size() > 0;
 	}
@@ -451,7 +485,10 @@ public class SettingsActivity extends XmppActivity implements
 				BROADCAST_LAST_ACTIVITY,
 				"enable_custom_priority",
 				"priority");
-		if (name.equals(KEEP_FOREGROUND_SERVICE)) {
+		if (name.equals(OMEMO_SETTING)) {
+			OmemoSetting.load(this, preferences);
+			changeOmemoSettingSummary();
+		} else if (name.equals(KEEP_FOREGROUND_SERVICE)) {
 			xmppConnectionService.toggleForegroundService();
 		} else if (resendPresence.contains(name)) {
 			if (xmppConnectionServiceBound) {

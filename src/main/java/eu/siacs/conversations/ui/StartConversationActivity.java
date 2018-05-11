@@ -65,18 +65,20 @@ import eu.siacs.conversations.entities.Contact;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.ListItem;
 import eu.siacs.conversations.entities.Presence;
+import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.services.XmppConnectionService.OnRosterUpdate;
 import eu.siacs.conversations.ui.adapter.ListItemAdapter;
 import eu.siacs.conversations.ui.interfaces.OnBackendConnected;
 import eu.siacs.conversations.ui.service.EmojiService;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
+import eu.siacs.conversations.ui.util.SoftKeyboardUtils;
 import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
 import eu.siacs.conversations.xmpp.XmppConnection;
 import rocks.xmpp.addr.Jid;
 
-public class StartConversationActivity extends XmppActivity implements OnRosterUpdate, OnUpdateBlocklist, CreateConferenceDialog.CreateConferenceDialogListener, JoinConferenceDialog.JoinConferenceDialogListener {
+public class StartConversationActivity extends XmppActivity implements XmppConnectionService.OnConversationUpdate, OnRosterUpdate, OnUpdateBlocklist, CreateConferenceDialog.CreateConferenceDialogListener, JoinConferenceDialog.JoinConferenceDialogListener {
 
 	private final int REQUEST_SYNC_CONTACTS = 0x28cf;
 	private final int REQUEST_CREATE_CONFERENCE = 0x39da;
@@ -99,6 +101,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		@Override
 		public boolean onMenuItemActionExpand(MenuItem item) {
 			mSearchEditText.post(() -> {
+				updateSearchViewHint();
 				mSearchEditText.requestFocus();
 				if (oneShotKeyboardSuppress.compareAndSet(true, false)) {
 					return;
@@ -114,7 +117,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 
 		@Override
 		public boolean onMenuItemActionCollapse(MenuItem item) {
-			hideKeyboard();
+			SoftKeyboardUtils.hideSoftKeyboard(StartConversationActivity.this);
 			mSearchEditText.setText("");
 			filter(null);
 			return true;
@@ -184,7 +187,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 					return true;
 				}
 			}
-			hideKeyboard();
+			SoftKeyboardUtils.hideSoftKeyboard(StartConversationActivity.this);
 			mListPagerAdapter.requestFocus(pos);
 			return true;
 		}
@@ -225,7 +228,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 	}
 
 	private static boolean isViewIntent(final Intent i) {
-		return i != null && (Intent.ACTION_VIEW.equals(i.getAction()) || Intent.ACTION_SENDTO.equals(i.getAction()));
+		return i != null && (Intent.ACTION_VIEW.equals(i.getAction()) || Intent.ACTION_SENDTO.equals(i.getAction()) || i.hasExtra(WelcomeActivity.EXTRA_INVITE_URI));
 	}
 
 	protected void hideToast() {
@@ -316,8 +319,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		if (this.mTheme != theme) {
 			recreate();
 		} else {
-			Intent i = getIntent();
-			if (i == null || !i.hasExtra(WelcomeActivity.EXTRA_INVITE_URI)) {
+			if (pendingViewIntent.peek() == null) {
 				askForContactsPermissions();
 			}
 		}
@@ -342,12 +344,8 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 
 	protected void openConversationForContact(Contact contact) {
 		Conversation conversation = xmppConnectionService.findOrCreateConversation(contact.getAccount(), contact.getJid(), false, true);
+		SoftKeyboardUtils.hideSoftKeyboard(this);
 		switchToConversation(conversation);
-	}
-
-	protected void openConversationForContact() {
-		int position = contact_context_id;
-		openConversationForContact(position);
 	}
 
 	protected void openConversationForBookmark() {
@@ -388,6 +386,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 			bookmark.setAutojoin(true);
 			xmppConnectionService.pushBookmarks(bookmark.getAccount());
 		}
+		SoftKeyboardUtils.hideSoftKeyboard(this);
 		switchToConversation(conversation);
 	}
 
@@ -395,6 +394,12 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		int position = contact_context_id;
 		Contact contact = (Contact) contacts.get(position);
 		switchToContactDetails(contact);
+	}
+
+	protected void showQrForContact() {
+		int position = contact_context_id;
+		Contact contact = (Contact) contacts.get(position);
+		showQrCode("xmpp:"+contact.getJid().asBareJid().toEscapedString());
 	}
 
 	protected void toggleContactBlock() {
@@ -542,6 +547,17 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		super.invalidateOptionsMenu();
 	}
 
+	private void updateSearchViewHint() {
+		if (binding == null || mSearchEditText == null) {
+			return;
+		}
+		if (binding.startConversationViewPager.getCurrentItem() == 0) {
+			mSearchEditText.setHint(R.string.search_contacts);
+		} else {
+			mSearchEditText.setHint(R.string.search_groups);
+		}
+	}
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		getMenuInflater().inflate(R.menu.start_conversation, menu);
@@ -563,6 +579,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 			mSearchEditText.append(initialSearchValue);
 			filter(initialSearchValue);
 		}
+		updateSearchViewHint();
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -572,6 +589,9 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 			return false;
 		}
 		switch (item.getItemId()) {
+			case android.R.id.home:
+				navigateBack();
+				return true;
 			case R.id.action_join_conference:
 				showJoinConferenceDialog(null);
 				return true;
@@ -689,6 +709,17 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 			}
 	}
 
+	private void configureHomeButton() {
+		final ActionBar actionBar = getSupportActionBar();
+		if (actionBar == null) {
+			return;
+		}
+		boolean openConversations = !xmppConnectionService.isConversationsListEmpty(null);
+		actionBar.setDisplayHomeAsUpEnabled(openConversations);
+		actionBar.setDisplayHomeAsUpEnabled(openConversations);
+
+	}
+
 	@Override
 	protected void onBackendConnected() {
 		if (mPostponedActivityResult != null) {
@@ -705,13 +736,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 				}
 			}
 		}
-		final ActionBar ab = getSupportActionBar();
-		boolean noConversations = xmppConnectionService.getConversations().size() == 0;
-		if (noConversations && ab != null) {
-			ab.setDisplayShowHomeEnabled(false);
-			ab.setDisplayHomeAsUpEnabled(false);
-			ab.setHomeButtonEnabled(false);
-		}
+		configureHomeButton();
 		Intent intent = pendingViewIntent.pop();
 		if (intent != null && processViewIntent(intent)) {
 			filter(null);
@@ -729,7 +754,7 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		}
 	}
 
-	protected boolean processViewIntent(Intent intent) {
+	protected boolean processViewIntent(@NonNull Intent intent) {
 		final String inviteUri = intent.getStringExtra(WelcomeActivity.EXTRA_INVITE_URI);
 		if (inviteUri != null) {
 			Invite invite = new Invite(inviteUri);
@@ -737,7 +762,11 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 				return invite.invite();
 			}
 		}
-		switch (intent.getAction()) {
+		final String action = intent.getAction();
+		if (action == null) {
+			return false;
+		}
+		switch (action) {
 			case Intent.ACTION_SENDTO:
 			case Intent.ACTION_VIEW:
 				Uri uri = intent.getData();
@@ -884,6 +913,21 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 		if (mSearchEditText != null) {
 			filter(mSearchEditText.getText().toString());
 		}
+		configureHomeButton();
+	}
+
+	@Override
+	public void onBackPressed() {
+		navigateBack();
+	}
+
+	private void navigateBack() {
+		if (xmppConnectionService != null && !xmppConnectionService.isConversationsListEmpty(null)) {
+			Intent intent = new Intent(this, ConversationsActivity.class);
+			intent.addFlags(Intent.FLAG_ACTIVITY_NO_ANIMATION);
+			startActivity(intent);
+		}
+		finish();
 	}
 
 	@Override
@@ -945,6 +989,11 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 			dialog.dismiss();
 			switchToConversation(conversation);
 		}
+	}
+
+	@Override
+	public void onConversationUpdate() {
+		refreshUi();
 	}
 
 	public static class MyListFragment extends ListFragment {
@@ -1015,11 +1064,11 @@ public class StartConversationActivity extends XmppActivity implements OnRosterU
 				return true;
 			}
 			switch (item.getItemId()) {
-				case R.id.context_start_conversation:
-					activity.openConversationForContact();
-					break;
 				case R.id.context_contact_details:
 					activity.openDetailsForContact();
+					break;
+				case R.id.context_show_qr:
+					activity.showQrForContact();
 					break;
 				case R.id.context_contact_block_unblock:
 					activity.toggleContactBlock();

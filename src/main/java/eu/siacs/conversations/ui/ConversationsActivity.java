@@ -63,6 +63,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.databinding.ActivityConversationsBinding;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Conversation;
@@ -74,6 +75,7 @@ import eu.siacs.conversations.ui.interfaces.OnConversationSelected;
 import eu.siacs.conversations.ui.interfaces.OnConversationsListItemUpdated;
 import eu.siacs.conversations.ui.service.EmojiService;
 import eu.siacs.conversations.ui.util.ActivityResult;
+import eu.siacs.conversations.ui.util.ConversationMenuConfigurator;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
 import eu.siacs.conversations.utils.ExceptionHelper;
@@ -89,6 +91,7 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 	public static final String EXTRA_CONVERSATION = "conversationUuid";
 	public static final String EXTRA_DOWNLOAD_UUID = "eu.siacs.conversations.download_uuid";
 	public static final String EXTRA_TEXT = "text";
+	public static final String EXTRA_AS_QUOTE = "as_quote";
 	public static final String EXTRA_NICK = "nick";
 	public static final String EXTRA_IS_PRIVATE_MESSAGE = "pm";
 
@@ -246,10 +249,8 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 					Toast.makeText(this, R.string.device_does_not_support_battery_op, Toast.LENGTH_SHORT).show();
 				}
 			});
-			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-				builder.setOnDismissListener(dialog -> setNeverAskForBatteryOptimizationsAgain());
-			}
-			AlertDialog dialog = builder.create();
+			builder.setOnDismissListener(dialog -> setNeverAskForBatteryOptimizationsAgain());
+			final AlertDialog dialog = builder.create();
 			dialog.setCanceledOnTouchOutside(false);
 			dialog.show();
 		}
@@ -369,6 +370,8 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 	@Override
 	protected void onCreate(final Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		ConversationMenuConfigurator.reloadFeatures(this);
+		OmemoSetting.load(this);
 		new EmojiService(this).init();
 		this.binding = DataBindingUtil.setContentView(this, R.layout.activity_conversations);
 		setSupportActionBar((Toolbar) binding.toolbar);
@@ -436,7 +439,13 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 				FragmentTransaction fragmentTransaction = getFragmentManager().beginTransaction();
 				fragmentTransaction.replace(R.id.main_fragment, conversationFragment);
 				fragmentTransaction.addToBackStack(null);
-				fragmentTransaction.commitAllowingStateLoss(); //allowing state loss is probably fine since view intents et all are already stored and a click can probably be 'ignored'
+				try {
+					fragmentTransaction.commit();
+				} catch (IllegalStateException e) {
+					Log.w(Config.LOGTAG,"sate loss while opening conversation",e);
+					//allowing state loss is probably fine since view intents et all are already stored and a click can probably be 'ignored'
+					return;
+				}
 			}
 		} else {
 			mainNeedsRefresh = true;
@@ -575,7 +584,12 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 		}
 		Fragment mainFragment = getFragmentManager().findFragmentById(R.id.main_fragment);
 		if (mainFragment != null && mainFragment instanceof ConversationFragment) {
-			getFragmentManager().popBackStack();
+			try {
+				getFragmentManager().popBackStack();
+			} catch (IllegalStateException e) {
+				Log.w(Config.LOGTAG,"state loss while popping back state after archiving conversation",e);
+				//this usually means activity is no longer active; meaning on the next open we will run through this again
+			}
 			return;
 		}
 		Fragment secondaryFragment = getFragmentManager().findFragmentById(R.id.secondary_fragment);
@@ -604,9 +618,9 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 	}
 
 	@Override
-	public void onConversationRead(Conversation conversation) {
+	public void onConversationRead(Conversation conversation, String upToUuid) {
 		if (!mActivityPaused && pendingViewIntent.peek() == null) {
-			xmppConnectionService.sendReadMarker(conversation);
+			xmppConnectionService.sendReadMarker(conversation, upToUuid);
 		} else {
 			Log.d(Config.LOGTAG, "ignoring read callback. mActivityPaused=" + Boolean.toString(mActivityPaused));
 		}

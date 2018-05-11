@@ -36,13 +36,13 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/pick_your_username"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
+                    android:textAppearance="@style/TextAppearance.Conversations.Title"/>
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/magic_create_text"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+                    android:textAppearance="@style/TextAppearance.Conversations.Body1"/>
                 <EditText
                     android:id="@+id/username"
                     android:layout_width="match_parent"
@@ -56,16 +56,16 @@
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/your_full_jid_will_be"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Caption"
+                    android:textAppearance="@style/TextAppearance.Conversations.Caption"
                     android:visibility="invisible"/>
                 <Button
                     android:id="@+id/create_account"
-                    style="?android:attr/borderlessButtonStyle"
+                    style="@style/Widget.Conversations.Button.Borderless"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
                     android:text="@string/next"
-                    android:textColor="@color/accent"/>
+                    android:textColor="?colorAccent"/>
             </LinearLayout>
             <RelativeLayout
                 android:layout_width="match_parent"

@@ -35,24 +35,24 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="@string/welcome_header"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
+                    android:textAppearance="@style/TextAppearance.Conversations.Title"/>
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="8dp"
                     android:text="@string/welcome_text"
-                    android:textAppearance="@style/TextAppearance.AppCompat.Body1"/>
+                    android:textAppearance="@style/TextAppearance.Conversations.Body1"/>
                 <Button
                     android:id="@+id/create_account"
-                    style="?android:attr/borderlessButtonStyle"
+                    style="@style/Widget.Conversations.Button.Borderless"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"
                     android:text="@string/create_account"
-                    android:textColor="@color/accent"/>
+                    android:textColor="?colorAccent"/>
                 <Button
                     android:id="@+id/use_own_provider"
-                    style="?android:attr/borderlessButtonStyle"
+                    style="@style/Widget.Conversations.Button.Borderless"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="right"

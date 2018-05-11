@@ -35,13 +35,13 @@
   privacy
 * Rely on existing, well established protocols (XMPP)
 * Do not require a Google Account or specifically Google Cloud Messaging (GCM)
-* Require as few permissions as possible
 
 ## Features
 
 * End-to-end encryption with [OMEMO](http://conversations.im/omemo/) or [OpenPGP](http://openpgp.org/about/)
 * Send and receive images as well as other kind of files
 * Share your location via an external [plug-in](https://play.google.com/store/apps/details?id=eu.siacs.conversations.sharelocation&referrer=utm_source%3Dgithub)
+* Send voice messages via an external [plug-in](https://play.google.com/store/apps/details?id=eu.siacs.conversations.voicerecorder&referrer=utm_source%3Dgithub)
 * Indication when your contact has read your message
 * Intuitive UI that follows Android Design guidelines
 * Pictures / Avatars for your Contacts
@@ -288,7 +288,7 @@ I am available for hire. Contact me via XMPP: `inputmice@siacs.eu`
 
 ### Security
 
-#### Why are there three end-to-end encryption methods and which one should I choose?
+#### Why are there two end-to-end encryption methods and which one should I choose?
 
 * OMEMO works even when a contact is offline, and works with multiple devices. It also allows asynchronous file-transfer when the server has [HTTP File Upload](http://xmpp.org/extensions/xep-0363.html). However, OMEMO not widely support and is currently implemented only implemented [by a handful of clients](https://omemo.top).
 * OpenPGP (XEP-0027) is a very old encryption method that has some advantages over OMEMO but should only be used by people who what they are doing.

@@ -50,6 +50,7 @@ import eu.siacs.conversations.entities.Roster;
 import eu.siacs.conversations.entities.ServiceDiscoveryResult;
 import eu.siacs.conversations.services.ShortcutService;
 import eu.siacs.conversations.utils.CryptoHelper;
+import eu.siacs.conversations.utils.FtsUtils;
 import eu.siacs.conversations.utils.MimeUtils;
 import eu.siacs.conversations.utils.Resolver;
 import eu.siacs.conversations.xmpp.mam.MamReference;
@@ -60,7 +61,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 	private static DatabaseBackend instance = null;
 
 	private static final String DATABASE_NAME = "history";
-	private static final int DATABASE_VERSION = 40;
+	private static final int DATABASE_VERSION = 41;
 
 	private static String CREATE_CONTATCS_STATEMENT = "create table "
 			+ Contact.TABLENAME + "(" + Contact.ACCOUNT + " TEXT, "
@@ -163,6 +164,12 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 	private static String CREATE_MESSAGE_TIME_INDEX = "create INDEX message_time_index ON "+Message.TABLENAME+"("+Message.TIME_SENT+")";
 	private static String CREATE_MESSAGE_CONVERSATION_INDEX = "create INDEX message_conversation_index ON "+Message.TABLENAME+"("+Message.CONVERSATION+")";
 
+	private static String CREATE_MESSAGE_INDEX_TABLE = "CREATE VIRTUAL TABLE messages_index USING FTS4(uuid, body)";
+	private static String CREATE_MESSAGE_INSERT_TRIGGER = "CREATE TRIGGER after_message_insert AFTER INSERT ON "+Message.TABLENAME+ " BEGIN INSERT INTO messages_index (uuid,body) VALUES (new.uuid,new.body); END;";
+	private static String CREATE_MESSAGE_UPDATE_TRIGGER = "CREATE TRIGGER after_message_update UPDATE of uuid,body ON "+Message.TABLENAME+" BEGIN update messages_index set body=new.body,uuid=new.uuid WHERE uuid=old.uuid; END;";
+	private static String CREATE_MESSAGE_DELETE_TRIGGER = "CREATE TRIGGER after_message_delete AFTER DELETE ON "+Message.TABLENAME+ " BEGIN DELETE from messages_index where uuid=old.uuid; END;";
+	private static String COPY_PREEXISTING_ENTRIES = "INSERT into messages_index(uuid,body) select uuid,body FROM "+Message.TABLENAME+";";
+
 	private DatabaseBackend(Context context) {
 		super(context, DATABASE_NAME, null, DATABASE_VERSION);
 	}
@@ -223,6 +230,10 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		db.execSQL(CREATE_IDENTITIES_STATEMENT);
 		db.execSQL(CREATE_PRESENCE_TEMPLATES_STATEMENT);
 		db.execSQL(CREATE_RESOLVER_RESULTS_TABLE);
+		db.execSQL(CREATE_MESSAGE_INDEX_TABLE);
+		db.execSQL(CREATE_MESSAGE_INSERT_TRIGGER);
+		db.execSQL(CREATE_MESSAGE_UPDATE_TRIGGER);
+		db.execSQL(CREATE_MESSAGE_DELETE_TRIGGER);
 	}
 
 	@Override
@@ -478,6 +489,14 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		if (oldVersion < 39 && newVersion >= 39) {
 			db.execSQL(CREATE_RESOLVER_RESULTS_TABLE);
 		}
+
+		if (oldVersion < 41 && newVersion >= 41) {
+			db.execSQL(CREATE_MESSAGE_INDEX_TABLE);
+			db.execSQL(CREATE_MESSAGE_INSERT_TRIGGER);
+			db.execSQL(CREATE_MESSAGE_UPDATE_TRIGGER);
+			db.execSQL(CREATE_MESSAGE_DELETE_TRIGGER);
+			db.execSQL(COPY_PREEXISTING_ENTRIES);
+		}
 	}
 
 	private static ContentValues createFingerprintStatusContentValues(FingerprintStatus.Trust trust, boolean active) {
@@ -674,8 +693,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		return getMessages(conversations, limit, -1);
 	}
 
-	public ArrayList<Message> getMessages(Conversation conversation, int limit,
-										  long timestamp) {
+	public ArrayList<Message> getMessages(Conversation conversation, int limit, long timestamp) {
 		ArrayList<Message> list = new ArrayList<>();
 		SQLiteDatabase db = this.getReadableDatabase();
 		Cursor cursor;
@@ -705,40 +723,44 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		return list;
 	}
 
+	public Cursor getMessageSearchCursor(List<String> term) {
+		SQLiteDatabase db = this.getReadableDatabase();
+		String SQL = "SELECT "+Message.TABLENAME+".*,"+Conversation.TABLENAME+'.'+Conversation.CONTACTJID+','+Conversation.TABLENAME+'.'+Conversation.ACCOUNT+','+Conversation.TABLENAME+'.'+Conversation.MODE+" FROM "+Message.TABLENAME +" join "+Conversation.TABLENAME+" on "+Message.TABLENAME+'.'+Message.CONVERSATION+'='+Conversation.TABLENAME+'.'+Conversation.UUID+" join messages_index ON messages_index.uuid=messages.uuid where "+Message.ENCRYPTION+" NOT IN("+Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE+','+Message.ENCRYPTION_PGP+','+Message.ENCRYPTION_DECRYPTION_FAILED+") AND "+Message.TYPE+" IN("+Message.TYPE_TEXT+','+Message.TYPE_PRIVATE+") AND messages_index.body MATCH ? ORDER BY "+Message.TIME_SENT+" DESC limit "+Config.MAX_SEARCH_RESULTS;
+		Log.d(Config.LOGTAG,"search term: "+FtsUtils.toMatchString(term));
+		return db.rawQuery(SQL,new String[]{FtsUtils.toMatchString(term)});
+	}
+
 	public Iterable<Message> getMessagesIterable(final Conversation conversation) {
-		return new Iterable<Message>() {
-			@Override
-			public Iterator<Message> iterator() {
-				class MessageIterator implements Iterator<Message> {
-					SQLiteDatabase db = getReadableDatabase();
-					String[] selectionArgs = {conversation.getUuid()};
-					Cursor cursor = db.query(Message.TABLENAME, null, Message.CONVERSATION
-							+ "=?", selectionArgs, null, null, Message.TIME_SENT
-							+ " ASC", null);
+		return () -> {
+			class MessageIterator implements Iterator<Message> {
+				private SQLiteDatabase db = getReadableDatabase();
+				private String[] selectionArgs = {conversation.getUuid()};
+				private Cursor cursor = db.query(Message.TABLENAME, null, Message.CONVERSATION
+						+ "=?", selectionArgs, null, null, Message.TIME_SENT
+						+ " ASC", null);
 
-					public MessageIterator() {
-						cursor.moveToFirst();
-					}
-
-					@Override
-					public boolean hasNext() {
-						return !cursor.isAfterLast();
-					}
-
-					@Override
-					public Message next() {
-						Message message = Message.fromCursor(cursor, conversation);
-						cursor.moveToNext();
-						return message;
-					}
-
-					@Override
-					public void remove() {
-						throw new UnsupportedOperationException();
-					}
+				private MessageIterator() {
+					cursor.moveToFirst();
 				}
-				return new MessageIterator();
+
+				@Override
+				public boolean hasNext() {
+					return !cursor.isAfterLast();
+				}
+
+				@Override
+				public Message next() {
+					Message message = Message.fromCursor(cursor, conversation);
+					cursor.moveToNext();
+					return message;
+				}
+
+				@Override
+				public void remove() {
+					throw new UnsupportedOperationException();
+				}
 			}
+			return new MessageIterator();
 		};
 	}
 
@@ -825,11 +847,10 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		return db;
 	}
 
-	public void updateMessage(Message message) {
+	public boolean updateMessage(Message message) {
 		SQLiteDatabase db = this.getWritableDatabase();
 		String[] args = {message.getUuid()};
-		db.update(Message.TABLENAME, message.getContentValues(), Message.UUID
-				+ "=?", args);
+		return db.update(Message.TABLENAME, message.getContentValues(), Message.UUID + "=?", args) == 1;
 	}
 
 	public void updateMessage(Message message, String uuid) {
@@ -873,9 +894,10 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 	}
 
 	public void deleteMessagesInConversation(Conversation conversation) {
-		SQLiteDatabase db = this.getWritableDatabase();
+		final SQLiteDatabase db = this.getWritableDatabase();
 		String[] args = {conversation.getUuid()};
-		db.delete(Message.TABLENAME, Message.CONVERSATION + "=?", args);
+		int num = db.delete(Message.TABLENAME, Message.CONVERSATION + "=?", args);
+		Log.d(Config.LOGTAG,"deleted "+num+" messages for "+conversation.getJid().asBareJid());
 	}
 
 	public boolean expireOldMessages(long timestamp) {
@@ -889,7 +911,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 		Cursor cursor = null;
 		try {
 			SQLiteDatabase db = this.getReadableDatabase();
-			String sql = "select messages.timeSent,messages.serverMsgId from accounts join conversations on accounts.uuid=conversations.accountUuid join messages on conversations.uuid=messages.conversationUuid where accounts.uuid=? and (messages.status=0 or messages.carbon=1 or messages.serverMsgId not null) and conversations.mode=0 order by messages.timesent desc limit 1";
+			String sql = "select messages.timeSent,messages.serverMsgId from accounts join conversations on accounts.uuid=conversations.accountUuid join messages on conversations.uuid=messages.conversationUuid where accounts.uuid=? and (messages.status=0 or messages.carbon=1 or messages.serverMsgId not null) and (conversations.mode=0 or (messages.serverMsgId not null and messages.type=4)) order by messages.timesent desc limit 1";
 			String[] args = {account.getUuid()};
 			cursor = db.rawQuery(sql, args);
 			if (cursor.getCount() == 0) {

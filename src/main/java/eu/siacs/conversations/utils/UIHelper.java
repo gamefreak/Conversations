@@ -23,6 +23,7 @@ import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.entities.Contact;
 import eu.siacs.conversations.entities.Conversation;
+import eu.siacs.conversations.entities.Conversational;
 import eu.siacs.conversations.entities.ListItem;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.MucOptions;
@@ -284,24 +285,17 @@ public class UIHelper {
 			return new Pair<>(context.getString(R.string.pgp_message), true);
 		} else if (message.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED) {
 			return new Pair<>(context.getString(R.string.decryption_failed), true);
+		} else if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE) {
+			return new Pair<>(context.getString(R.string.not_encrypted_for_this_device), true);
 		} else if (message.getType() == Message.TYPE_FILE || message.getType() == Message.TYPE_IMAGE) {
-			if (message.getStatus() == Message.STATUS_RECEIVED) {
-				return new Pair<>(context.getString(R.string.received_x_file,
-						getFileDescriptionString(context, message)), true);
-			} else {
-				return new Pair<>(getFileDescriptionString(context, message), true);
-			}
+			return new Pair<>(getFileDescriptionString(context, message), true);
 		} else {
-			final String body = message.getBody();
+			final String body = MessageUtils.filterLtrRtl(message.getBody());
 			if (body.startsWith(Message.ME_COMMAND)) {
 				return new Pair<>(body.replaceAll("^" + Message.ME_COMMAND,
 						UIHelper.getMessageDisplayName(message) + " "), false);
 			} else if (message.isGeoUri()) {
-				if (message.getStatus() == Message.STATUS_RECEIVED) {
-					return new Pair<>(context.getString(R.string.received_location), true);
-				} else {
-					return new Pair<>(context.getString(R.string.location), true);
-				}
+				return new Pair<>(context.getString(R.string.location), true);
 			} else if (message.treatAsDownloadable()) {
 				return new Pair<>(context.getString(R.string.x_file_offered_for_download,
 						getFileDescriptionString(context, message)), true);
@@ -448,11 +442,13 @@ public class UIHelper {
 			return context.getString(R.string.audio);
 		} else if (mime.startsWith("video/")) {
 			return context.getString(R.string.video);
+		} else if (mime.equals("image/gif")) {
+			return context.getString(R.string.gif);
 		} else if (mime.startsWith("image/")) {
 			return context.getString(R.string.image);
 		} else if (mime.contains("pdf")) {
 			return context.getString(R.string.pdf_document);
-		} else if (mime.contains("application/vnd.android.package-archive")) {
+		} else if (mime.equals("application/vnd.android.package-archive")) {
 			return context.getString(R.string.apk);
 		} else if (mime.contains("vcard")) {
 			return context.getString(R.string.vcard);
@@ -462,7 +458,7 @@ public class UIHelper {
 	}
 
 	public static String getMessageDisplayName(final Message message) {
-		final Conversation conversation = message.getConversation();
+		final Conversational conversation = message.getConversation();
 		if (message.getStatus() == Message.STATUS_RECEIVED) {
 			final Contact contact = message.getContact();
 			if (conversation.getMode() == Conversation.MODE_MULTI) {
@@ -476,8 +472,8 @@ public class UIHelper {
 				return contact != null ? contact.getDisplayName() : "";
 			}
 		} else {
-			if (conversation.getMode() == Conversation.MODE_MULTI) {
-				return conversation.getMucOptions().getSelf().getName();
+			if (conversation instanceof Conversation && conversation.getMode() == Conversation.MODE_MULTI) {
+				return ((Conversation) conversation).getMucOptions().getSelf().getName();
 			} else {
 				final Jid jid = conversation.getAccount().getJid();
 				return jid.getLocal() != null ? jid.getLocal() : Jid.ofDomain(jid.getDomain()).toString();

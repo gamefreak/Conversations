@@ -16,6 +16,7 @@ import java.util.UUID;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
+import eu.siacs.conversations.crypto.axolotl.NotEncryptedForThisDeviceException;
 import eu.siacs.conversations.crypto.axolotl.XmppAxolotlMessage;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Bookmark;
@@ -31,6 +32,7 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xml.Element;
+import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.OnMessagePacketReceived;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.pep.Avatar;
@@ -39,8 +41,41 @@ import rocks.xmpp.addr.Jid;
 
 public class MessageParser extends AbstractParser implements OnMessagePacketReceived {
 
+	private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
+
 	public MessageParser(XmppConnectionService service) {
 		super(service);
+	}
+
+	private static String extractStanzaId(Element packet, boolean isTypeGroupChat, Conversation conversation) {
+		final Jid by;
+		final boolean safeToExtract;
+		if (isTypeGroupChat) {
+			by = conversation.getJid().asBareJid();
+			safeToExtract = conversation.getMucOptions().hasFeature(Namespace.STANZA_IDS);
+		} else {
+			Account account = conversation.getAccount();
+			by = account.getJid().asBareJid();
+			safeToExtract = account.getXmppConnection().getFeatures().stanzaIds();
+		}
+		return safeToExtract ? extractStanzaId(packet, by) : null;
+	}
+
+	private static String extractStanzaId(Element packet, Jid by) {
+		for (Element child : packet.getChildren()) {
+			if (child.getName().equals("stanza-id")
+					&& Namespace.STANZA_IDS.equals(child.getNamespace())
+					&& by.equals(InvalidJid.getNullForInvalid(child.getAttributeAsJid("by")))) {
+				return child.getAttribute("id");
+			}
+		}
+		return null;
+	}
+
+	private static Jid getTrueCounterpart(Element mucUserElement, Jid fallback) {
+		final Element item = mucUserElement == null ? null : mucUserElement.findChild("item");
+		Jid result = item == null ? null : InvalidJid.getNullForInvalid(item.getAttributeAsJid("jid"));
+		return result != null ? result : fallback;
 	}
 
 	private boolean extractChatState(Conversation c, final boolean isTypeGroupChat, final MessagePacket packet) {
@@ -81,7 +116,12 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			return null;
 		}
 		if (xmppAxolotlMessage.hasPayload()) {
-			final XmppAxolotlMessage.XmppAxolotlPlaintextMessage plaintextMessage = service.processReceivingPayloadMessage(xmppAxolotlMessage, postpone);
+			final XmppAxolotlMessage.XmppAxolotlPlaintextMessage plaintextMessage;
+			try {
+				plaintextMessage = service.processReceivingPayloadMessage(xmppAxolotlMessage, postpone);
+			} catch (NotEncryptedForThisDeviceException e) {
+				return new Message(conversation, "", Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE, status);
+			}
 			if (plaintextMessage != null) {
 				Message finishedMessage = new Message(conversation, plaintextMessage.getPlaintext(), Message.ENCRYPTION_AXOLOTL, status);
 				finishedMessage.setFingerprint(plaintextMessage.getFingerprint());
@@ -89,36 +129,10 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 				return finishedMessage;
 			}
 		} else {
-			Log.d(Config.LOGTAG,conversation.getAccount().getJid().asBareJid()+": received OMEMO key transport message");
+			Log.d(Config.LOGTAG, conversation.getAccount().getJid().asBareJid() + ": received OMEMO key transport message");
 			service.processReceivingKeyTransportMessage(xmppAxolotlMessage, postpone);
 		}
 		return null;
-	}
-
-	private class Invite {
-		final Jid jid;
-		final String password;
-		final Contact inviter;
-
-		Invite(Jid jid, String password, Contact inviter) {
-			this.jid = jid;
-			this.password = password;
-			this.inviter = inviter;
-		}
-
-		public boolean execute(Account account) {
-			if (jid != null) {
-				Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, jid, true, false);
-				if (!conversation.getMucOptions().online()) {
-					conversation.getMucOptions().setPassword(password);
-					mXmppConnectionService.databaseBackend.updateConversation(conversation);
-					mXmppConnectionService.joinMuc(conversation, inviter != null && inviter.mutualPresenceSubscription());
-					mXmppConnectionService.updateConversationUi();
-				}
-				return true;
-			}
-			return false;
-		}
 	}
 
 	private Invite extractInvite(Account account, Element message) {
@@ -126,42 +140,25 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		if (x != null) {
 			Element invite = x.findChild("invite");
 			if (invite != null) {
-				Element pw = x.findChild("password");
-				Jid from = invite.getAttributeAsJid("from");
+				String password = x.findChildContent("password");
+				Jid from = InvalidJid.getNullForInvalid(invite.getAttributeAsJid("from"));
 				Contact contact = from == null ? null : account.getRoster().getContact(from);
-				return new Invite(message.getAttributeAsJid("from"), pw != null ? pw.getContent() : null, contact);
+				Jid room = InvalidJid.getNullForInvalid(message.getAttributeAsJid("from"));
+				if (room == null) {
+					return null;
+				}
+				return new Invite(room, password, contact);
 			}
 		} else {
 			x = message.findChild("x", "jabber:x:conference");
 			if (x != null) {
-				Jid from = message.getAttributeAsJid("from");
+				Jid from = InvalidJid.getNullForInvalid(message.getAttributeAsJid("from"));
 				Contact contact = from == null ? null : account.getRoster().getContact(from);
-				return new Invite(x.getAttributeAsJid("jid"), x.getAttribute("password"), contact);
-			}
-		}
-		return null;
-	}
-
-	private static String extractStanzaId(Element packet, boolean isTypeGroupChat, Conversation conversation) {
-		final Jid by;
-		final boolean safeToExtract;
-		if (isTypeGroupChat) {
-			by = conversation.getJid().asBareJid();
-			safeToExtract = conversation.getMucOptions().hasFeature(Namespace.STANZA_IDS);
-		} else {
-			Account account = conversation.getAccount();
-			by = account.getJid().asBareJid();
-			safeToExtract = account.getXmppConnection().getFeatures().stanzaIds();
-		}
-		return safeToExtract ? extractStanzaId(packet, by) : null;
-	}
-
-	private static String extractStanzaId(Element packet, Jid by) {
-		for (Element child : packet.getChildren()) {
-			if (child.getName().equals("stanza-id")
-					&& Namespace.STANZA_IDS.equals(child.getNamespace())
-					&& by.equals(child.getAttributeAsJid("by"))) {
-				return child.getAttribute("id");
+				Jid room = InvalidJid.getNullForInvalid(x.getAttributeAsJid("jid"));
+				if (room == null) {
+					return null;
+				}
+				return new Invite(room, x.getAttribute("password"), contact);
 			}
 		}
 		return null;
@@ -296,17 +293,17 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		}
 		boolean notify = false;
 
-		if (from == null) {
-			Log.d(Config.LOGTAG, "no from in: " + packet.toString());
+		if (from == null || !InvalidJid.isValid(from) || !InvalidJid.isValid(to)) {
+			Log.e(Config.LOGTAG, "encountered invalid message from='" + from + "' to='" + to + "'");
 			return;
 		}
 
 		boolean isTypeGroupChat = packet.getType() == MessagePacket.TYPE_GROUPCHAT;
 		if (query != null && !query.muc() && isTypeGroupChat) {
-			Log.e(Config.LOGTAG,account.getJid().asBareJid()+": received groupchat ("+from+") message on regular MAM request. skipping");
+			Log.e(Config.LOGTAG, account.getJid().asBareJid() + ": received groupchat (" + from + ") message on regular MAM request. skipping");
 			return;
 		}
-		boolean isMucStatusMessage = from.isBareJid() && mucUserElement != null && mucUserElement.hasChild("status");
+		boolean isMucStatusMessage = InvalidJid.hasValidFrom(packet) && from.isBareJid() && mucUserElement != null && mucUserElement.hasChild("status");
 		boolean selfAddressed;
 		if (packet.fromAccount(account)) {
 			status = Message.STATUS_SEND;
@@ -328,7 +325,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		}
 
 		if ((body != null || pgpEncrypted != null || (axolotlEncrypted != null && axolotlEncrypted.hasChild("payload")) || oobUrl != null) && !isMucStatusMessage) {
-			final boolean conversationIsProbablyMuc = isTypeGroupChat || mucUserElement != null || account.getXmppConnection().getMucServers().contains(counterpart.getDomain());
+			final boolean conversationIsProbablyMuc = isTypeGroupChat || mucUserElement != null || account.getXmppConnection().getMucServersWithholdAccount().contains(counterpart.getDomain());
 			final Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), conversationIsProbablyMuc, false, query, false);
 			final boolean conversationMultiMode = conversation.getMode() == Conversation.MODE_MULTI;
 
@@ -342,7 +339,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 					return;
 				}
 				status = Message.STATUS_RECEIVED;
-				if (remoteMsgId != null && conversation.findMessageWithRemoteId(remoteMsgId,counterpart) != null) {
+				if (remoteMsgId != null && conversation.findMessageWithRemoteId(remoteMsgId, counterpart) != null) {
 					return;
 				}
 			}
@@ -392,10 +389,10 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 					message = parseAxolotlChat(axolotlEncrypted, origin, conversation, status, query != null);
 				} else {
 					Message trial = null;
-					for(Jid fallback : fallbacksBySourceId) {
+					for (Jid fallback : fallbacksBySourceId) {
 						trial = parseAxolotlChat(axolotlEncrypted, fallback, conversation, status, query != null);
 						if (trial != null) {
-							Log.d(Config.LOGTAG,account.getJid().asBareJid()+": decoded muc message using fallback");
+							Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": decoded muc message using fallback");
 							origin = fallback;
 							break;
 						}
@@ -403,7 +400,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 					message = trial;
 				}
 				if (message == null) {
-					if (query == null &&  extractChatState(mXmppConnectionService.find(account, counterpart.asBareJid()), isTypeGroupChat, packet)) {
+					if (query == null && extractChatState(mXmppConnectionService.find(account, counterpart.asBareJid()), isTypeGroupChat, packet)) {
 						mXmppConnectionService.updateConversationUi();
 					}
 					if (query != null && status == Message.STATUS_SEND && remoteMsgId != null) {
@@ -411,7 +408,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 						if (previouslySent != null && previouslySent.getServerMsgId() == null && serverMsgId != null) {
 							previouslySent.setServerMsgId(serverMsgId);
 							mXmppConnectionService.databaseBackend.updateMessage(previouslySent);
-							Log.d(Config.LOGTAG,account.getJid().asBareJid()+": encountered previously sent OMEMO message without serverId. updating...");
+							Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": encountered previously sent OMEMO message without serverId. updating...");
 						}
 					}
 					return;
@@ -442,6 +439,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			}
 			message.markable = packet.hasChild("markable", "urn:xmpp:chat-markers:0");
 			if (conversationMultiMode) {
+				message.setMucUser(conversation.getMucOptions().findUserByFullJid(counterpart));
 				final Jid fallback = conversation.getMucOptions().getTrueCounterpart(counterpart);
 				Jid trueCounterpart;
 				if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL) {
@@ -473,8 +471,9 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							|| replacedMessage.getFingerprint().equals(message.getFingerprint());
 					final boolean trueCountersMatch = replacedMessage.getTrueCounterpart() != null
 							&& replacedMessage.getTrueCounterpart().equals(message.getTrueCounterpart());
+					final boolean mucUserMatches = query == null && replacedMessage.sameMucUser(message); //can not be checked when using mam
 					final boolean duplicate = conversation.hasDuplicateMessage(message);
-					if (fingerprintsMatch && (trueCountersMatch || !conversationMultiMode) && !duplicate) {
+					if (fingerprintsMatch && (trueCountersMatch || !conversationMultiMode || mucUserMatches) && !duplicate) {
 						Log.d(Config.LOGTAG, "replaced message '" + replacedMessage.getBody() + "' with '" + message.getBody() + "'");
 						synchronized (replacedMessage) {
 							final String uuid = replacedMessage.getUuid();
@@ -521,7 +520,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			boolean checkForDuplicates = (isTypeGroupChat && packet.hasChild("delay", "urn:xmpp:delay"))
 					|| message.getType() == Message.TYPE_PRIVATE
 					|| message.getServerMsgId() != null;
-			if (checkForDuplicates ) {
+			if (checkForDuplicates) {
 				final Message duplicate = conversation.findDuplicateMessage(message);
 				if (duplicate != null) {
 					final boolean serverMsgIdUpdated;
@@ -530,18 +529,22 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							&& duplicate.getServerMsgId() == null
 							&& message.getServerMsgId() != null) {
 						duplicate.setServerMsgId(message.getServerMsgId());
-						mXmppConnectionService.databaseBackend.updateMessage(message);
-						serverMsgIdUpdated = true;
+						if (mXmppConnectionService.databaseBackend.updateMessage(duplicate)) {
+							serverMsgIdUpdated = true;
+						} else {
+							serverMsgIdUpdated = false;
+							Log.e(Config.LOGTAG,"failed to update message");
+						}
 					} else {
 						serverMsgIdUpdated = false;
 					}
-					Log.d(Config.LOGTAG, "skipping duplicate message with " + message.getCounterpart()+". serverMsgIdUpdated="+Boolean.toString(serverMsgIdUpdated));
+					Log.d(Config.LOGTAG, "skipping duplicate message with " + message.getCounterpart() + ". serverMsgIdUpdated=" + Boolean.toString(serverMsgIdUpdated));
 					return;
 				}
 			}
 
 			if (query != null && query.getPagingOrder() == MessageArchiveService.PagingOrder.REVERSE) {
-				conversation.prepend(query.getActualInThisQuery(),message);
+				conversation.prepend(query.getActualInThisQuery(), message);
 			} else {
 				conversation.add(message);
 			}
@@ -563,6 +566,8 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 
 			if (message.getEncryption() == Message.ENCRYPTION_PGP) {
 				notify = conversation.getAccount().getPgpDecryptionService().decrypt(message, notify);
+			} else if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE) {
+				notify = false;
 			}
 
 			if (query == null) {
@@ -610,7 +615,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 				try {
 					final XmppAxolotlMessage xmppAxolotlMessage = XmppAxolotlMessage.fromElement(axolotlEncrypted, origin.asBareJid());
 					account.getAxolotlService().processReceivingKeyTransportMessage(xmppAxolotlMessage, query != null);
-					Log.d(Config.LOGTAG,account.getJid().asBareJid()+": omemo key transport message received from "+origin);
+					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": omemo key transport message received from " + origin);
 				} catch (Exception e) {
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": invalid omemo key transport message received " + e.getMessage());
 					return;
@@ -640,7 +645,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 					}
 				}
 			}
-			if (conversation != null && mucUserElement != null && from.isBareJid()) {
+			if (conversation != null && mucUserElement != null && InvalidJid.hasValidFrom(packet) && from.isBareJid()) {
 				for (Element child : mucUserElement.getChildren()) {
 					if ("status".equals(child.getName())) {
 						try {
@@ -692,7 +697,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			String id = received.getAttribute("id");
 			if (packet.fromAccount(account)) {
 				if (query != null && id != null && packet.getTo() != null) {
-					query.pendingReceiptRequests.remove(new ReceiptRequest(packet.getTo(),id));
+					query.removePendingReceiptRequest(new ReceiptRequest(packet.getTo(), id));
 				}
 			} else {
 				mXmppConnectionService.markMessage(account, from.asBareJid(), received.getAttribute("id"), Message.STATUS_SEND_RECEIVED);
@@ -701,7 +706,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		Element displayed = packet.findChild("displayed", "urn:xmpp:chat-markers:0");
 		if (displayed != null) {
 			final String id = displayed.getAttribute("id");
-			final Jid sender = displayed.getAttributeAsJid("sender");
+			final Jid sender = InvalidJid.getNullForInvalid(displayed.getAttributeAsJid("sender"));
 			if (packet.fromAccount(account) && !selfAddressed) {
 				dismissNotification(account, counterpart, query);
 			} else if (isTypeGroupChat) {
@@ -716,7 +721,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							if (!message.isRead() && (query == null || query.isCatchup())) { //checking if message is unread fixes race conditions with reflections
 								mXmppConnectionService.markRead(conversation);
 							}
-						} else  if (!counterpart.isBareJid() && trueJid != null){
+						} else if (!counterpart.isBareJid() && trueJid != null) {
 							ReadByMarker readByMarker = ReadByMarker.from(counterpart, trueJid);
 							if (message.addReadByMarker(readByMarker)) {
 								Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": added read by (" + readByMarker.getRealJid() + ") to message '" + message.getBody() + "'");
@@ -741,12 +746,12 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		}
 
 		Element event = original.findChild("event", "http://jabber.org/protocol/pubsub#event");
-		if (event != null) {
+		if (event != null && InvalidJid.hasValidFrom(original)) {
 			parseEvent(event, original.getFrom(), account);
 		}
 
 		final String nick = packet.findChildContent("nick", Namespace.NICK);
-		if (nick != null) {
+		if (nick != null && InvalidJid.hasValidFrom(original)) {
 			Contact contact = account.getRoster().getContact(from);
 			if (contact.setPresenceName(nick)) {
 				mXmppConnectionService.getAvatarService().clear(contact);
@@ -759,12 +764,6 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		if (conversation != null && (query == null || query.isCatchup())) {
 			mXmppConnectionService.markRead(conversation); //TODO only mark messages read that are older than timestamp
 		}
-	}
-
-	private static Jid getTrueCounterpart(Element mucUserElement, Jid fallback) {
-		final Element item = mucUserElement == null ? null : mucUserElement.findChild("item");
-		Jid result = item == null ? null : item.getAttributeAsJid("jid");
-		return result != null ? result : fallback;
 	}
 
 	private void processMessageReceipts(Account account, MessagePacket packet, MessageArchiveService.Query query) {
@@ -785,18 +784,42 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 						packet.getType());
 				mXmppConnectionService.sendMessagePacket(account, receipt);
 			}
-		} else {
+		} else if (query.isCatchup()) {
 			if (request) {
-				query.pendingReceiptRequests.add(new ReceiptRequest(packet.getFrom(),packet.getId()));
+				query.addPendingReceiptRequest(new ReceiptRequest(packet.getFrom(), packet.getId()));
 			}
 		}
 	}
-
-	private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
 
 	private void activateGracePeriod(Account account) {
 		long duration = mXmppConnectionService.getLongPreference("grace_period_length", R.integer.grace_period) * 1000;
 		Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": activating grace period till " + TIME_FORMAT.format(new Date(System.currentTimeMillis() + duration)));
 		account.activateGracePeriod(duration);
+	}
+
+	private class Invite {
+		final Jid jid;
+		final String password;
+		final Contact inviter;
+
+		Invite(Jid jid, String password, Contact inviter) {
+			this.jid = jid;
+			this.password = password;
+			this.inviter = inviter;
+		}
+
+		public boolean execute(Account account) {
+			if (jid != null) {
+				Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, jid, true, false);
+				if (!conversation.getMucOptions().online()) {
+					conversation.getMucOptions().setPassword(password);
+					mXmppConnectionService.databaseBackend.updateConversation(conversation);
+					mXmppConnectionService.joinMuc(conversation, inviter != null && inviter.mutualPresenceSubscription());
+					mXmppConnectionService.updateConversationUi();
+				}
+				return true;
+			}
+			return false;
+		}
 	}
 }

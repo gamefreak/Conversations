@@ -20,21 +20,21 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.siacs.conversations.Config;
+import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import rocks.xmpp.addr.Jid;
 
+import static eu.siacs.conversations.entities.Bookmark.printableValue;
 
-public class Conversation extends AbstractEntity implements Blockable, Comparable<Conversation> {
+
+public class Conversation extends AbstractEntity implements Blockable, Comparable<Conversation>, Conversational {
 	public static final String TABLENAME = "conversations";
 
 	public static final int STATUS_AVAILABLE = 0;
 	public static final int STATUS_ARCHIVED = 1;
-
-	public static final int MODE_MULTI = 1;
-	public static final int MODE_SINGLE = 0;
 
 	public static final String NAME = "name";
 	public static final String ACCOUNT = "accountUuid";
@@ -53,6 +53,10 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private static final String ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP = "next_message_timestamp";
 	private static final String ATTRIBUTE_CRYPTO_TARGETS = "crypto_targets";
 	private static final String ATTRIBUTE_NEXT_ENCRYPTION = "next_encryption";
+	public static final String ATTRIBUTE_ALLOW_PM = "allow_pm";
+	public static final String ATTRIBUTE_MEMBERS_ONLY = "members_only";
+	public static final String ATTRIBUTE_MODERATED = "moderated";
+	public static final String ATTRIBUTE_NON_ANONYMOUS = "non_anonymous";
 	protected final ArrayList<Message> messages = new ArrayList<>();
 	public AtomicBoolean messagesLoaded = new AtomicBoolean(true);
 	protected Account account = null;
@@ -436,7 +440,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return (this.messages.size() == 0) || this.messages.get(this.messages.size() - 1).isRead();
 	}
 
-	public List<Message> markRead() {
+	public List<Message> markRead(String upToUuid) {
 		final List<Message> unread = new ArrayList<>();
 		synchronized (this.messages) {
 			for (Message message : this.messages) {
@@ -444,22 +448,23 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 					message.markRead();
 					unread.add(message);
 				}
+				if (message.getUuid().equals(upToUuid)) {
+					return unread;
+				}
 			}
 		}
 		return unread;
 	}
 
-	public Message getLatestMarkableMessage(boolean isPrivateAndNonAnonymousMuc) {
-		synchronized (this.messages) {
-			for (int i = this.messages.size() - 1; i >= 0; --i) {
-				final Message message = this.messages.get(i);
+	public static Message getLatestMarkableMessage(final List<Message> messages, boolean isPrivateAndNonAnonymousMuc) {
+			for (int i = messages.size() - 1; i >= 0; --i) {
+				final Message message = messages.get(i);
 				if (message.getStatus() <= Message.STATUS_RECEIVED
 						&& (message.markable || isPrivateAndNonAnonymousMuc)
 						&& message.getType() != Message.TYPE_PRIVATE) {
-					return message.isRead() ? null : message;
+					return message;
 				}
 			}
-		}
 		return null;
 	}
 
@@ -476,21 +481,21 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		}
 	}
 
-	public CharSequence getName() {
+	public @NonNull CharSequence getName() {
 		if (getMode() == MODE_MULTI) {
 			final String subject = getMucOptions().getSubject();
-			Bookmark bookmark = getBookmark();
+			final Bookmark bookmark = getBookmark();
 			final String bookmarkName = bookmark != null ? bookmark.getBookmarkName() : null;
-			if (subject != null && !subject.trim().isEmpty()) {
+			if (printableValue(subject)) {
 				return subject;
-			} else if (bookmarkName != null && !bookmarkName.trim().isEmpty()) {
+			} else if (printableValue(bookmarkName, false)) {
 				return bookmarkName;
 			} else {
-				String generatedName = getMucOptions().createNameFromParticipants();
-				if (generatedName != null) {
+				final String generatedName = getMucOptions().createNameFromParticipants();
+				if (printableValue(generatedName)) {
 					return generatedName;
 				} else {
-					return getJid().getLocal();
+					return contactJid.getLocal() != null ? contactJid.getLocal() : contactJid;
 				}
 			}
 		} else if (isWithStranger()) {
@@ -590,12 +595,15 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public int getNextEncryption() {
+		if (!Config.supportOmemo() && !Config.supportOpenPgp()) {
+			return Message.ENCRYPTION_NONE;
+		}
+		if (OmemoSetting.isAlways()) {
+			return suitableForOmemoByDefault(this) ? Message.ENCRYPTION_AXOLOTL : Message.ENCRYPTION_NONE;
+		}
 		final int defaultEncryption;
-		AxolotlService axolotlService = account.getAxolotlService();
-		if (contactJid.asBareJid().equals(Config.BUG_REPORTS)) {
-			defaultEncryption = Message.ENCRYPTION_NONE;
-		} else if (axolotlService != null && axolotlService.isConversationAxolotlCapable(this)) {
-			defaultEncryption = Message.ENCRYPTION_AXOLOTL;
+		if (suitableForOmemoByDefault(this)) {
+			defaultEncryption = OmemoSetting.getEncryption();
 		} else {
 			defaultEncryption = Message.ENCRYPTION_NONE;
 		}
@@ -605,6 +613,22 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		} else {
 			return encryption;
 		}
+	}
+
+	private static boolean suitableForOmemoByDefault(final Conversation conversation) {
+		if (conversation.getJid().asBareJid().equals(Config.BUG_REPORTS)) {
+			return false;
+		}
+		if (conversation.getContact().isOwnServer()) {
+			return false;
+		}
+		final String contact = conversation.getJid().getDomain();
+		final String account = conversation.getAccount().getServer();
+		if (Config.OMEMO_EXCEPTIONS.CONTACT_DOMAINS.contains(contact) || Config.OMEMO_EXCEPTIONS.ACCOUNT_DOMAINS.contains(account)) {
+			return false;
+		}
+		final AxolotlService axolotlService = conversation.getAccount().getAxolotlService();
+		return axolotlService != null && axolotlService.isConversationAxolotlCapable(conversation);
 	}
 
 	public void setNextEncryption(int encryption) {
@@ -706,6 +730,12 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return mode == MODE_SINGLE || getBooleanAttribute(ATTRIBUTE_ALWAYS_NOTIFY, Config.ALWAYS_NOTIFY_BY_DEFAULT || isPrivateAndNonAnonymous());
 	}
 
+	public boolean setAttribute(String key, boolean value) {
+		boolean prev = getBooleanAttribute(key,false);
+		setAttribute(key,Boolean.toString(value));
+		return prev != value;
+	}
+
 	private boolean setAttribute(String key, long value) {
 		return setAttribute(key, Long.toString(value));
 	}
@@ -792,7 +822,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		}
 	}
 
-	private boolean getBooleanAttribute(String key, boolean defaultValue) {
+	public boolean getBooleanAttribute(String key, boolean defaultValue) {
 		String value = this.getAttribute(key);
 		if (value == null) {
 			return defaultValue;
@@ -890,10 +920,31 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public boolean isWithStranger() {
+		final Contact contact = getContact();
 		return mode == MODE_SINGLE
-				&& !getJid().equals(Jid.ofDomain(account.getJid().getDomain()))
-				&& !getContact().showInRoster()
+				&& !contact.isOwnServer()
+				&& !contact.showInRoster()
+				&& !contact.isSelf()
 				&& sentMessagesCount() == 0;
+	}
+
+	public int getReceivedMessagesCountSinceUuid(String uuid) {
+		if (uuid == null) {
+			return  0;
+		}
+		int count = 0;
+		synchronized (this.messages) {
+			for (int i = messages.size() - 1; i >= 0; i--) {
+				final Message message = messages.get(i);
+				if (uuid.equals(message.getUuid())) {
+					return count;
+				}
+				if (message.getStatus() <= Message.STATUS_RECEIVED) {
+					++count;
+				}
+			}
+		}
+		return 0;
 	}
 
 	public interface OnMessageFound {

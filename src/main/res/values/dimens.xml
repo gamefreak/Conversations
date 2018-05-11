@@ -9,8 +9,9 @@
 	<dimen name="key_action_width">48dp</dimen>  <!-- icon width (24dp) + 2 * image button padding -->
 	<dimen name="fineprint_size">11sp</dimen>
 	<dimen name="audio_player_width">224dp</dimen>
-	<dimen name="swipe_handle_size">32dp</dimen>
 	<dimen name="avatar_item_distance">16dp</dimen>
+
+	<dimen name="toolbar_elevation">4dp</dimen>
 
 	<dimen name="publish_avatar_top_margin">8dp</dimen>
 	<dimen name="publish_avatar_size">96dp</dimen>
@@ -21,4 +22,8 @@
 	<!-- scanner -->
 	<dimen name="scan_laser_width">4dp</dimen>
 	<dimen name="scan_dot_size">8dp</dimen>
+
+	<dimen name="swipe_escape_velocity">1200dp</dimen> <!-- android default is 120dp -->
+
+	<dimen name="background_image_opacity">0.12</dimen>
 </resources>

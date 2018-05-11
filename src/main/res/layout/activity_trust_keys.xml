@@ -46,14 +46,14 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:text="@string/error_trustkeys_title"
-                            android:textAppearance="@style/TextAppearance.AppCompat.Title"
+                            android:textAppearance="@style/TextAppearance.Conversations.Title"
                             android:layout_marginBottom="8sp"/>
 
                         <TextView
                             android:id="@+id/key_error_message"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:textAppearance="@style/TextAppearance.AppCompat.Subhead"/>
+                            android:textAppearance="@style/TextAppearance.Conversations.Subhead"/>
                         <TextView
                             android:id="@+id/key_error_general"
                             android:layout_width="wrap_content"
@@ -75,14 +75,14 @@
 
                         <Button
                             android:id="@+id/disable_button"
-                            style="?android:attr/borderlessButtonStyle"
+                            style="@style/Widget.Conversations.Button.Borderless"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:minWidth="0dp"
                             android:paddingLeft="16dp"
                             android:paddingRight="16dp"
                             android:text="@string/disable_encryption"
-                            android:textColor="@color/accent"/>
+                            android:textColor="?colorAccent"/>
                     </LinearLayout>
                     </LinearLayout>
 
@@ -109,7 +109,7 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_margin="@dimen/list_padding"
-                            android:textAppearance="@style/TextAppearance.AppCompat.Title"/>
+                            android:textAppearance="@style/TextAppearance.Conversations.Title"/>
 
                         <LinearLayout
                             android:id="@+id/own_keys_details"
@@ -144,7 +144,7 @@
 
             <Button
                 android:id="@+id/cancel_button"
-                style="?android:attr/borderlessButtonStyle"
+                style="@style/Widget.Conversations.Button.Borderless"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -159,7 +159,7 @@
 
             <Button
                 android:id="@+id/save_button"
-                style="?android:attr/borderlessButtonStyle"
+                style="@style/Widget.Conversations.Button.Borderless"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"

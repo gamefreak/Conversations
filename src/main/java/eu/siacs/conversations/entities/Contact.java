@@ -5,6 +5,8 @@ import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.ContactsContract;
+import android.support.annotation.NonNull;
+import android.text.TextUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -36,18 +38,18 @@ public class Contact implements ListItem, Blockable {
 	public static final String LAST_PRESENCE = "last_presence";
 	public static final String LAST_TIME = "last_time";
 	public static final String GROUPS = "groups";
-	protected String accountUuid;
-	protected String systemName;
-	protected String serverName;
-	protected String presenceName;
-	protected String commonName;
+	private String accountUuid;
+	private String systemName;
+	private String serverName;
+	private String presenceName;
+	private String commonName;
 	protected Jid jid;
-	protected int subscription = 0;
-	protected String systemAccount;
-	protected String photoUri;
-	protected JSONObject keys = new JSONObject();
-	protected JSONArray groups = new JSONArray();
-	protected final Presences presences = new Presences();
+	private int subscription = 0;
+	private String systemAccount;
+	private String photoUri;
+	private final JSONObject keys;
+	private JSONArray groups = new JSONArray();
+	private final Presences presences = new Presences();
 	protected Account account;
 	protected Avatar avatar;
 
@@ -56,9 +58,9 @@ public class Contact implements ListItem, Blockable {
 	private String mLastPresence = null;
 
 	public Contact(final String account, final String systemName, final String serverName,
-			final Jid jid, final int subscription, final String photoUri,
-			final String systemAccount, final String keys, final String avatar, final long lastseen,
-				   final String presence, final String groups) {
+	               final Jid jid, final int subscription, final String photoUri,
+	               final String systemAccount, final String keys, final String avatar, final long lastseen,
+	               final String presence, final String groups) {
 		this.accountUuid = account;
 		this.systemName = systemName;
 		this.serverName = serverName;
@@ -66,11 +68,13 @@ public class Contact implements ListItem, Blockable {
 		this.subscription = subscription;
 		this.photoUri = photoUri;
 		this.systemAccount = systemAccount;
+		JSONObject tmpJsonObject;
 		try {
-			this.keys = (keys == null ? new JSONObject("") : new JSONObject(keys));
+			tmpJsonObject = (keys == null ? new JSONObject("") : new JSONObject(keys));
 		} catch (JSONException e) {
-			this.keys = new JSONObject();
+			tmpJsonObject = new JSONObject();
 		}
+		this.keys = tmpJsonObject;
 		if (avatar != null) {
 			this.avatar = new Avatar();
 			this.avatar.sha1sum = avatar;
@@ -87,6 +91,7 @@ public class Contact implements ListItem, Blockable {
 
 	public Contact(final Jid jid) {
 		this.jid = jid;
+		this.keys = new JSONObject();
 	}
 
 	public static Contact fromCursor(final Cursor cursor) {
@@ -125,13 +130,13 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public String getDisplayName() {
-		if (Config.X509_VERIFICATION && this.commonName != null && !this.commonName.isEmpty()) {
+		if (Config.X509_VERIFICATION && !TextUtils.isEmpty(this.commonName)) {
 			return this.commonName;
-		} else if (this.systemName != null && !this.systemName.isEmpty()) {
+		} else if (!TextUtils.isEmpty(this.systemName)) {
 			return this.systemName;
-		} else if (this.serverName != null && !this.serverName.isEmpty()) {
+		} else if (!TextUtils.isEmpty(this.serverName)) {
 			return this.serverName;
-		} else if (this.presenceName != null && !this.presenceName.isEmpty() && mutualPresenceSubscription() ) {
+		} else if (!TextUtils.isEmpty(this.presenceName) && mutualPresenceSubscription()) {
 			return this.presenceName;
 		} else if (jid.getLocal() != null) {
 			return JidHelper.localPartOrFallback(jid);
@@ -165,22 +170,22 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public boolean match(Context context, String needle) {
-		if (needle == null || needle.isEmpty()) {
+		if (TextUtils.isEmpty(needle)) {
 			return true;
 		}
 		needle = needle.toLowerCase(Locale.US).trim();
 		String[] parts = needle.split("\\s+");
 		if (parts.length > 1) {
-			for(int i = 0; i < parts.length; ++i) {
-				if (!match(context, parts[i])) {
+			for (String part : parts) {
+				if (!match(context, part)) {
 					return false;
 				}
 			}
 			return true;
 		} else {
 			return jid.toString().contains(needle) ||
-				getDisplayName().toLowerCase(Locale.US).contains(needle) ||
-				matchInTag(context, needle);
+					getDisplayName().toLowerCase(Locale.US).contains(needle) ||
+					matchInTag(context, needle);
 		}
 	}
 
@@ -289,8 +294,8 @@ public class Contact implements ListItem, Blockable {
 		this.systemAccount = account;
 	}
 
-	public List<String> getGroups() {
-		ArrayList<String> groups = new ArrayList<String>();
+	private List<String> getGroups() {
+		ArrayList<String> groups = new ArrayList<>();
 		for (int i = 0; i < this.groups.length(); ++i) {
 			try {
 				groups.add(this.groups.getString(i));
@@ -337,8 +342,8 @@ public class Contact implements ListItem, Blockable {
 
 	public boolean showInRoster() {
 		return (this.getOption(Contact.Options.IN_ROSTER) && (!this
-					.getOption(Contact.Options.DIRTY_DELETE)))
-			|| (this.getOption(Contact.Options.DIRTY_PUSH));
+				.getOption(Contact.Options.DIRTY_DELETE)))
+				|| (this.getOption(Contact.Options.DIRTY_PUSH));
 	}
 
 	public void parseSubscriptionFromElement(Element item) {
@@ -402,7 +407,7 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	@Override
-	public int compareTo(final ListItem another) {
+	public int compareTo(@NonNull final ListItem another) {
 		return this.getDisplayName().compareToIgnoreCase(
 				another.getDisplayName());
 	}
@@ -451,7 +456,11 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public boolean isSelf() {
-		return account.getJid().asBareJid().equals(getJid().asBareJid());
+		return account.getJid().asBareJid().equals(jid.asBareJid());
+	}
+
+	boolean isOwnServer() {
+		return account.getJid().getDomain().equals(jid.asBareJid().toString());
 	}
 
 	public void setCommonName(String cn) {

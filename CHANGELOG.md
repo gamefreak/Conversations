@@ -1,5 +1,30 @@
 # Changelog
 
+### Version 2.2.0
+* Integrate Voice Recorder
+* Integrate Share Location
+* Added ability to search messages
+
+### Version 2.1.4
+* bug fixes
+
+### Version 2.1.3
+* Do not process stanzas with invalid JIDs
+
+### Version 2.1.2
+* Fixed avatars not being displayed on new installs
+
+### Version 2.1.1
+* Improved start up performance
+* bug fixes
+
+### Version 2.1.0
+* Added configurable font size
+* Added global OMEMO preference
+* Added scroll to bottom button
+* Only mark visible messages as read
+
+
 ### Version 2.0.0
 * OMEMO by default for everything but public group chats
 * Integrate QR code scanner (requires camera permission)

@@ -574,8 +574,9 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 		mXmppConnectionService.sendIqPacket(account, publish, new OnIqPacketReceived() {
 			@Override
 			public void onIqPacketReceived(Account account, IqPacket packet) {
-				Element error = packet.getType() == IqPacket.TYPE.ERROR ? packet.findChild("error") : null;
-				if (firstAttempt && error != null && error.hasChild("precondition-not-met", Namespace.PUBSUB_ERROR)) {
+				final Element error = packet.getType() == IqPacket.TYPE.ERROR ? packet.findChild("error") : null;
+				final boolean preConditionNotMet = error != null && error.hasChild("precondition-not-met", Namespace.PUBSUB_ERROR);
+				if (firstAttempt && preConditionNotMet) {
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": precondition wasn't met for device list. pushing node configuration");
 					mXmppConnectionService.pushNodeConfiguration(account, AxolotlService.PEP_DEVICE_LIST, publishOptions, new XmppConnectionService.OnConfigurationPushed() {
 						@Override
@@ -595,8 +596,13 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 						mXmppConnectionService.databaseBackend.updateAccount(account);
 					}
 					if (packet.getType() == IqPacket.TYPE.ERROR) {
-						pepBroken = true;
-						Log.d(Config.LOGTAG, getLogprefix(account) + "Error received while publishing own device id" + packet.findChild("error"));
+						if (preConditionNotMet) {
+							Log.d(Config.LOGTAG,account.getJid().asBareJid()+": device list pre condition still not met on second attempt");
+						} else if (error != null) {
+							pepBroken = true;
+							Log.d(Config.LOGTAG, getLogprefix(account) + "Error received while publishing own device id" + packet.findChild("error"));
+						}
+
 					}
 				}
 			}
@@ -785,8 +791,9 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 		mXmppConnectionService.sendIqPacket(account, publish, new OnIqPacketReceived() {
 			@Override
 			public void onIqPacketReceived(final Account account, IqPacket packet) {
-				Element error = packet.getType() == IqPacket.TYPE.ERROR ? packet.findChild("error") : null;
-				if (firstAttempt && error != null && error.hasChild("precondition-not-met", Namespace.PUBSUB_ERROR)) {
+				final Element error = packet.getType() == IqPacket.TYPE.ERROR ? packet.findChild("error") : null;
+				final boolean preconditionNotMet = error != null && error.hasChild("precondition-not-met", Namespace.PUBSUB_ERROR);
+				if (firstAttempt && preconditionNotMet) {
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": precondition wasn't met for bundle. pushing node configuration");
 					final String node = AxolotlService.PEP_BUNDLES + ":" + getOwnDeviceId();
 					mXmppConnectionService.pushNodeConfiguration(account, node, publishOptions, new XmppConnectionService.OnConfigurationPushed() {
@@ -809,8 +816,12 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 						publishOwnDeviceIdIfNeeded();
 					}
 				} else if (packet.getType() == IqPacket.TYPE.ERROR) {
+					if (preconditionNotMet) {
+						Log.d(Config.LOGTAG,getLogprefix(account) + "bundle precondition still not met after second attempt");
+					} else {
+						Log.d(Config.LOGTAG, getLogprefix(account) + "Error received while publishing bundle: " + error);
+					}
 					pepBroken = true;
-					Log.d(Config.LOGTAG, getLogprefix(account) + "Error received while publishing bundle: " + packet.findChild("error"));
 				}
 			}
 		});
@@ -978,7 +989,8 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 		fetchDeviceIds(jid, null);
 	}
 
-	public void fetchDeviceIds(final Jid jid, OnDeviceIdsFetched callback) {
+	private void fetchDeviceIds(final Jid jid, OnDeviceIdsFetched callback) {
+		IqPacket packet;
 		synchronized (this.fetchDeviceIdsMap) {
 			List<OnDeviceIdsFetched> callbacks = this.fetchDeviceIdsMap.get(jid);
 			if (callbacks != null) {
@@ -986,6 +998,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 					callbacks.add(callback);
 				}
 				Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": fetching device ids for " + jid + " already running. adding callback");
+				packet = null;
 			} else {
 				callbacks = new ArrayList<>();
 				if (callback != null) {
@@ -993,36 +1006,37 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 				}
 				this.fetchDeviceIdsMap.put(jid, callbacks);
 				Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": fetching device ids for " + jid);
-				IqPacket packet = mXmppConnectionService.getIqGenerator().retrieveDeviceIds(jid);
-				mXmppConnectionService.sendIqPacket(account, packet, (account, response) -> {
-					synchronized (fetchDeviceIdsMap) {
-						List<OnDeviceIdsFetched> callbacks1 = fetchDeviceIdsMap.remove(jid);
-						if (response.getType() == IqPacket.TYPE.RESULT) {
-							fetchDeviceListStatus.put(jid, true);
-							Element item = mXmppConnectionService.getIqParser().getItem(response);
-							Set<Integer> deviceIds = mXmppConnectionService.getIqParser().deviceIds(item);
-							registerDevices(jid, deviceIds);
-							if (callbacks1 != null) {
-								for (OnDeviceIdsFetched callback1 : callbacks1) {
-									callback1.fetched(jid, deviceIds);
-								}
+				packet = mXmppConnectionService.getIqGenerator().retrieveDeviceIds(jid);
+			}
+		}
+		if (packet != null) {
+			mXmppConnectionService.sendIqPacket(account, packet, (account, response) -> {
+				synchronized (fetchDeviceIdsMap) {
+					List<OnDeviceIdsFetched> callbacks = fetchDeviceIdsMap.remove(jid);
+					if (response.getType() == IqPacket.TYPE.RESULT) {
+						fetchDeviceListStatus.put(jid, true);
+						Element item = mXmppConnectionService.getIqParser().getItem(response);
+						Set<Integer> deviceIds = mXmppConnectionService.getIqParser().deviceIds(item);
+						registerDevices(jid, deviceIds);
+						if (callbacks != null) {
+							for (OnDeviceIdsFetched c : callbacks) {
+								c.fetched(jid, deviceIds);
 							}
+						}
+					} else {
+						if (response.getType() == IqPacket.TYPE.TIMEOUT) {
+							fetchDeviceListStatus.remove(jid);
 						} else {
-							if (response.getType() == IqPacket.TYPE.TIMEOUT) {
-								fetchDeviceListStatus.remove(jid);
-							} else {
-								fetchDeviceListStatus.put(jid, false);
-							}
-							Log.d(Config.LOGTAG, response.toString());
-							if (callbacks1 != null) {
-								for (OnDeviceIdsFetched callback1 : callbacks1) {
-									callback1.fetched(jid, null);
-								}
+							fetchDeviceListStatus.put(jid, false);
+						}
+						if (callbacks != null) {
+							for (OnDeviceIdsFetched c : callbacks) {
+								c.fetched(jid, null);
 							}
 						}
 					}
-				});
-			}
+				}
+			});
 		}
 	}
 
@@ -1304,7 +1318,7 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 		if (message.getType() == Message.TYPE_PRIVATE) {
 			success = buildHeader(axolotlMessage, message.getTrueCounterpart());
 		} else {
-			success = buildHeader(axolotlMessage, message.getConversation());
+			success = buildHeader(axolotlMessage, (Conversation) message.getConversation());
 		}
 		return success ? axolotlMessage : null;
 	}
@@ -1372,15 +1386,22 @@ public class AxolotlService implements OnAdvancedStreamFeaturesLoaded {
 		return session;
 	}
 
-	public XmppAxolotlMessage.XmppAxolotlPlaintextMessage processReceivingPayloadMessage(XmppAxolotlMessage message, boolean postponePreKeyMessageHandling) {
+	public XmppAxolotlMessage.XmppAxolotlPlaintextMessage processReceivingPayloadMessage(XmppAxolotlMessage message, boolean postponePreKeyMessageHandling) throws NotEncryptedForThisDeviceException {
 		XmppAxolotlMessage.XmppAxolotlPlaintextMessage plaintextMessage = null;
 
 		XmppAxolotlSession session = getReceivingSession(message);
+		int ownDeviceId = getOwnDeviceId();
 		try {
-			plaintextMessage = message.decrypt(session, getOwnDeviceId());
+			plaintextMessage = message.decrypt(session, ownDeviceId);
 			Integer preKeyId = session.getPreKeyIdAndReset();
 			if (preKeyId != null) {
 				postPreKeyMessageHandling(session, preKeyId, postponePreKeyMessageHandling);
+			}
+		} catch (NotEncryptedForThisDeviceException e) {
+			if (account.getJid().asBareJid().equals(message.getFrom().asBareJid()) && message.getSenderDeviceId() == ownDeviceId) {
+				Log.w(Config.LOGTAG, getLogprefix(account) + "Reflected omemo message received");
+			} else {
+				throw e;
 			}
 		} catch (CryptoFailedException e) {
 			Log.w(Config.LOGTAG, getLogprefix(account) + "Failed to decrypt message from " + message.getFrom() + ": " + e.getMessage());

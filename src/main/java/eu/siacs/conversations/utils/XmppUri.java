@@ -1,6 +1,7 @@
 package eu.siacs.conversations.utils;
 
 import android.net.Uri;
+import android.util.Log;
 
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -8,20 +9,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import eu.siacs.conversations.Config;
 import rocks.xmpp.addr.Jid;
 
 public class XmppUri {
 
 	protected Uri uri;
 	protected String jid;
-	protected List<Fingerprint> fingerprints = new ArrayList<>();
+	private List<Fingerprint> fingerprints = new ArrayList<>();
 	private String body;
 	private String name;
 	private String action;
-	protected boolean safeSource = true;
+	private boolean safeSource = true;
 
-	public static final String OMEMO_URI_PARAM = "omemo-sid-";
-	public static final String OTR_URI_PARAM = "otr-fingerprint";
+	private static final String OMEMO_URI_PARAM = "omemo-sid-";
 
 	public static final String ACTION_JOIN = "join";
 	public static final String ACTION_MESSAGE = "message";
@@ -60,8 +61,9 @@ public class XmppUri {
 			if (segments.size() >= 2 && segments.get(1).contains("@")) {
 				// sample : https://conversations.im/i/foo@bar.com
 				try {
-					jid = Jid.of(segments.get(1)).toString();
+					jid = Jid.of(lameUrlDecode(segments.get(1))).toString();
 				} catch (Exception e) {
+					Log.d(Config.LOGTAG, "parsing failed ", e);
 					jid = null;
 				}
 			} else if (segments.size() >= 3) {
@@ -71,7 +73,7 @@ public class XmppUri {
 			if (segments.size() > 1 && "j".equalsIgnoreCase(segments.get(0))) {
 				action = ACTION_JOIN;
 			}
-			fingerprints = parseFingerprints(uri.getQuery(),'&');
+			fingerprints = parseFingerprints(uri.getQuery(), '&');
 		} else if ("xmpp".equalsIgnoreCase(scheme)) {
 			// sample: xmpp:foo@bar.com
 
@@ -119,22 +121,22 @@ public class XmppUri {
 		return "";
 	}
 
-	protected List<Fingerprint> parseFingerprints(String query) {
-		return parseFingerprints(query,';');
+	private List<Fingerprint> parseFingerprints(String query) {
+		return parseFingerprints(query, ';');
 	}
 
-	protected List<Fingerprint> parseFingerprints(String query, char seperator) {
+	private List<Fingerprint> parseFingerprints(String query, char seperator) {
 		List<Fingerprint> fingerprints = new ArrayList<>();
 		String[] pairs = query == null ? new String[0] : query.split(String.valueOf(seperator));
-		for(String pair : pairs) {
-			String[] parts = pair.split("=",2);
+		for (String pair : pairs) {
+			String[] parts = pair.split("=", 2);
 			if (parts.length == 2) {
 				String key = parts[0].toLowerCase(Locale.US);
 				String value = parts[1].toLowerCase(Locale.US);
 				if (key.startsWith(OMEMO_URI_PARAM)) {
 					try {
 						int id = Integer.parseInt(key.substring(OMEMO_URI_PARAM.length()));
-						fingerprints.add(new Fingerprint(FingerprintType.OMEMO,value,id));
+						fingerprints.add(new Fingerprint(FingerprintType.OMEMO, value, id));
 					} catch (Exception e) {
 						//ignoring invalid device id
 					}
@@ -144,12 +146,12 @@ public class XmppUri {
 		return fingerprints;
 	}
 
-	protected String parseParameter(String key, String query) {
-		for(String pair : query == null ? new String[0] : query.split(";")) {
-			final String[] parts = pair.split("=",2);
+	private String parseParameter(String key, String query) {
+		for (String pair : query == null ? new String[0] : query.split(";")) {
+			final String[] parts = pair.split("=", 2);
 			if (parts.length == 2 && key.equals(parts[0].toLowerCase(Locale.US))) {
 				try {
-					return URLDecoder.decode(parts[1],"UTF-8");
+					return URLDecoder.decode(parts[1], "UTF-8");
 				} catch (UnsupportedEncodingException e) {
 					return null;
 				}
@@ -159,8 +161,8 @@ public class XmppUri {
 	}
 
 	private boolean hasAction(String query, String action) {
-		for(String pair : query == null ? new String[0] : query.split(";")) {
-			final String[] parts = pair.split("=",2);
+		for (String pair : query == null ? new String[0] : query.split(";")) {
+			final String[] parts = pair.split("=", 2);
 			if (parts.length == 1 && parts[0].equals(action)) {
 				return true;
 			}
@@ -169,16 +171,13 @@ public class XmppUri {
 	}
 
 	public boolean isAction(final String action) {
-		if (this.action == null) {
-			return false;
-		}
+		return this.action != null && this.action.equals(action);
 
-		return this.action.equals(action);
 	}
 
 	public Jid getJid() {
 		try {
-			return this.jid == null ? null :Jid.of(this.jid.toLowerCase());
+			return this.jid == null ? null : Jid.of(this.jid.toLowerCase());
 		} catch (IllegalArgumentException e) {
 			return null;
 		}
@@ -211,6 +210,7 @@ public class XmppUri {
 	public boolean hasFingerprints() {
 		return fingerprints.size() > 0;
 	}
+
 	public enum FingerprintType {
 		OMEMO
 	}
@@ -218,7 +218,7 @@ public class XmppUri {
 	public static String getFingerprintUri(String base, List<XmppUri.Fingerprint> fingerprints, char seperator) {
 		StringBuilder builder = new StringBuilder(base);
 		builder.append('?');
-		for(int i = 0; i < fingerprints.size(); ++i) {
+		for (int i = 0; i < fingerprints.size(); ++i) {
 			XmppUri.FingerprintType type = fingerprints.get(i).type;
 			if (type == XmppUri.FingerprintType.OMEMO) {
 				builder.append(XmppUri.OMEMO_URI_PARAM);
@@ -226,7 +226,7 @@ public class XmppUri {
 			}
 			builder.append('=');
 			builder.append(fingerprints.get(i).fingerprint);
-			if (i != fingerprints.size() -1) {
+			if (i != fingerprints.size() - 1) {
 				builder.append(seperator);
 			}
 		}
@@ -236,11 +236,7 @@ public class XmppUri {
 	public static class Fingerprint {
 		public final FingerprintType type;
 		public final String fingerprint;
-		public final int deviceId;
-
-		public Fingerprint(FingerprintType type, String fingerprint) {
-			this(type, fingerprint, 0);
-		}
+		final int deviceId;
 
 		public Fingerprint(FingerprintType type, String fingerprint, int deviceId) {
 			this.type = type;
@@ -250,7 +246,15 @@ public class XmppUri {
 
 		@Override
 		public String toString() {
-			return type.toString()+": "+fingerprint+(deviceId != 0 ? " "+String.valueOf(deviceId) : "");
+			return type.toString() + ": " + fingerprint + (deviceId != 0 ? " " + String.valueOf(deviceId) : "");
 		}
+	}
+
+	private static String lameUrlDecode(String url) {
+		return url.replace("%23", "#").replace("%25", "%");
+	}
+
+	public static String lameUrlEncode(String url) {
+		return url.replace("%", "%25").replace("#", "%23");
 	}
 }

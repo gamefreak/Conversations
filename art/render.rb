@@ -14,6 +14,10 @@ images = {
 	'ic_launcher.svg' => ['ic_launcher', 48],
 	'main_logo.svg' => ['main_logo', 200],
     'main_logo.svg' => ['splash_logo', 144],
+    'ic_search_black.svg' => ['ic_search_background_black', 144],
+    'ic_search_white.svg' => ['ic_search_background_white', 144],
+    'ic_no_results_white.svg' => ['ic_no_results_background_white', 144],
+    'ic_no_results_black.svg' => ['ic_no_results_background_black', 144],
 	'play_video.svg' => ['play_video', 128],
 	'play_gif.svg' => ['play_gif', 128],
 	'conversations_mono.svg' => ['ic_notification', 24],
@@ -70,6 +74,7 @@ images = {
 	'message_bubble_sent_grey.svg' => ['message_bubble_sent_grey.9', 0],
 	'date_bubble_white.svg' => ['date_bubble_white.9', 0],
 	'date_bubble_grey.svg' => ['date_bubble_grey.9', 0],
+	'marker.svg' => ['marker', 0]
 	}
 
 # Executable paths for Mac OSX

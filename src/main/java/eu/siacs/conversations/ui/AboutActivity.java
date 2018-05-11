@@ -15,8 +15,7 @@ public class AboutActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        int mTheme = ThemeHelper.findTheme(this);
-        setTheme(mTheme);
+        setTheme(ThemeHelper.find(this));
 
         setContentView(R.layout.activity_about);
         setSupportActionBar(findViewById(R.id.toolbar));
