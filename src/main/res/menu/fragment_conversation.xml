@@ -5,7 +5,7 @@
         android:id="@+id/action_security"
         android:icon="?attr/icon_not_secure"
         android:orderInCategory="20"
-        app:showAsAction="always"
+        app:showAsAction="never"
         android:title="@string/action_secure">
         <menu>
             <group android:checkableBehavior="single" >
@@ -69,7 +69,7 @@
         android:id="@+id/action_muc_details"
         android:icon="?attr/icon_group"
         android:orderInCategory="40"
-        app:showAsAction="never"
+        app:showAsAction="ifRoom"
         android:title="@string/action_muc_details"/>
     <item
         android:id="@+id/action_invite"
