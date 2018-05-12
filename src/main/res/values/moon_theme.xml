@@ -38,4 +38,62 @@
         <item name="colorPrimaryDark">@color/blue900_dark</item>
 		<item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
 	</style>
+
+
+    <!-- Light -->
+    <style name="ConversationsTheme.Moon.Medium" parent="ConversationsTheme.Medium">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Large" parent="ConversationsTheme.Large">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
+    </style>
+
+    <style name="ConversationsTheme.Moon.Dialog" parent="@style/ConversationsTheme.Dialog">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Dialog.Medium" parent="ConversationsTheme.Dialog.Medium">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Dialog.Large" parent="ConversationsTheme.Dialog.Large">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue</item>
+    </style>
+
+
+    <!-- Dark -->
+    <style name="ConversationsTheme.Moon.Dark.Medium" parent="ConversationsTheme.Dark.Medium">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Dark.Large" parent="ConversationsTheme.Dark.Large">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
+    </style>
+
+    <style name="ConversationsTheme.Moon.Dark.Dialog" parent="@style/ConversationsTheme.Dark.Dialog">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Dark.Dialog.Medium" parent="ConversationsTheme.Dark.Dialog.Medium">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
+    </style>
+    <style name="ConversationsTheme.Moon.Dark.Dialog.Large" parent="ConversationsTheme.Dark.Dialog.Large">
+        <item name="colorPrimary">@color/blue900</item>
+        <item name="colorPrimaryDark">@color/blue900_dark</item>
+        <item type="reference" name="message_bubble_received_green">@drawable/message_bubble_received_blue_dark</item>
+    </style>
 </resources>

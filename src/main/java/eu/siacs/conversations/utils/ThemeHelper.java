@@ -48,8 +48,20 @@ public class ThemeHelper {
 	public static int find(Context context) {
 		final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 		final Resources resources = context.getResources();
-		final boolean dark = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).equals("dark");
+		final boolean dark = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).endsWith("dark");
+		final boolean moon = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).startsWith("moon");
 		final String fontSize = sharedPreferences.getString("font_size", resources.getString(R.string.default_font_size));
+
+		if (moon) {
+			switch (fontSize) {
+				case "medium":
+					return dark ? R.style.ConversationsTheme_Moon_Dark_Medium : R.style.ConversationsTheme_Moon_Medium;
+				case "large":
+					return dark ? R.style.ConversationsTheme_Moon_Dark_Large : R.style.ConversationsTheme_Moon_Large;
+				default:
+					return dark ? R.style.ConversationsTheme_Moon_Dark : R.style.ConversationsTheme_Moon;
+			}
+		}
 		switch (fontSize) {
 			case "medium":
 				return dark ? R.style.ConversationsTheme_Dark_Medium : R.style.ConversationsTheme_Medium;
@@ -63,8 +75,20 @@ public class ThemeHelper {
 	public static int findDialog(Context context) {
 		final SharedPreferences sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context);
 		final Resources resources = context.getResources();
-		final boolean dark = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).equals("dark");
+		final boolean dark = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).endsWith("dark");
+		final boolean moon = sharedPreferences.getString(SettingsActivity.THEME, resources.getString(R.string.theme)).startsWith("moon");
 		final String fontSize = sharedPreferences.getString("font_size", resources.getString(R.string.default_font_size));
+
+		if (moon) {
+			switch (fontSize) {
+				case "medium":
+					return dark ? R.style.ConversationsTheme_Moon_Dark_Dialog_Medium : R.style.ConversationsTheme_Moon_Dialog_Medium;
+				case "large":
+					return dark ? R.style.ConversationsTheme_Moon_Dark_Dialog_Large : R.style.ConversationsTheme_Moon_Dialog_Large;
+				default:
+					return dark ? R.style.ConversationsTheme_Moon_Dark_Dialog : R.style.ConversationsTheme_Moon_Dialog;
+			}
+		}
 		switch (fontSize) {
 			case "medium":
 				return dark ? R.style.ConversationsTheme_Dark_Dialog_Medium : R.style.ConversationsTheme_Dialog_Medium;
@@ -80,6 +104,9 @@ public class ThemeHelper {
 			case R.style.ConversationsTheme_Dark:
 			case R.style.ConversationsTheme_Dark_Large:
 			case R.style.ConversationsTheme_Dark_Medium:
+			case R.style.ConversationsTheme_Moon_Dark:
+			case R.style.ConversationsTheme_Moon_Dark_Large:
+			case R.style.ConversationsTheme_Moon_Dark_Medium:
 				return true;
 			default:
 				return false;

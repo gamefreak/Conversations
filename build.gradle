@@ -68,7 +68,7 @@ android {
         minSdkVersion 19
         targetSdkVersion 25
         versionCode 270
-        versionName "2.2.0"
+        versionName "2.2.0.0"
         archivesBaseName += "-$versionName"
         applicationId "horse.vinylscratch.conversations"
         resValue "string", "applicationId", applicationId
