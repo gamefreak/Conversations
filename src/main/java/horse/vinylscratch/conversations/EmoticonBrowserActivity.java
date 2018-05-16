@@ -121,7 +121,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			} else {
 				this.emotes.clear();
 
-				String filter = this.searchFilter.toLowerCase();
+				String filter = this.searchFilter.toLowerCase().trim();
 				for (Emote emote : this.getSortedEmotes(SortMode.ALL)) {
 					for (String alias : emote.getAliases()) {
 						if (alias.toLowerCase().contains(filter)) {
