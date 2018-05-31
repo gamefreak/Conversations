@@ -2,6 +2,7 @@ package eu.siacs.conversations.ui;
 
 import android.app.PendingIntent;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.IntentSender.SendIntentException;
 import android.content.res.Resources;
 import android.databinding.DataBindingUtil;
@@ -18,6 +19,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -222,6 +224,35 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		updateView();
 	}
 
+	private void editTopic(final OnValueEdited callback) {
+		String oldSubject = mConversation.getMucOptions().getSubject();
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		View view = getLayoutInflater().inflate(R.layout.dialog_topic, null);
+		final EditText editor = view.findViewById(R.id.editor);
+
+		builder.setPositiveButton(R.string.accept, null);
+
+		editor.requestFocus();
+		editor.setText(oldSubject != null ? oldSubject : "");
+
+		builder.setView(view);
+		builder.setNegativeButton(R.string.cancel, null);
+		final AlertDialog dialog = builder.create();
+		dialog.show();
+		View.OnClickListener clickListener = v -> {
+			String value = editor.getText().toString();
+			if (!value.equals(oldSubject) && value.trim().length() > 0) {
+				String error = callback.onValueEdited(value);
+				if (error != null) {
+					editor.setError(error);
+					return;
+				}
+			}
+			dialog.dismiss();
+		};
+		dialog.getButton(DialogInterface.BUTTON_POSITIVE).setOnClickListener(clickListener);
+	}
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -240,6 +271,11 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 						return getString(R.string.invalid_username);
 					}
 				}));
+		this.binding.editTopicButton.setOnClickListener(v -> {
+			if (mConversation != null && mConversation.getMucOptions().canChangeSubject()) {
+				editTopic(this.onSubjectEdited);
+			}
+		});
 		this.mAdvancedMode = getPreferences().getBoolean("advanced_muc_mode", false);
 		this.binding.mucInfoMore.setVisibility(this.mAdvancedMode ? View.VISIBLE : View.GONE);
 		this.binding.notificationStatusButton.setOnClickListener(this.mNotifyStatusClickListener);
@@ -262,13 +298,6 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		switch (menuItem.getItemId()) {
 			case android.R.id.home:
 				finish();
-				break;
-			case R.id.action_edit_subject:
-				if (mConversation != null) {
-					quickEdit(mConversation.getMucOptions().getSubject(),
-							R.string.edit_subject_hint,
-							this.onSubjectEdited);
-				}
 				break;
 			case R.id.action_share_http:
 				shareLink(true);
@@ -313,7 +342,6 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		MenuItem menuItemSaveBookmark = menu.findItem(R.id.action_save_as_bookmark);
 		MenuItem menuItemDeleteBookmark = menu.findItem(R.id.action_delete_bookmark);
 		MenuItem menuItemAdvancedMode = menu.findItem(R.id.action_advanced_mode);
-		MenuItem menuItemChangeSubject = menu.findItem(R.id.action_edit_subject);
 		menuItemAdvancedMode.setChecked(mAdvancedMode);
 		if (mConversation == null) {
 			return true;
@@ -325,7 +353,6 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 			menuItemDeleteBookmark.setVisible(false);
 			menuItemSaveBookmark.setVisible(true);
 		}
-		menuItemChangeSubject.setVisible(mConversation.getMucOptions().canChangeSubject());
 		return true;
 	}
 
@@ -518,6 +545,10 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 		this.binding.detailsAccount.setText(getString(R.string.using_account, account));
 		this.binding.yourPhoto.setImageBitmap(avatarService().get(mConversation.getAccount(), getPixel(48)));
 		setTitle(mConversation.getName());
+		// clearFocus/setTextKeepState is needed to prevent the view from jumping to the top when setText is called (noticable in rooms with long member lists)
+		this.binding.mucTopic.clearFocus();
+		this.binding.mucTopic.setTextKeepState(mucOptions.getSubject());
+		this.binding.editTopicButton.setVisibility(mConversation.getMucOptions().canChangeSubject() ? View.VISIBLE : View.GONE);
 		this.binding.mucJabberid.setText(mConversation.getJid().asBareJid().toString());
 		this.binding.mucYourNick.setText(mucOptions.getActualNick());
 		if (mucOptions.online()) {
