@@ -20,6 +20,7 @@
   <string name="title_activity_sharewith">Compartir na conversa</string>
   <string name="title_activity_start_conversation">Iniciar conversa</string>
   <string name="title_activity_choose_contact">Escoller Contacto</string>
+  <string name="title_activity_choose_contacts">Escolla contactos</string>
   <string name="title_activity_share_via_account">Compartir coa conta</string>
   <string name="title_activity_block_list">Lista de bloqueo</string>
   <string name="just_now">agora</string>
@@ -42,6 +43,7 @@
   <string name="block_domain_text">Bloquear todos os contactos desde 1%s?</string>
   <string name="unblock_domain_text">Desbloquear todos os contactos desde 1%s?</string>
   <string name="contact_blocked">Contacto bloqueado</string>
+  <string name="blocked">Bloqueado</string>
   <string name="remove_bookmark_text">Quere eliminar %s como marcador? A conversa asociada a este marcador non será eliminada.</string>
   <string name="register_account">Rexistrar nova conta no servidor</string>
   <string name="change_password_on_server">Cambiar o contrasinal no servidor</string>
@@ -227,7 +229,7 @@
   <string name="delete_bookmark">Eliminar marcador</string>
   <string name="bookmark_already_exists">Este marcador xa existe</string>
   <string name="action_edit_subject">Editar o tema da conversa en grupo</string>
-  <string name="edit_subject_hint">O tema desta conversa en grupo</string>
+  <string name="topic">Asunto</string>
   <string name="joining_conference">Entrando na conversa en grupo</string>
   <string name="leave">Saír</string>
   <string name="contact_added_you">Contacto engadido a súa lista de contactos</string>
@@ -235,6 +237,7 @@
   <string name="contact_has_read_up_to_this_point">%s leeu ate este punto</string>
   <string name="contacts_have_read_up_to_this_point">%s leu ate este punto</string>
   <string name="contacts_and_n_more_have_read_up_to_this_point">%1$s +%2$d máis leron ate este punto</string>
+  <string name="everyone_has_read_up_to_this_point">Todas leron ate este punto</string>
   <string name="publish">Publicar</string>
   <string name="touch_to_choose_picture">Toque no avatar para escoller imaxe desde a galería</string>
   <string name="publishing">Publicando...</string>
@@ -276,13 +279,12 @@
   <string name="pref_use_indicate_received_summary">As mensaxes recibidas marcaránse cun sinal verde si este está admitido</string>
   <string name="pref_use_send_button_to_indicate_status_summary">Boton de enviar de cor para indicar o estado do contacto</string>
   <string name="pref_expert_options_other">Outro</string>
-  <string name="pref_conference_name">Nome da conversa en grupo</string>
-  <string name="pref_conference_name_summary">Utilice o tema en lugar do JID para identificar as conversas en grupo</string>
   <string name="pref_autojoin">Unirse automaticamente ás conversas en grupo</string>
   <string name="pref_autojoin_summary">Respecta a marca de autoentrada nos marcadores da conversa en grupo</string>
   <string name="toast_message_omemo_fingerprint">Copiouse a pegada dixital OMEMO ao portapapeis!</string>
   <string name="conference_banned">Vostede non pode acceder a esta conversa en grupo</string>
   <string name="conference_members_only">Esta conversa en grupo é so para membros</string>
+  <string name="conference_resource_constraint">Restrición do recurso</string>
   <string name="conference_kicked">Xa foi expulsado de esta conversa en grupo</string>
   <string name="conference_shutdown">A conversa en grupo foi apagada</string>
   <string name="conference_unknown_error">Xa non estás nesta conversa en grupo</string>
@@ -293,10 +295,13 @@
   <string name="check_x_filesize_on_host">Comporbar o tamaño de %1$s en %2$s</string>
   <string name="message_options">Opcións da mensaxe</string>
   <string name="quote">Cita</string>
+  <string name="paste_as_quote">Pegar como cita</string>
   <string name="copy_original_url">Copiar URL orixinal</string>
   <string name="send_again">Enviar de novo</string>
   <string name="file_url">URL do ficheiro</string>
   <string name="url_copied_to_clipboard">URL copiado ao portapapeis</string>
+  <string name="jabber_id_copied_to_clipboard">ID de Jabberd copiada ó portapapeis</string>
+  <string name="web_address">Dirección Web</string>
   <string name="scan_qr_code">Escanear código de barras 2D</string>
   <string name="show_qr_code">Mostar código de barras 2D</string>
   <string name="show_block_list">Mostrar lista de bloqueo</string>
@@ -417,10 +422,6 @@
     <item quantity="one">%d certificado eliminado</item>
     <item quantity="other">%d certificados eleminados</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Selecione %d contacto</item>
-    <item quantity="other">Selecione %d contactos</item>
-  </plurals>
   <string name="pref_quick_action_summary">Substitúa o botón enviar con unha acción rápida</string>
   <string name="pref_quick_action">Acción rápida</string>
   <string name="none">Ningunha</string>
@@ -506,7 +507,6 @@
   <string name="correct_message">Correxir mensaxe</string>
   <string name="send_corrected_message">Enviar mensaxe correxida</string>
   <string name="no_keys_just_confirm">Xa confia neste contacto. Ao seleccionar \'feito\' só está confirmando que %s é parte deste chat grupal.</string>
-  <string name="select_image_and_crop">Escoller imaxe e recortar</string>
   <string name="this_account_is_disabled">Deshabilitou esta conta</string>
   <string name="security_error_invalid_file_access">Fallo na seguridade: Acceso non válido ao ficheiro</string>
   <string name="no_application_to_share_uri">Non se atopou un aplicativo para compartir URI</string>
@@ -707,4 +707,18 @@
   <string name="view_conversation">Ver conversa</string>
   <string name="pref_use_share_location_plugin">Engadido para Compartir Localización</string>
   <string name="pref_use_share_location_plugin_summary">Utilice o Engadido para Compartir Localización en lugar do mapa incluído</string>
+  <string name="copy_link">Copiar a dirección web</string>
+  <string name="copy_jabber_id">Copiar a ID de Jabber</string>
+  <string name="p1_s3_filetransfer">Compartición de ficheiro HTTP para S3</string>
+  <string name="pref_start_search">Busca directa</string>
+  <string name="pref_start_search_summary">Na pantalla \'Iniciar Conversa\' abrir teclado e por o cursor no campo de busca</string>
+  <string name="group_chat_avatar">Avatar da conversa de grupo</string>
+  <string name="host_does_not_support_group_chat_avatars">O servidor non soporta o avatar na conversa de grupo</string>
+  <string name="only_the_owner_can_change_group_chat_avatar">Só o dono pode cambiar o avatar da conversa de grupo</string>
+  <string name="contact_name">Nome do contacto</string>
+  <string name="nickname">Alcume</string>
+  <string name="group_chat_name">Nome</string>
+  <string name="providing_a_name_is_optional">Proporcionar un nome é optativo</string>
+  <string name="create_dialog_group_chat_name">Nome da conversa de grupo</string>
+  <string name="conference_destroyed">Esta conversa de grupo foi destruída</string>
 </resources>

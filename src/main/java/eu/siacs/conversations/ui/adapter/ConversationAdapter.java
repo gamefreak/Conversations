@@ -26,6 +26,7 @@ import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.Transferable;
 import eu.siacs.conversations.ui.ConversationFragment;
+import eu.siacs.conversations.ui.ConversationsOverviewFragment;
 import eu.siacs.conversations.ui.XmppActivity;
 import eu.siacs.conversations.ui.util.Color;
 import eu.siacs.conversations.ui.widget.UnreadCountCustomView;
@@ -84,18 +85,18 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 		if (conversation == null) {
 			return;
 		}
-		if (conversation.getMode() == Conversation.MODE_SINGLE || activity.useSubjectToIdentifyConference()) {
-			CharSequence name = conversation.getName();
-			if (name instanceof Jid) {
-				viewHolder.name.setText(IrregularUnicodeDetector.style(activity, (Jid) name));
-			} else {
-				viewHolder.name.setText(EmojiWrapper.transform(name));
-			}
+		CharSequence name = conversation.getName();
+		if (name instanceof Jid) {
+			viewHolder.name.setText(IrregularUnicodeDetector.style(activity, (Jid) name));
 		} else {
-			viewHolder.name.setText(conversation.getJid().asBareJid().toString());
+			viewHolder.name.setText(EmojiWrapper.transform(name));
 		}
 
-		viewHolder.frame.setBackgroundColor(Color.get(activity, conversation == ConversationFragment.getConversation(activity) ? R.attr.color_background_secondary : R.attr.color_background_primary));
+		if (conversation == ConversationFragment.getConversation(activity)) {
+			viewHolder.frame.setBackgroundColor(Color.get(activity,R.attr.color_background_tertiary));
+		} else {
+			viewHolder.frame.setBackgroundColor(Color.get(activity,R.attr.color_background_primary));
+		}
 
 		Message message = conversation.getLatestMessage();
 		final int unreadCount = conversation.unreadCount();
@@ -156,9 +157,9 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 				viewHolder.lastMessageIcon.setVisibility(View.GONE);
 				showPreviewText = true;
 			}
-			final Pair<String, Boolean> preview = UIHelper.getMessagePreview(activity, message);
+			final Pair<CharSequence, Boolean> preview = UIHelper.getMessagePreview(activity, message, viewHolder.lastMessage.getCurrentTextColor());
 			if (showPreviewText) {
-				viewHolder.lastMessage.setText(EmojiWrapper.transform(preview.first));
+				viewHolder.lastMessage.setText(EmojiWrapper.transform(UIHelper.shorten(preview.first)));
 			} else {
 				viewHolder.lastMessageIcon.setContentDescription(preview.first);
 			}

@@ -35,6 +35,10 @@ import eu.siacs.conversations.http.AesGcmURLStreamHandler;
 import rocks.xmpp.addr.Jid;
 
 public final class CryptoHelper {
+
+	private static final char[] VOWELS = "aeiou".toCharArray();
+	private static final char[] CONSONANTS = "bcfghjklmnpqrstvwxyz".toCharArray();
+
 	private final static char[] hexArray = "0123456789abcdef".toCharArray();
 
 	public static final Pattern UUID_PATTERN = Pattern.compile("[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}");
@@ -48,6 +52,16 @@ public final class CryptoHelper {
 			hexChars[j * 2 + 1] = hexArray[v & 0x0F];
 		}
 		return new String(hexChars);
+	}
+
+	public static String pronounceable(SecureRandom random) {
+		char[] output = new char[random.nextInt(4) * 2 + 5];
+		boolean vowel = random.nextBoolean();
+		for(int i = 0; i < output.length; ++i) {
+			output[i] = vowel ? VOWELS[random.nextInt(VOWELS.length)] : CONSONANTS[random.nextInt(CONSONANTS.length)];
+			vowel = !vowel;
+		}
+		return String.valueOf(output);
 	}
 
 	public static byte[] hexToBytes(String hexString) {
@@ -130,6 +144,7 @@ public final class CryptoHelper {
 		cipherSuites.retainAll(platformCiphers);
 		cipherSuites.addAll(platformCiphers);
 		filterWeakCipherSuites(cipherSuites);
+		cipherSuites.remove("TLS_FALLBACK_SCSV");
 		return cipherSuites.toArray(new String[cipherSuites.size()]);
 	}
 
@@ -222,13 +237,13 @@ public final class CryptoHelper {
 		return prettifyFingerprintCert(bytesToHex(fingerprint));
 	}
 
-	public static String getAccountFingerprint(Account account) {
-		return getFingerprint(account.getJid().asBareJid().toString());
+	public static String getAccountFingerprint(Account account, String androidId) {
+		return getFingerprint(account.getJid().asBareJid().toEscapedString()+"\00"+androidId);
 	}
 
 	public static String getFingerprint(String value) {
 		try {
-			MessageDigest md = MessageDigest.getInstance("SHA-256");
+			MessageDigest md = MessageDigest.getInstance("SHA-1");
 			return bytesToHex(md.digest(value.getBytes("UTF-8")));
 		} catch (Exception e) {
 			return "";
@@ -276,6 +291,6 @@ public final class CryptoHelper {
 			return false;
 		}
 		final String u = url.toLowerCase();
-		return !u.contains(" ") && (u.startsWith("https://") || u.startsWith("http://")) && u.endsWith(".pgp");
+		return !u.contains(" ") && (u.startsWith("https://") || u.startsWith("http://") || u.startsWith("p1s3://")) && u.endsWith(".pgp");
 	}
 }

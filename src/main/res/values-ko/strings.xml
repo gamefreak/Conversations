@@ -362,9 +362,6 @@
   <plurals name="toast_delete_certificates">
     <item quantity="other">%d 인증서 삭제됨 </item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="other">%d 연락처 선택 </item>
-  </plurals>
   <string name="pref_quick_action_summary">전송 버튼을 빠른 동작 버튼으로 교체</string>
   <string name="pref_quick_action">빠른 동작</string>
   <string name="none">없음</string>
@@ -438,7 +435,6 @@
   <string name="this_field_is_required">반드시 작성해야 합니다</string>
   <string name="correct_message">메세지 정정</string>
   <string name="send_corrected_message">정정한 메세지 전송</string>
-  <string name="select_image_and_crop">이미지 선택 후 자르기</string>
   <string name="this_account_is_disabled">이 계정을 비활성화했습니다</string>
   <string name="security_error_invalid_file_access">보안 오류 : 잘못된 파일 액세스</string>
   <string name="no_application_to_share_uri">URI를 공유하는 응용 프로그램을 찾을 수 없습니다</string>

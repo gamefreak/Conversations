@@ -29,7 +29,7 @@ public abstract class ConversationsFileObserver {
 
         while (!stack.empty()) {
             String parent = stack.pop();
-            mObservers.add(new SingleFileObserver(parent, FileObserver.DELETE));
+            mObservers.add(new SingleFileObserver(parent, FileObserver.DELETE| FileObserver.MOVED_FROM));
             final File path = new File(parent);
             final File[] files = path.listFiles();
             if (files == null) {
@@ -74,6 +74,11 @@ public abstract class ConversationsFileObserver {
     }
 
     abstract public void onEvent(int event, String path);
+
+    public void restartWatching() {
+        stopWatching();
+        startWatching();
+    }
 
     private class SingleFileObserver extends FileObserver {
         private final String path;

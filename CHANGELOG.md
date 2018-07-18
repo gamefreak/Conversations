@@ -1,5 +1,34 @@
 # Changelog
 
+### Version 2.2.7
+* stability improvements
+
+### Version 2.2.6
+* support old MAM version to work with Prosody
+
+### Version 2.2.5
+* Persist MUC avatar across restarts / show in bookmarks
+* Offer Paste as quote for HTML content
+
+### Version 2.2.4
+* Use group chat name as primary identifier
+* Show group name and subject in group chat details
+* Upload group chat avatar on compatible servers
+
+### Version 2.2.3
+* Introduce Expert Setting to enable direct search
+* Introduce Paste As Quote on Android 6+
+* Fixed issues with HTTP Upload
+
+### Version 2.2.2
+* Fixed connection problems with TLS1.3 servers
+* Attempt to delete broken bundles from PEP
+* Use FCM instead of GCM
+
+### Version 2.2.1
+* improved recording quality
+* load map tiles over Tor if enabled 
+
 ### Version 2.2.0
 * Integrate Voice Recorder
 * Integrate Share Location

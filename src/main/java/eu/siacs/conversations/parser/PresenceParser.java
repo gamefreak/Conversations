@@ -20,6 +20,7 @@ import eu.siacs.conversations.entities.Presence;
 import eu.siacs.conversations.generator.IqGenerator;
 import eu.siacs.conversations.generator.PresenceGenerator;
 import eu.siacs.conversations.services.XmppConnectionService;
+import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.InvalidJid;
@@ -74,7 +75,10 @@ public class PresenceParser extends AbstractParser implements
 							if (mucOptions.setOnline()) {
 								mXmppConnectionService.getAvatarService().clear(mucOptions);
 							}
-							mucOptions.setSelf(user);
+							if (mucOptions.setSelf(user)) {
+								Log.d(Config.LOGTAG,"role or affiliation changed");
+								mXmppConnectionService.databaseBackend.updateConversation(conversation);
+							}
 
 							mXmppConnectionService.persistSelfNick(user);
 							invokeRenameListener(mucOptions, true);
@@ -122,7 +126,15 @@ public class PresenceParser extends AbstractParser implements
 					}
 				}
 			} else if (type.equals("unavailable")) {
-				if (codes.contains(MucOptions.STATUS_CODE_SHUTDOWN) && from.equals(mucOptions.getSelf().getFullJid())) {
+				final boolean fullJidMatches = from.equals(mucOptions.getSelf().getFullJid());
+				if (x.hasChild("destroy") && fullJidMatches) {
+					Element destroy = x.findChild("destroy");
+					final Jid alternate = destroy == null ? null : InvalidJid.getNullForInvalid(destroy.getAttributeAsJid("jid"));
+					mucOptions.setError(MucOptions.Error.DESTROYED);
+					if (alternate != null) {
+						Log.d(Config.LOGTAG, conversation.getAccount().getJid().asBareJid() + ": muc destroyed. alternate location " + alternate);
+					}
+				} else if (codes.contains(MucOptions.STATUS_CODE_SHUTDOWN) && fullJidMatches) {
 					mucOptions.setError(MucOptions.Error.SHUTDOWN);
 				} else if (codes.contains(MucOptions.STATUS_CODE_SELF_PRESENCE)) {
 					if (codes.contains(MucOptions.STATUS_CODE_KICKED)) {
@@ -166,6 +178,25 @@ public class PresenceParser extends AbstractParser implements
 					mucOptions.setError(MucOptions.Error.BANNED);
 				} else if (error.hasChild("registration-required")) {
 					mucOptions.setError(MucOptions.Error.MEMBERS_ONLY);
+				} else if (error.hasChild("resource-constraint")) {
+					mucOptions.setError(MucOptions.Error.RESOURCE_CONSTRAINT);
+				} else if (error.hasChild("gone")) {
+					final String gone = error.findChildContent("gone");
+					final Jid alternate;
+					if (gone != null) {
+						final XmppUri xmppUri = new XmppUri(gone);
+						if (xmppUri.isJidValid()) {
+							alternate = xmppUri.getJid();
+						} else {
+							alternate = null;
+						}
+					} else {
+						alternate = null;
+					}
+					mucOptions.setError(MucOptions.Error.DESTROYED);
+					if (alternate != null) {
+						Log.d(Config.LOGTAG, conversation.getAccount().getJid().asBareJid() + ": muc destroyed. alternate location " + alternate);
+					}
 				} else {
 					final String text = error.findChildContent("text");
 					if (text != null && text.contains("attribute 'to'")) {
@@ -233,6 +264,7 @@ public class PresenceParser extends AbstractParser implements
 						mXmppConnectionService.updateConversationUi();
 						mXmppConnectionService.updateAccountUi();
 					} else if (contact.setAvatar(avatar)) {
+						mXmppConnectionService.syncRoster(account);
 						mXmppConnectionService.getAvatarService().clear(contact);
 						mXmppConnectionService.updateConversationUi();
 						mXmppConnectionService.updateRosterUi();
@@ -286,6 +318,9 @@ public class PresenceParser extends AbstractParser implements
 				contact.clearPresences();
 			} else {
 				contact.removePresence(from.getResource());
+			}
+			if (contact.getShownStatus() == Presence.Status.OFFLINE) {
+				contact.flagInactive();
 			}
 			mXmppConnectionService.onContactStatusChanged.onContactStatusChanged(contact, false);
 		} else if (type.equals("subscribe")) {

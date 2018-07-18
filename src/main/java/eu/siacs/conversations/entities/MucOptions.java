@@ -1,24 +1,26 @@
 package eu.siacs.conversations.entities;
 
-import android.annotation.SuppressLint;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
-import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.forms.Data;
 import eu.siacs.conversations.xmpp.forms.Field;
 import eu.siacs.conversations.xmpp.pep.Avatar;
 import rocks.xmpp.addr.Jid;
 
-@SuppressLint("DefaultLocale")
 public class MucOptions {
 
 	private boolean mAutoPushConfiguration = true;
@@ -27,8 +29,11 @@ public class MucOptions {
 		return this.conversation.getAccount();
 	}
 
-	public void setSelf(User user) {
+	public boolean setSelf(User user) {
 		this.self = user;
+		final boolean roleChanged = this.conversation.setAttribute("role",user.role.toString());
+		final boolean affiliationChanged = this.conversation.setAttribute("affiliation",user.affiliation.toString());
+		return roleChanged || affiliationChanged;
 	}
 
 	public void changeAffiliation(Jid jid, Affiliation affiliation) {
@@ -64,20 +69,22 @@ public class MucOptions {
 		}
 	}
 
-	public enum Affiliation {
-		OWNER("owner", 4, R.string.owner),
-		ADMIN("admin", 3, R.string.admin),
-		MEMBER("member", 2, R.string.member),
-		OUTCAST("outcast", 0, R.string.outcast),
-		NONE("none", 1, R.string.no_affiliation);
+	public boolean mamSupport() {
+		return MessageArchiveService.Version.has(getFeatures());
+	}
 
-		Affiliation(String string, int rank, int resId) {
-			this.string = string;
+	public enum Affiliation {
+		OWNER(4, R.string.owner),
+		ADMIN(3, R.string.admin),
+		MEMBER(2, R.string.member),
+		OUTCAST(0, R.string.outcast),
+		NONE(1, R.string.no_affiliation);
+
+		Affiliation(int rank, int resId) {
 			this.resId = resId;
 			this.rank = rank;
 		}
 
-		private String string;
 		private int resId;
 		private int rank;
 
@@ -87,7 +94,7 @@ public class MucOptions {
 
 		@Override
 		public String toString() {
-			return this.string;
+			return name().toLowerCase(Locale.US);
 		}
 
 		public boolean outranks(Affiliation affiliation) {
@@ -97,21 +104,30 @@ public class MucOptions {
 		public boolean ranks(Affiliation affiliation) {
 			return rank >= affiliation.rank;
 		}
+
+		public static Affiliation of(@Nullable String value) {
+			if (value == null) {
+				return NONE;
+			}
+			try {
+				return Affiliation.valueOf(value.toUpperCase(Locale.US));
+			} catch (IllegalArgumentException e) {
+				return NONE;
+			}
+		}
 	}
 
 	public enum Role {
-		MODERATOR("moderator", R.string.moderator, 3),
-		VISITOR("visitor", R.string.visitor, 1),
-		PARTICIPANT("participant", R.string.participant, 2),
-		NONE("none", R.string.no_role, 0);
+		MODERATOR(R.string.moderator, 3),
+		VISITOR(R.string.visitor, 1),
+		PARTICIPANT(R.string.participant, 2),
+		NONE(R.string.no_role, 0);
 
-		Role(String string, int resId, int rank) {
-			this.string = string;
+		Role(int resId, int rank) {
 			this.resId = resId;
 			this.rank = rank;
 		}
 
-		private String string;
 		private int resId;
 		private int rank;
 
@@ -121,11 +137,22 @@ public class MucOptions {
 
 		@Override
 		public String toString() {
-			return this.string;
+			return name().toLowerCase(Locale.US);
 		}
 
 		public boolean ranks(Role role) {
 			return rank >= role.rank;
+		}
+
+		public static Role of(@Nullable String value) {
+			if (value == null) {
+				return NONE;
+			}
+			try {
+				return Role.valueOf(value.toUpperCase(Locale.US));
+			} catch (IllegalArgumentException e) {
+				return NONE;
+			}
 		}
 	}
 
@@ -137,8 +164,10 @@ public class MucOptions {
 		PASSWORD_REQUIRED,
 		BANNED,
 		MEMBERS_ONLY,
+		RESOURCE_CONSTRAINT,
 		KICKED,
 		SHUTDOWN,
+		DESTROYED,
 		INVALID_NICK,
 		UNKNOWN
 	}
@@ -190,25 +219,7 @@ public class MucOptions {
 		}
 
 		public void setRole(String role) {
-			if (role == null) {
-				this.role = Role.NONE;
-				return;
-			}
-			role = role.toLowerCase();
-			switch (role) {
-				case "moderator":
-					this.role = Role.MODERATOR;
-					break;
-				case "participant":
-					this.role = Role.PARTICIPANT;
-					break;
-				case "visitor":
-					this.role = Role.VISITOR;
-					break;
-				default:
-					this.role = Role.NONE;
-					break;
-			}
+			this.role = Role.of(role);
 		}
 
 		public Affiliation getAffiliation() {
@@ -216,27 +227,7 @@ public class MucOptions {
 		}
 
 		public void setAffiliation(String affiliation) {
-			if (affiliation == null) {
-				this.affiliation = Affiliation.NONE;
-				return;
-			}
-			affiliation = affiliation.toLowerCase();
-			switch (affiliation) {
-				case "admin":
-					this.affiliation = Affiliation.ADMIN;
-					break;
-				case "owner":
-					this.affiliation = Affiliation.OWNER;
-					break;
-				case "member":
-					this.affiliation = Affiliation.MEMBER;
-					break;
-				case "outcast":
-					this.affiliation = Affiliation.OUTCAST;
-					break;
-				default:
-					this.affiliation = Affiliation.NONE;
-			}
+			this.affiliation = Affiliation.of(affiliation);
 		}
 
 		public void setPgpKeyId(long id) {
@@ -303,6 +294,10 @@ public class MucOptions {
 
 		}
 
+		public boolean isDomain() {
+			return realJid != null && realJid.getLocal() == null && role == Role.NONE;
+		}
+
 		@Override
 		public int hashCode() {
 			int result = role != null ? role.hashCode() : 0;
@@ -322,7 +317,7 @@ public class MucOptions {
 		}
 
 		@Override
-		public int compareTo(User another) {
+		public int compareTo(@NonNull User another) {
 			if (another.getAffiliation().outranks(getAffiliation())) {
 				return 1;
 			} else if (getAffiliation().outranks(another.getAffiliation())) {
@@ -358,8 +353,7 @@ public class MucOptions {
 
 	private Account account;
 	private final Set<User> users = new HashSet<>();
-	private final List<String> features = new ArrayList<>();
-	private Data form = new Data();
+	private ServiceDiscoveryResult serviceDiscoveryResult;
 	private final Conversation conversation;
 	private boolean isOnline = false;
 	private Error error = Error.NONE;
@@ -371,67 +365,88 @@ public class MucOptions {
 		this.account = conversation.getAccount();
 		this.conversation = conversation;
 		this.self = new User(this, createJoinJid(getProposedNick()));
+		this.self.affiliation = Affiliation.of(conversation.getAttribute("affiliation"));
+		this.self.role = Role.of(conversation.getAttribute("role"));
 	}
 
-	public boolean updateConfiguration(List<String> features, Data data) {
-		updateFeatures(features);
-		updateFormData(data == null ? new Data() : data);
-		Field allowPmField = this.form.getFieldByName("muc#roomconfig_allowpm");
-		boolean changed = false;
-		changed |= conversation.setAttribute(Conversation.ATTRIBUTE_ALLOW_PM, allowPmField == null || "1".equals(allowPmField.getValue()));
+	public boolean updateConfiguration(ServiceDiscoveryResult serviceDiscoveryResult) {
+		this.serviceDiscoveryResult = serviceDiscoveryResult;
+		String name;
+		Field roomConfigName = getRoomInfoForm().getFieldByName("muc#roomconfig_roomname");
+		if (roomConfigName != null) {
+			name = roomConfigName.getValue();
+		} else {
+			List<ServiceDiscoveryResult.Identity> identities = serviceDiscoveryResult.getIdentities();
+			String identityName = identities.size() > 0 ? identities.get(0).getName() : null;
+			final Jid jid = conversation.getJid();
+			if (identityName != null && !identityName.equals(jid == null ? null : jid.getEscapedLocal())) {
+				name = identityName;
+			} else {
+				name = null;
+			}
+		}
+		boolean changed = conversation.setAttribute("muc_name", name);
 		changed |= conversation.setAttribute(Conversation.ATTRIBUTE_MEMBERS_ONLY, this.hasFeature("muc_membersonly"));
 		changed |= conversation.setAttribute(Conversation.ATTRIBUTE_MODERATED, this.hasFeature("muc_moderated"));
 		changed |= conversation.setAttribute(Conversation.ATTRIBUTE_NON_ANONYMOUS, this.hasFeature("muc_nonanonymous"));
 		return changed;
 	}
 
-	private void updateFeatures(List<String> features) {
-		this.features.clear();
-		this.features.addAll(features);
+
+	private Data getRoomInfoForm() {
+		final List<Data> forms = serviceDiscoveryResult == null ? Collections.emptyList() : serviceDiscoveryResult.forms;
+		return forms.size() == 0 ? new Data() : forms.get(0);
 	}
 
 	public String getAvatar() {
 		return account.getRoster().getContact(conversation.getJid()).getAvatar();
 	}
 
-	private void updateFormData(Data form) {
-		this.form = form;
+	public boolean hasFeature(String feature) {
+		return this.serviceDiscoveryResult != null && this.serviceDiscoveryResult.features.contains(feature);
 	}
 
-	public boolean hasFeature(String feature) {
-		return this.features.contains(feature);
-	}
+	public boolean hasVCards() {
+	    return hasFeature("vcard-temp");
+    }
 
 	public boolean canInvite() {
-		Field field = this.form.getFieldByName("muc#roomconfig_allowinvites");
+		Field field = getRoomInfoForm().getFieldByName("muc#roomconfig_allowinvites");
 		return !membersOnly() || self.getRole().ranks(Role.MODERATOR) || (field != null && "1".equals(field.getValue()));
 	}
 
 	public boolean canChangeSubject() {
-		Field field = this.form.getFieldByName("muc#roomconfig_changesubject");
+		Field field = getRoomInfoForm().getFieldByName("muc#roominfo_changesubject");
 		return self.getRole().ranks(Role.MODERATOR) || (field != null && "1".equals(field.getValue()));
 	}
 
 	public boolean allowPm() {
-		return conversation.getBooleanAttribute(Conversation.ATTRIBUTE_ALLOW_PM, false);
+		final Field field = getRoomInfoForm().getFieldByName("muc#roomconfig_allowpm");
+		if (field == null) {
+			return true; //fall back if field does not exists
+		}
+		if ("anyone".equals(field.getValue())) {
+			return true;
+		} else if ("participants".equals(field.getValue())) {
+			return self.getRole().ranks(Role.PARTICIPANT);
+		} else if ("moderators".equals(field.getValue())) {
+			return self.getRole().ranks(Role.MODERATOR);
+		} else {
+			return false;
+		}
 	}
 
 	public boolean participating() {
-		return !online()
-				|| self.getRole().ranks(Role.PARTICIPANT)
-				|| hasFeature("muc_unmoderated");
+		return self.getRole().ranks(Role.PARTICIPANT) || !moderated();
 	}
 
 	public boolean membersOnly() {
 		return conversation.getBooleanAttribute(Conversation.ATTRIBUTE_MEMBERS_ONLY, false);
 	}
 
-	public boolean mamSupport() {
-		return hasFeature(Namespace.MAM) || hasFeature(Namespace.MAM_LEGACY);
-	}
 
-	public boolean mamLegacy() {
-		return hasFeature(Namespace.MAM_LEGACY) && !hasFeature(Namespace.MAM);
+	public List<String> getFeatures() {
+		return this.serviceDiscoveryResult != null ? this.serviceDiscoveryResult.features : Collections.emptyList();
 	}
 
 	public boolean nonanonymous() {
@@ -584,17 +599,13 @@ public class MucOptions {
 
 	public ArrayList<User> getUsers(boolean includeOffline) {
 		synchronized (users) {
-			if (includeOffline) {
-				return new ArrayList<>(users);
-			} else {
-				ArrayList<User> onlineUsers = new ArrayList<>();
-				for (User user : users) {
-					if (user.getRole().ranks(Role.PARTICIPANT)) {
-						onlineUsers.add(user);
+				ArrayList<User> users = new ArrayList<>();
+				for (User user : this.users) {
+					if (!user.isDomain() && (includeOffline || user.getRole().ranks(Role.PARTICIPANT))) {
+						users.add(user);
 					}
 				}
-				return onlineUsers;
-			}
+				return users;
 		}
 	}
 
@@ -619,7 +630,7 @@ public class MucOptions {
 		jids.add(account.getJid().asBareJid());
 		synchronized (users) {
 			for (User user : users) {
-				if (user.getRealJid() == null || jids.add(user.getRealJid())) {
+				if (user.getRealJid() == null || (user.getRealJid().getLocal() != null && jids.add(user.getRealJid()))) {
 					subset.add(user);
 				}
 				if (subset.size() >= max) {
@@ -688,7 +699,11 @@ public class MucOptions {
 		return this.conversation.getAttribute("subject");
 	}
 
-	public List<User> getFallbackUsersFromCryptoTargets() {
+	public String getName() {
+		return this.conversation.getAttribute("muc_name");
+	}
+
+	private List<User> getFallbackUsersFromCryptoTargets() {
 		List<User> users = new ArrayList<>();
 		for (Jid jid : conversation.getAcceptedCryptoTargets()) {
 			User user = new User(this, null);
@@ -803,11 +818,11 @@ public class MucOptions {
 		return this.conversation;
 	}
 
-	public List<Jid> getMembers() {
+	public List<Jid> getMembers(final boolean includeDomains) {
 		ArrayList<Jid> members = new ArrayList<>();
 		synchronized (users) {
 			for (User user : users) {
-				if (user.affiliation.ranks(Affiliation.MEMBER) && user.realJid != null) {
+				if (user.affiliation.ranks(Affiliation.MEMBER) && user.realJid != null && (!user.isDomain() || includeDomains)) {
 					members.add(user.realJid);
 				}
 			}

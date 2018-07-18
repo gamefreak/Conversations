@@ -347,10 +347,6 @@
     <item quantity="one">%d certificado apagado</item>
     <item quantity="other">%d certificados apagados</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Selecionar %d contacto</item>
-    <item quantity="other">Selecionar %d contactos</item>
-  </plurals>
   <string name="pref_quick_action_summary">Substituir botão enviar com ação rápida</string>
   <string name="pref_quick_action">Ação rápida</string>
   <string name="none">Nenhum</string>
@@ -421,7 +417,6 @@
   <string name="this_field_is_required">Este campo é obrigatório</string>
   <string name="correct_message">Corrigir mensagem</string>
   <string name="send_corrected_message">Enviar mensagem corrigida</string>
-  <string name="select_image_and_crop">Selecione imagem e corte</string>
   <string name="this_account_is_disabled">Desativou esta conta</string>
   <string name="security_error_invalid_file_access">Erro de segurança: Acesso ao ficheiro inválido</string>
   <string name="no_application_to_share_uri">Não foi encontrada nenhuma aplicação para partilhar o URI</string>

@@ -20,6 +20,7 @@
     <string name="title_activity_sharewith">Share with Conversation</string>
     <string name="title_activity_start_conversation">Start Conversation</string>
     <string name="title_activity_choose_contact">Choose Contact</string>
+    <string name="title_activity_choose_contacts">Choose Contacts</string>
     <string name="title_activity_share_via_account">Share via account</string>
     <string name="title_activity_block_list">Block list</string>
     <string name="just_now">just now</string>
@@ -42,6 +43,7 @@
     <string name="block_domain_text">Block all contacts from %s?</string>
     <string name="unblock_domain_text">Unblock all contacts from %s?</string>
     <string name="contact_blocked">Contact blocked</string>
+    <string name="blocked">Blocked</string>
     <string name="remove_bookmark_text">Would you like to remove %s as a bookmark? The conversation associated with this bookmark will not be removed.</string>
     <string name="register_account">Register new account on server</string>
     <string name="change_password_on_server">Change password on server</string>
@@ -227,7 +229,7 @@
     <string name="delete_bookmark">Delete bookmark</string>
     <string name="bookmark_already_exists">This bookmark already exists</string>
     <string name="action_edit_subject">Edit group chat subject</string>
-    <string name="edit_subject_hint">The subject of this group chat</string>
+    <string name="topic">Topic</string>
     <string name="joining_conference">Joining group chat…</string>
     <string name="leave">Leave</string>
     <string name="contact_added_you">Contact added you to contact list</string>
@@ -235,6 +237,7 @@
     <string name="contact_has_read_up_to_this_point">%s has read up to this point</string>
     <string name="contacts_have_read_up_to_this_point">%s have read up to this point</string>
     <string name="contacts_and_n_more_have_read_up_to_this_point">%1$s +%2$d more have read up to this point</string>
+    <string name="everyone_has_read_up_to_this_point">Everyone has read up to this point</string>
     <string name="publish">Publish</string>
     <string name="touch_to_choose_picture">Touch avatar to select picture from gallery</string>
     <string name="publishing">Publishing…</string>
@@ -276,13 +279,12 @@
     <string name="pref_use_indicate_received_summary">Received messages will be marked with a green tick if supported</string>
     <string name="pref_use_send_button_to_indicate_status_summary">Colorize send button to indicate contact status</string>
     <string name="pref_expert_options_other">Other</string>
-    <string name="pref_conference_name">Group chat name</string>
-    <string name="pref_conference_name_summary">Use subject instead of JID to identify group chats</string>
     <string name="pref_autojoin">Automatically join group chats</string>
     <string name="pref_autojoin_summary">Respect the autojoin flag in group chat bookmarks</string>
     <string name="toast_message_omemo_fingerprint">OMEMO fingerprint copied to clipboard!</string>
     <string name="conference_banned">You are banned from this group chat</string>
     <string name="conference_members_only">This group chat is members only</string>
+    <string name="conference_resource_constraint">Resource constraint</string>
     <string name="conference_kicked">You have been kicked from this group chat</string>
     <string name="conference_shutdown">The group chat was shut down</string>
     <string name="conference_unknown_error">You are no longer in this group chat</string>
@@ -293,6 +295,7 @@
     <string name="check_x_filesize_on_host">Check %1$s size on %2$s</string>
     <string name="message_options">Message options</string>
     <string name="quote">Quote</string>
+    <string name="paste_as_quote">Paste as quote</string>
     <string name="copy_original_url">Copy original URL</string>
     <string name="send_again">Send again</string>
     <string name="file_url">File URL</string>
@@ -419,10 +422,6 @@
         <item quantity="one">%d certificate deleted</item>
         <item quantity="other">%d certificates deleted</item>
     </plurals>
-    <plurals name="select_contact">
-        <item quantity="one">Select %d contact</item>
-        <item quantity="other">Select %d contacts</item>
-    </plurals>
     <string name="pref_quick_action_summary">Replace send button with quick action</string>
     <string name="pref_quick_action">Quick Action</string>
     <string name="none">None</string>
@@ -508,7 +507,6 @@
     <string name="correct_message">Correct message</string>
     <string name="send_corrected_message">Send corrected message</string>
     <string name="no_keys_just_confirm">You already trust this contact. By selecting \'done\' you are just confirming that %s is part of this group chat.</string>
-    <string name="select_image_and_crop">Select image and crop</string>
     <string name="this_account_is_disabled">You have disabled this account</string>
     <string name="security_error_invalid_file_access">Security error: Invalid file access</string>
     <string name="no_application_to_share_uri">No application found to share URI</string>
@@ -713,4 +711,16 @@
     <string name="pref_use_share_location_plugin_summary">Use the Share Location Plugin instead of the build in map</string>
     <string name="copy_link">Copy web address</string>
     <string name="copy_jabber_id">Copy Jabber ID</string>
+    <string name="p1_s3_filetransfer">HTTP File Sharing for S3</string>
+    <string name="pref_start_search">Direct Search</string>
+    <string name="pref_start_search_summary">At ‘Start Conversation’ screen open keyboard and place cursor in search field</string>
+    <string name="group_chat_avatar">Group chat avatar</string>
+    <string name="host_does_not_support_group_chat_avatars">Host does not support group chat avatars</string>
+    <string name="only_the_owner_can_change_group_chat_avatar">Only the owner can change group chat avatar</string>
+    <string name="contact_name">Contact name</string>
+    <string name="nickname">Nickname</string>
+    <string name="group_chat_name">Name</string>
+    <string name="providing_a_name_is_optional">Providing a name is optional</string>
+    <string name="create_dialog_group_chat_name">Group chat name</string>
+    <string name="conference_destroyed">This group chat has been destroyed</string>
 </resources>

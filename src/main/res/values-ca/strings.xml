@@ -227,7 +227,6 @@
   <string name="delete_bookmark">Elimina dels marcadors</string>
   <string name="bookmark_already_exists">Aquest marcador ja existeix</string>
   <string name="action_edit_subject">Edita el tema del xat de grup</string>
-  <string name="edit_subject_hint">El tema d\'aquest xat de grup</string>
   <string name="joining_conference">S\'està unint al xat de grup...</string>
   <string name="leave">Surt</string>
   <string name="contact_added_you">S\'ha afegit el contacte a la llista de contactes</string>
@@ -276,8 +275,6 @@
   <string name="pref_use_indicate_received_summary">Els missatges rebuts seràn marcats amb uns ticks verds si ho admet</string>
   <string name="pref_use_send_button_to_indicate_status_summary">Pintar el botó d\'enviament per indicar l\'estatus del contacte</string>
   <string name="pref_expert_options_other">Altres</string>
-  <string name="pref_conference_name">Nom del xat de grup</string>
-  <string name="pref_conference_name_summary">Utilitzeu el tema en comptes de JID per identificar els xats del grup</string>
   <string name="pref_autojoin">Uniu-vos automàticament als xats de grup</string>
   <string name="pref_autojoin_summary">Respecta l\'indicador d\'autoentrada als marcadors de xat de grup</string>
   <string name="toast_message_omemo_fingerprint">S\'ha copiat l\'empremta digital d\'OMEMO al porta-retalls.</string>
@@ -296,6 +293,9 @@
   <string name="copy_original_url">Copiar la URL original</string>
   <string name="send_again">Envia una altra vegada</string>
   <string name="file_url">URL del fitxer</string>
+  <string name="url_copied_to_clipboard">URL copiada al portapapers</string>
+  <string name="jabber_id_copied_to_clipboard">ID de Jabberd copiada al portapapers</string>
+  <string name="web_address">Adreça Web</string>
   <string name="scan_qr_code">Escaneja el codi de barres 2D</string>
   <string name="show_qr_code">Mostra el codi de barres 2D</string>
   <string name="show_block_list">Mostra la llista de bloqueig</string>
@@ -419,15 +419,13 @@ mentrestant.</string>
     <item quantity="one">%d certificat esborrat</item>
     <item quantity="other">%d certificats esborrats</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Seleccionar %d contacte</item>
-    <item quantity="other">Seleccionar %d contactes</item>
-  </plurals>
   <string name="pref_quick_action_summary">Reemplaça el botó d\'enviar per una acció ràpida</string>
   <string name="pref_quick_action">Acció ràpida</string>
   <string name="none">Cap</string>
   <string name="recently_used">Ús més recent</string>
   <string name="choose_quick_action">Trieu una acció ràpida</string>
+  <string name="search_contacts">Buscar contactes</string>
+  <string name="search_groups">Buscar xats en grup</string>
   <string name="send_private_message">Envia un missatge privat</string>
   <string name="user_has_left_conference">%1$s ha deixat el xat del grup!</string>
   <string name="username">Nom d\'usuari</string>
@@ -514,7 +512,6 @@ missatges.\n\nAra se us demanarà que desactiveu-las.</string>
   <string name="correct_message">Corregeix el missatge</string>
   <string name="send_corrected_message">Envia el missatge corregit</string>
   <string name="no_keys_just_confirm">Ja confieu en aquest contacte. Si seleccioneu \"fet\", només confirma que forma %s part d\'aquest xat en grup.</string>
-  <string name="select_image_and_crop">Seleccioneu la imatge i retalleu</string>
   <string name="this_account_is_disabled">Heu desactivat aquest compte</string>
   <string name="security_error_invalid_file_access">Error de seguretat: accés d\'arxiu no vàlid</string>
   <string name="no_application_to_share_uri">No s\'ha trobat cap aplicació que comparteixi URI</string>
@@ -705,4 +702,23 @@ que l\'administrador del servidor llegeixi els missatges, però pot ser l\'únic
   <string name="large">Gran</string>
   <string name="not_encrypted_for_this_device">El missatge no està xifrat per a aquest dispositiu.</string>
   <string name="undo">desfer</string>
+  <string name="location_disabled">L\'ús compartit d\'ubicacions està desactivat</string>
+  <string name="action_fix_to_location">Posició fixa</string>
+  <string name="action_unfix_from_location">Posició no fixada</string>
+  <string name="action_copy_location">Copiar ubicació</string>
+  <string name="action_share_location">Compartir ubicació</string>
+  <string name="action_directions">Adreces</string>
+  <string name="title_activity_share_location">Compartir ubicació</string>
+  <string name="title_activity_show_location">Mostrar ubicació</string>
+  <string name="share">Compartir</string>
+  <string name="unable_to_start_recording">No es pot iniciar l\'enregistrament</string>
+  <string name="please_wait">Si us plau, esperi...</string>
+  <string name="no_microphone_permission">Conversations  necessita accés al micròfon</string>
+  <string name="search_messages">Buscar missatges</string>
+  <string name="gif">GIF</string>
+  <string name="view_conversation">Veure conversa</string>
+  <string name="pref_use_share_location_plugin">Plugin per Compartir Ubicació</string>
+  <string name="pref_use_share_location_plugin_summary">Utilitzi el plugin Compartir ubicació en lloc d\'incorporar el mapa</string>
+  <string name="copy_link">Copiar adreça web</string>
+  <string name="copy_jabber_id">Copiar ID de Jabber</string>
 </resources>

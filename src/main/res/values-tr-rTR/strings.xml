@@ -364,10 +364,6 @@
     <item quantity="one">%d sertifikaları silindi</item>
     <item quantity="other">%d sertifikaları silindi</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">%d kişiyi seç</item>
-    <item quantity="other">%d kişiyi seç</item>
-  </plurals>
   <string name="pref_quick_action_summary">Gönder düğmesini kısayol atamasıyla değiştir</string>
   <string name="pref_quick_action">Kısayol</string>
   <string name="none">Hiçbiri</string>
@@ -442,7 +438,6 @@
   <string name="this_field_is_required">Bu alan zorunludur</string>
   <string name="correct_message">ileti düzelt</string>
   <string name="send_corrected_message">Düzeltilmiş iletiyi gönder</string>
-  <string name="select_image_and_crop">Resmi seçip kırpın</string>
   <string name="this_account_is_disabled">Bu hesabı devre dışı bıraktınız</string>
   <string name="security_error_invalid_file_access">Güvenlik hatası: Geçersiz dosya erişimi</string>
   <string name="no_application_to_share_uri">URI paylaşmak için uygulama bulunamadı</string>

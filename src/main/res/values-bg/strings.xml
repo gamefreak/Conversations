@@ -20,6 +20,7 @@
   <string name="title_activity_sharewith">Споделяне в разговора</string>
   <string name="title_activity_start_conversation">Започване на разговор</string>
   <string name="title_activity_choose_contact">Изберете контакт</string>
+  <string name="title_activity_choose_contacts">Изберете контакти</string>
   <string name="title_activity_share_via_account">Споделяне чрез профил</string>
   <string name="title_activity_block_list">Списък с блокирани</string>
   <string name="just_now">току-що</string>
@@ -42,6 +43,7 @@
   <string name="block_domain_text">Блокиране на всички контакти от %s?</string>
   <string name="unblock_domain_text">Деблокиране на всички контакти от %s?</string>
   <string name="contact_blocked">Контактът е блокиран</string>
+  <string name="blocked">Блокиран</string>
   <string name="remove_bookmark_text">Искате ли да премахнете отметката за %s? Разговорът, свързан с тази отметка, няма да бъде премахнат.</string>
   <string name="register_account">Регистриране на нов профил на сървъра</string>
   <string name="change_password_on_server">Промяна на паролата в сървъра</string>
@@ -227,7 +229,7 @@
   <string name="delete_bookmark">Изтриване на отметка</string>
   <string name="bookmark_already_exists">Вече съществува такава отметка</string>
   <string name="action_edit_subject">Редактиране на темата на груповия разговор</string>
-  <string name="edit_subject_hint">Темата на този групов разговор</string>
+  <string name="topic">Тема</string>
   <string name="joining_conference">Присъединяване в групов разговор…</string>
   <string name="leave">Напускане</string>
   <string name="contact_added_you">Контактът е добавен във Вашия списък от контакти</string>
@@ -235,6 +237,7 @@
   <string name="contact_has_read_up_to_this_point">%s е прочел до тук</string>
   <string name="contacts_have_read_up_to_this_point">%s човека са прочели до тук</string>
   <string name="contacts_and_n_more_have_read_up_to_this_point">%1$s и още %2$d човека са прочели до тук</string>
+  <string name="everyone_has_read_up_to_this_point">Всички са прочели до тук</string>
   <string name="publish">Публикуване</string>
   <string name="touch_to_choose_picture">Докоснете аватара, за да изберете изображение от галерията</string>
   <string name="publishing">Публикуване…</string>
@@ -276,13 +279,12 @@
   <string name="pref_use_indicate_received_summary">Получените съобщения ще бъдат отбелязани със зелена отметка, ако това се поддържа</string>
   <string name="pref_use_send_button_to_indicate_status_summary">Оцветяване на бутона за изпращане в зависимост от състоянието на контакта</string>
   <string name="pref_expert_options_other">Други</string>
-  <string name="pref_conference_name">Име на груповия разговор</string>
-  <string name="pref_conference_name_summary">Използване на темата вместо JID за идентифициране на груповите разговори</string>
   <string name="pref_autojoin">Автоматично присъединяване в груповите разговори</string>
   <string name="pref_autojoin_summary">Спазване на флага за автоматично присъединяване в отметките на груповите разговори</string>
   <string name="toast_message_omemo_fingerprint">Отпечатъкът OMEMO е копиран!</string>
   <string name="conference_banned">Достъпът Ви до този групов разговор е забранен</string>
   <string name="conference_members_only">Този групов разговор е само за членове</string>
+  <string name="conference_resource_constraint">Ограничение на ресурса</string>
   <string name="conference_kicked">Бяхте изритан(а) от този групов разговор</string>
   <string name="conference_shutdown">Груповия разговор приключи</string>
   <string name="conference_unknown_error">Вече не участвате в този групов разговор</string>
@@ -293,10 +295,13 @@
   <string name="check_x_filesize_on_host">Проверете размера на %1$s на %2$s</string>
   <string name="message_options">Настройки за съобщенята</string>
   <string name="quote">Цитат</string>
+  <string name="paste_as_quote">Поставяне като цитат</string>
   <string name="copy_original_url">Копиране на оригиналния адрес</string>
   <string name="send_again">Повторно изпращане</string>
   <string name="file_url">Адрес на файла</string>
   <string name="url_copied_to_clipboard">Копиране на адреса</string>
+  <string name="jabber_id_copied_to_clipboard">Jabber идентификаторът е копиран</string>
+  <string name="web_address">уеб адрес</string>
   <string name="scan_qr_code">Сканиране на 2-измерен баркод</string>
   <string name="show_qr_code">Показване на 2-измерен баркод</string>
   <string name="show_block_list">Показване на списъка с блокирани</string>
@@ -417,10 +422,6 @@
     <item quantity="one">%d сертификат е изтрит</item>
     <item quantity="other">%d сертификата са изтрити</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Изберете %d контакт</item>
-    <item quantity="other">Изберете %d контакта</item>
-  </plurals>
   <string name="pref_quick_action_summary">Замяна на бутона за изпращане с бързо действие</string>
   <string name="pref_quick_action">Бързо действие</string>
   <string name="none">Нищо</string>
@@ -506,7 +507,6 @@
   <string name="correct_message">Поправяне на съобщението</string>
   <string name="send_corrected_message">Изпращане на поправеното съобщение</string>
   <string name="no_keys_just_confirm">Вие вече имате доверие на този контакт. Избирайки „готово“, Вие просто потвърждавате, че %s е част от този групов разговор.</string>
-  <string name="select_image_and_crop">Изберете изображение и изрежете</string>
   <string name="this_account_is_disabled">Вие сте деактивирали този профил</string>
   <string name="security_error_invalid_file_access">Грешка в сигурността: неправилен достъп до файл</string>
   <string name="no_application_to_share_uri">Няма намерено приложение за споделяне на адреса</string>
@@ -707,4 +707,18 @@
   <string name="view_conversation">Преглед на разговора</string>
   <string name="pref_use_share_location_plugin">Разширение за споделяне на местоположението</string>
   <string name="pref_use_share_location_plugin_summary">Използване на разширението за споделяне на местоположението вместо вградената карта</string>
+  <string name="copy_link">Копиране на уеб адрес</string>
+  <string name="copy_jabber_id">Копиране на Jabber идентификатор</string>
+  <string name="p1_s3_filetransfer">Споделяне на файлове през HTTP за S3</string>
+  <string name="pref_start_search">Директно търсене</string>
+  <string name="pref_start_search_summary">На екрана за „Започване на разговор“ да се отваря клавиатурата и да се поставя курсорът в полето за търсене</string>
+  <string name="group_chat_avatar">Аватар на груповия разговор</string>
+  <string name="host_does_not_support_group_chat_avatars">Сървърът не поддържа аватари за груповите разговори</string>
+  <string name="only_the_owner_can_change_group_chat_avatar">Само собственикът може да променя аватара на груповия разговор</string>
+  <string name="contact_name">Име на контакта</string>
+  <string name="nickname">Псевдоним</string>
+  <string name="group_chat_name">Име</string>
+  <string name="providing_a_name_is_optional">Въвеждането на име не е задължитално</string>
+  <string name="create_dialog_group_chat_name">Име на груповия разговор</string>
+  <string name="conference_destroyed">Този групов разговор е унищожен</string>
 </resources>

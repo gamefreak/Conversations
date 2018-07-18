@@ -43,7 +43,6 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.provider.Settings;
@@ -78,7 +77,9 @@ import eu.siacs.conversations.ui.util.ActivityResult;
 import eu.siacs.conversations.ui.util.ConversationMenuConfigurator;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
+import eu.siacs.conversations.utils.EmojiWrapper;
 import eu.siacs.conversations.utils.ExceptionHelper;
+import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
 import horse.vinylscratch.conversations.UpdateCheckReceiver;
 import horse.vinylscratch.conversations.VersionCheckTask;
@@ -458,6 +459,18 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 		}
 	}
 
+	public boolean onXmppUriClicked(Uri uri) {
+		XmppUri xmppUri = new XmppUri(uri);
+		if (xmppUri.isJidValid() && !xmppUri.hasFingerprints()) {
+			final Conversation conversation = xmppConnectionService.findUniqueConversationByJid(xmppUri);
+			if (conversation != null) {
+				openConversation(conversation, null);
+				return true;
+			}
+		}
+		return false;
+	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
 		if (MenuDoubleTabUtil.shouldIgnoreTap()) {
@@ -467,7 +480,11 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 			case android.R.id.home:
 				FragmentManager fm = getFragmentManager();
 				if (fm.getBackStackEntryCount() > 0) {
-					fm.popBackStack();
+					try {
+						fm.popBackStack();
+					} catch (IllegalArgumentException e) {
+						Log.w(Config.LOGTAG,"Unable to pop back stack after pressing home button");
+					}
 					return true;
 				}
 				break;
@@ -567,7 +584,7 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
 			if (mainFragment != null && mainFragment instanceof ConversationFragment) {
 				final Conversation conversation = ((ConversationFragment) mainFragment).getConversation();
 				if (conversation != null) {
-					actionBar.setTitle(conversation.getName());
+					actionBar.setTitle(EmojiWrapper.transform(conversation.getName()));
 					actionBar.setDisplayHomeAsUpEnabled(true);
 					return;
 				}

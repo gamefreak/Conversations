@@ -2,7 +2,6 @@ package eu.siacs.conversations.ui.widget;
 
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
-import android.support.text.emoji.widget.EmojiAppCompatEditText;
 import android.support.v13.view.inputmethod.EditorInfoCompat;
 import android.support.v13.view.inputmethod.InputConnectionCompat;
 import android.support.v13.view.inputmethod.InputContentInfoCompat;
@@ -23,7 +22,7 @@ import android.view.inputmethod.InputConnection;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 
-public class EditMessage extends EmojiAppCompatEditText {
+public class EditMessage extends EmojiWrapperEditText {
 
 	private static final InputFilter SPAN_FILTER = (source, start, end, dest, dstart, dend) -> source instanceof Spanned ? source.toString() : source;
 	protected Handler mTypingHandler = new Handler();
@@ -129,18 +128,30 @@ public class EditMessage extends EmojiAppCompatEditText {
 		this.mCommitContentListener = listener;
 	}
 
+	public void insertAsQuote(String text) {
+		text = text.replaceAll("(\n *){2,}", "\n").replaceAll("(^|\n)", "$1> ").replaceAll("\n$", "");
+		Editable editable = getEditableText();
+		int position = getSelectionEnd();
+		if (position == -1) position = editable.length();
+		if (position > 0 && editable.charAt(position - 1) != '\n') {
+			editable.insert(position++, "\n");
+		}
+		editable.insert(position, text);
+		position += text.length();
+		editable.insert(position++, "\n");
+		if (position < editable.length() && editable.charAt(position) != '\n') {
+			editable.insert(position, "\n");
+		}
+		setSelection(position);
+	}
+
 	@Override
 	public InputConnection onCreateInputConnection(EditorInfo editorInfo) {
 		final InputConnection ic = super.onCreateInputConnection(editorInfo);
 
-		if (mimeTypes != null && mCommitContentListener != null) {
+		if (mimeTypes != null && mCommitContentListener != null && ic != null) {
 			EditorInfoCompat.setContentMimeTypes(editorInfo, mimeTypes);
-			return InputConnectionCompat.createWrapper(ic, editorInfo, new InputConnectionCompat.OnCommitContentListener() {
-				@Override
-				public boolean onCommitContent(InputContentInfoCompat inputContentInfo, int flags, Bundle opts) {
-					return EditMessage.this.mCommitContentListener.onCommitContent(inputContentInfo, flags, opts, mimeTypes);
-				}
-			});
+			return InputConnectionCompat.createWrapper(ic, editorInfo, (inputContentInfo, flags, opts) -> EditMessage.this.mCommitContentListener.onCommitContent(inputContentInfo, flags, opts, mimeTypes));
 		} else {
 			return ic;
 		}

@@ -20,6 +20,7 @@
   <string name="title_activity_sharewith">Compartir con Conversación</string>
   <string name="title_activity_start_conversation">Nueva Conversación</string>
   <string name="title_activity_choose_contact">Seleccionar Contacto</string>
+  <string name="title_activity_choose_contacts">Seleccionar Contactos</string>
   <string name="title_activity_share_via_account">Compartir via cuenta</string>
   <string name="title_activity_block_list">Lista contactos bloqueados</string>
   <string name="just_now">ahora</string>
@@ -42,6 +43,7 @@
   <string name="block_domain_text">¿Bloquear todos los contactos de %s?</string>
   <string name="unblock_domain_text">¿Desbloquear todos los contatos de %s?</string>
   <string name="contact_blocked">Contacto bloqueado</string>
+  <string name="blocked">Bloqueado</string>
   <string name="remove_bookmark_text">¿Quieres eliminar %s de tus marcadores? La conversación asociada con este marcador no se eliminará.</string>
   <string name="register_account">Registrar nueva cuenta en servidor</string>
   <string name="change_password_on_server">Cambiar contraseña en servidor</string>
@@ -227,7 +229,7 @@
   <string name="delete_bookmark">Eliminar marcador</string>
   <string name="bookmark_already_exists">Este marcador ya existe</string>
   <string name="action_edit_subject">Editar asunto de la conversación</string>
-  <string name="edit_subject_hint">El asunto de esta conversación en grupo</string>
+  <string name="topic">Asunto</string>
   <string name="joining_conference">Uniéndose a conversación...</string>
   <string name="leave">Salir</string>
   <string name="contact_added_you">El contacto te ha añadido a su lista de contactos</string>
@@ -235,6 +237,7 @@
   <string name="contact_has_read_up_to_this_point">%s ha leído hasta aquí</string>
   <string name="contacts_have_read_up_to_this_point">%s han leído hasta aquí</string>
   <string name="contacts_and_n_more_have_read_up_to_this_point">%1$s + %2$d han leído hasta aquí</string>
+  <string name="everyone_has_read_up_to_this_point">Todos han leído hasta aquí</string>
   <string name="publish">Publicar</string>
   <string name="touch_to_choose_picture">Pulsa para seleccionar una imagen de la galería</string>
   <string name="publishing">Publicando…</string>
@@ -276,8 +279,6 @@
   <string name="pref_use_indicate_received_summary">Cuando el contacto reciba el mensaje será indicado con una marca verde. Cuidado, esto podría no funcionar en todos los casos.</string>
   <string name="pref_use_send_button_to_indicate_status_summary">El color del botón enviar indica el estado del contacto</string>
   <string name="pref_expert_options_other">Otros</string>
-  <string name="pref_conference_name">Nombre en la conversaciones en grupo</string>
-  <string name="pref_conference_name_summary">Usar el asunto de la conversación en lugar del identificador jabber como nombre en las conversaciones en grupo</string>
   <string name="pref_autojoin">Unirse automáticamente a conversaciones en grupo</string>
   <string name="pref_autojoin_summary">Respetar la opción de los marcadores de unirse automáticamente a las conversaciones en grupo</string>
   <string name="toast_message_omemo_fingerprint">¡Huella digital OMEMO copiada al portapapeles!</string>
@@ -293,10 +294,13 @@
   <string name="check_x_filesize_on_host">Comprobar tamaño de %1$s en %2$s</string>
   <string name="message_options">Opciones de mensaje</string>
   <string name="quote">Citar</string>
+  <string name="paste_as_quote">Pegar como cita</string>
   <string name="copy_original_url">Copiar URL original</string>
   <string name="send_again">Volver a enviar</string>
   <string name="file_url">URL de archivo</string>
   <string name="url_copied_to_clipboard">URL copiada al portapapeles</string>
+  <string name="jabber_id_copied_to_clipboard">Identificador Jabber copiado al portapapeles</string>
+  <string name="web_address">dirección web</string>
   <string name="scan_qr_code">Escanear código QR</string>
   <string name="show_qr_code">Mostrar código QR</string>
   <string name="show_block_list">Mostrar contactos bloqueados</string>
@@ -417,10 +421,6 @@
     <item quantity="one">%d certificado eliminado</item>
     <item quantity="other">%d certificados eliminados</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Seleccionado %d contacto</item>
-    <item quantity="other">Seleccionados %d contactos</item>
-  </plurals>
   <string name="pref_quick_action_summary">Cambiar el botón de enviar por botón de acción rápida</string>
   <string name="pref_quick_action">Acción rápida</string>
   <string name="none">Ninguna</string>
@@ -506,7 +506,6 @@
   <string name="correct_message">Corregir mensaje</string>
   <string name="send_corrected_message">Enviar mensaje corregido</string>
   <string name="no_keys_just_confirm">Ya confías en este contacto. Seleccionando \'hecho\', estás confirmando que %s es parte de esta conversación.</string>
-  <string name="select_image_and_crop">Seleccionar imagen y recortar</string>
   <string name="this_account_is_disabled">Has deshabilitado esta cuenta</string>
   <string name="security_error_invalid_file_access">Error de seguridad: Acceso a fichero inválido</string>
   <string name="no_application_to_share_uri">No se ha encontrado ninguna aplicación para compartir la URI</string>
@@ -707,4 +706,18 @@
   <string name="view_conversation">Ver conversación</string>
   <string name="pref_use_share_location_plugin">Plugin para Compartir Ubicación</string>
   <string name="pref_use_share_location_plugin_summary">Usar el Plugin externo para Compartir Ubicación en lugar del propio de la aplicación.</string>
+  <string name="copy_link">Copiar dirección web</string>
+  <string name="copy_jabber_id">Copiar Identificador Jabber</string>
+  <string name="p1_s3_filetransfer">Compartición de Archivos mediante S3</string>
+  <string name="pref_start_search">Búsqueda directa</string>
+  <string name="pref_start_search_summary">En la pantalla de \'Nueva Conversación\' abrir el teclado y poner el cursor en el campo de búsqueda</string>
+  <string name="group_chat_avatar">Avatar de la conversación en grupo</string>
+  <string name="host_does_not_support_group_chat_avatars">El servidor no soporta avatares en conversaciones en grupo</string>
+  <string name="only_the_owner_can_change_group_chat_avatar">Solo el propietario de la conversación puede cambiar el avatar</string>
+  <string name="contact_name">Nombre del contacto</string>
+  <string name="nickname">Apodo</string>
+  <string name="group_chat_name">Nombre</string>
+  <string name="providing_a_name_is_optional">Añadir un nombre es opcional</string>
+  <string name="create_dialog_group_chat_name">Nombre de la Conversación en grupo</string>
+  <string name="conference_destroyed">Esta conversación en grupo ha sido destruida</string>
 </resources>

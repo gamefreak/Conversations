@@ -333,9 +333,13 @@ public class TrustKeysActivity extends OmemoActivity implements OnKeyStatusUpdat
 				processFingerprintVerification(this.mPendingFingerprintVerificationUri);
 				this.mPendingFingerprintVerificationUri = null;
 			} else {
-				reloadFingerprints();
-				populateView();
-				invalidateOptionsMenu();
+				final boolean keysToTrust = reloadFingerprints();
+				if (keysToTrust || hasPendingKeyFetches() || hasNoOtherTrustedKeys()) {
+					populateView();
+					invalidateOptionsMenu();
+				} else {
+					finishOk(false);
+				}
 			}
 		}
 	}
@@ -349,7 +353,7 @@ public class TrustKeysActivity extends OmemoActivity implements OnKeyStatusUpdat
 	}
 
 	private boolean hasPendingKeyFetches() {
-		return mAccount != null && mAccount.getAxolotlService().hasPendingKeyFetches(mAccount, contactJids);
+		return mAccount != null && mAccount.getAxolotlService().hasPendingKeyFetches(contactJids);
 	}
 
 

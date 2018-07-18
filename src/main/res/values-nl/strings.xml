@@ -20,6 +20,7 @@
   <string name="title_activity_sharewith">Delen in gesprek</string>
   <string name="title_activity_start_conversation">Gesprek starten</string>
   <string name="title_activity_choose_contact">Contact kiezen</string>
+  <string name="title_activity_choose_contacts">Contacten kiezen</string>
   <string name="title_activity_share_via_account">Delen via account</string>
   <string name="title_activity_block_list">Geblokkeerde contacten</string>
   <string name="just_now">zojuist</string>
@@ -42,6 +43,7 @@
   <string name="block_domain_text">Alle contacten van %s blokkeren?</string>
   <string name="unblock_domain_text">Alle contacten van %s deblokkeren?</string>
   <string name="contact_blocked">Contact geblokkeerd</string>
+  <string name="blocked">Geblokkeerd</string>
   <string name="remove_bookmark_text">Wil je %s als bladwijzer verwijderen? Het gesprek met deze account zal niet worden verwijderd.</string>
   <string name="register_account">Nieuwe account op server registreren</string>
   <string name="change_password_on_server">Wachtwoord op server veranderen</string>
@@ -227,7 +229,7 @@
   <string name="delete_bookmark">Bladwijzer verwijderen</string>
   <string name="bookmark_already_exists">Deze bladwijzer bestaat al</string>
   <string name="action_edit_subject">Gespreksonderwerp bewerken</string>
-  <string name="edit_subject_hint">Het onderwerp van dit groepsgesprek</string>
+  <string name="topic">Onderwerp</string>
   <string name="joining_conference">Deelnemen aan groepsgesprek…</string>
   <string name="leave">Verlaten</string>
   <string name="contact_added_you">Contact heeft je toegevoegd aan zijn/haar contacten</string>
@@ -235,6 +237,7 @@
   <string name="contact_has_read_up_to_this_point">%s heeft tot hier gelezen</string>
   <string name="contacts_have_read_up_to_this_point">%s hebben tot hier gelezen</string>
   <string name="contacts_and_n_more_have_read_up_to_this_point">%1$s en nog %2$d meer hebben tot hier gelezen</string>
+  <string name="everyone_has_read_up_to_this_point">Iedereen heeft tot hier gelezen</string>
   <string name="publish">Publiceer</string>
   <string name="touch_to_choose_picture">Tik op avatar om een foto uit de galerij te kiezen</string>
   <string name="publishing">Publiceren…</string>
@@ -276,13 +279,12 @@
   <string name="pref_use_indicate_received_summary">Indien ondersteund, worden ontvangen berichten met een groen vinkje aangeduid</string>
   <string name="pref_use_send_button_to_indicate_status_summary">Kleur verstuur-knop in om status van contact weer te geven</string>
   <string name="pref_expert_options_other">Andere</string>
-  <string name="pref_conference_name">Gespreksnaam</string>
-  <string name="pref_conference_name_summary">Gebruik onderwerp ipv JID om groepsgesprekken te identificeren</string>
   <string name="pref_autojoin">Automatisch deelnemen aan groepsgesprekken</string>
   <string name="pref_autojoin_summary">Respecteer de autojoin-vlag bij groepsgespreksbladwijzers</string>
   <string name="toast_message_omemo_fingerprint">OMEMO-vingerafdruk gekopieerd naar klembord!</string>
   <string name="conference_banned">Je bent verbannen uit dit groepsgesprek</string>
   <string name="conference_members_only">Dit groepsgesprek is enkel voor leden</string>
+  <string name="conference_resource_constraint">Bronbeperking</string>
   <string name="conference_kicked">Je bent uit dit groepsgesprek verwijderd</string>
   <string name="conference_shutdown">Het groepsgesprek is uitgeschakeld</string>
   <string name="conference_unknown_error">Je neemt niet langer deel aan dit groepsgesprek</string>
@@ -293,9 +295,13 @@
   <string name="check_x_filesize_on_host">Bestandsgrootte van %1$s op %2$s controleren</string>
   <string name="message_options">Berichtopties</string>
   <string name="quote">Citeren</string>
+  <string name="paste_as_quote">Plakken als citaat</string>
   <string name="copy_original_url">Oorspronkelijke URL kopiëren</string>
   <string name="send_again">Opnieuw versturen</string>
   <string name="file_url">Bestands-URL</string>
+  <string name="url_copied_to_clipboard">URL gekopieerd naar klembord</string>
+  <string name="jabber_id_copied_to_clipboard">Jabber-ID gekopieerd naar klembord</string>
+  <string name="web_address">webadres</string>
   <string name="scan_qr_code">2D-streepjescode scannen</string>
   <string name="show_qr_code">2D-streepjescode tonen</string>
   <string name="show_block_list">Geblokkeerde contacten weergeven</string>
@@ -416,15 +422,13 @@
     <item quantity="one">%d certificaat verwijderd</item>
     <item quantity="other">%d certificaten verwijderd</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Selecteer %d contact</item>
-    <item quantity="other">Selecteer %d contacten</item>
-  </plurals>
   <string name="pref_quick_action_summary">Vervang verzendknop door snelle actie</string>
   <string name="pref_quick_action">Snelle actie</string>
   <string name="none">Geen</string>
   <string name="recently_used">Recent gebruikt</string>
   <string name="choose_quick_action">Snelle actie kiezen</string>
+  <string name="search_contacts">Contacten zoeken</string>
+  <string name="search_groups">Groepsgesprekken zoeken</string>
   <string name="send_private_message">Privébericht sturen</string>
   <string name="user_has_left_conference">%1$s heeft het groepsgesprek verlaten!</string>
   <string name="username">Gebruikersnaam</string>
@@ -503,7 +507,6 @@
   <string name="correct_message">Bericht corrigeren</string>
   <string name="send_corrected_message">Gecorrigeerd bericht versturen</string>
   <string name="no_keys_just_confirm">Je vertrouwt dit contact al. Door \'klaar\' te kiezen bevestig je enkel dat %s deel uitmaakt van dit groepsgesprek.</string>
-  <string name="select_image_and_crop">Afbeelding kiezen en bijsnijden</string>
   <string name="this_account_is_disabled">Je hebt deze account uitgeschakeld</string>
   <string name="security_error_invalid_file_access">Beveiligingsfout: Ongeldige bestandstoegang</string>
   <string name="no_application_to_share_uri">Geen applicatie om URI te delen</string>
@@ -687,4 +690,35 @@
   <string name="large">Groot</string>
   <string name="not_encrypted_for_this_device">Bericht is niet versleuteld voor dit apparaat.</string>
   <string name="undo">ongedaan maken</string>
+  <string name="location_disabled">Delen van locatie is uitgeschakeld</string>
+  <string name="action_fix_to_location">Positie vergrendelen</string>
+  <string name="action_unfix_from_location">Positie ontgrendelen</string>
+  <string name="action_copy_location">Locatie kopiëren</string>
+  <string name="action_share_location">Locatie delen</string>
+  <string name="action_directions">Routebeschrijving</string>
+  <string name="title_activity_share_location">Locatie delen</string>
+  <string name="title_activity_show_location">Locatie weergeven</string>
+  <string name="share">Delen</string>
+  <string name="unable_to_start_recording">Kan opname niet starten</string>
+  <string name="please_wait">Even geduld…</string>
+  <string name="no_microphone_permission">Conversations heeft toegang nodig tot de microfoon</string>
+  <string name="search_messages">Berichten zoeken</string>
+  <string name="gif">GIF</string>
+  <string name="view_conversation">Gesprek bekijken</string>
+  <string name="pref_use_share_location_plugin">Plug-in voor delen van locatie</string>
+  <string name="pref_use_share_location_plugin_summary">Gebruik de ‘Plug-in voor delen van locatie’ in plaats van de ingebouwde kaart</string>
+  <string name="copy_link">Webadres kopiëren</string>
+  <string name="copy_jabber_id">Jabber-ID kopiëren</string>
+  <string name="p1_s3_filetransfer">Bestanden delen via HTTP voor S3</string>
+  <string name="pref_start_search">Rechtstreeks zoeken</string>
+  <string name="pref_start_search_summary">Open het toetsenbord op het scherm ‘Gesprek starten’ en plaats de cursor in het zoekveld</string>
+  <string name="group_chat_avatar">Gespreksafbeelding</string>
+  <string name="host_does_not_support_group_chat_avatars">Host ondersteunt geen gespreksafbeeldingen</string>
+  <string name="only_the_owner_can_change_group_chat_avatar">Enkel de eigenaar kan de gespreksafbeelding wijzigen</string>
+  <string name="contact_name">Contactnaam</string>
+  <string name="nickname">Bijnaam</string>
+  <string name="group_chat_name">Naam</string>
+  <string name="providing_a_name_is_optional">Naam is niet vereist</string>
+  <string name="create_dialog_group_chat_name">Gespreksnaam</string>
+  <string name="conference_destroyed">Dit groepsgesprek is verwijderd</string>
 </resources>

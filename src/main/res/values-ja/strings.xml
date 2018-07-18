@@ -226,7 +226,6 @@
   <string name="delete_bookmark">ブックマークを削除</string>
   <string name="bookmark_already_exists">このブックマークはすでに存在します</string>
   <string name="action_edit_subject">談話室の題を編集</string>
-  <string name="edit_subject_hint">この談話室の題</string>
   <string name="joining_conference">談話室に参加しています…</string>
   <string name="leave">退出</string>
   <string name="contact_added_you">連絡先があなたを連絡先リストに追加しました</string>
@@ -241,7 +240,7 @@
   <string name="or_long_press_for_default">(または長押しするとデフォルトに戻します)</string>
   <string name="error_publish_avatar_no_server_support">ご利用のサーバーは、アバターの公開をサポートしていません</string>
   <string name="private_message">ささやいた</string>
-  <string name="private_message_to">%s に</string>
+  <string name="private_message_to">%s へ</string>
   <string name="send_private_message_to">プライベートメッセージを %s に送信</string>
   <string name="connect">接続</string>
   <string name="account_already_exists">このアカウントはすでに存在します</string>
@@ -273,13 +272,12 @@
   <string name="pref_use_indicate_received_summary">サポートされている場合、受信したメッセージに緑色のチェックマークが付きます</string>
   <string name="pref_use_send_button_to_indicate_status_summary">送信ボタンに連絡先ステータスを示す色が付きます</string>
   <string name="pref_expert_options_other">その他</string>
-  <string name="pref_conference_name">談話室名</string>
-  <string name="pref_conference_name_summary">談話室のJIDの代わりに題を使う</string>
   <string name="pref_autojoin">自動で談話室に参加</string>
   <string name="toast_message_omemo_fingerprint">OMEMO フィンガープリントをクリップボードにコピーしました!</string>
   <string name="conference_banned">この談話室から締め出されています</string>
   <string name="conference_members_only">この談話室はメンバー制です</string>
   <string name="conference_kicked">この談話室から蹴り出されています</string>
+  <string name="conference_shutdown">このグループチャットは閉鎖されました</string>
   <string name="conference_unknown_error">既にこの談話室に参加していません</string>
   <string name="using_account">アカウント %s を使用</string>
   <string name="checking_x">HTTP ホストの %s を確認中</string>
@@ -291,6 +289,8 @@
   <string name="copy_original_url">元の URL をコピー</string>
   <string name="send_again">再送</string>
   <string name="file_url">ファイル URL</string>
+  <string name="url_copied_to_clipboard">URL をクリップボードにコピーしました</string>
+  <string name="jabber_id_copied_to_clipboard">Jabber ID をクリップボードにコピーしました</string>
   <string name="scan_qr_code">2D バーコードをスキャン</string>
   <string name="show_qr_code">2D バーコードを表示</string>
   <string name="show_block_list">ブロックリストを表示</string>
@@ -402,9 +402,6 @@
   <plurals name="toast_delete_certificates">
     <item quantity="other">%d 証明書を削除しました</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="other">%d 連絡先を選択</item>
-  </plurals>
   <string name="pref_quick_action_summary">送信ボタンをクイックアクションで置き換えます</string>
   <string name="pref_quick_action">クイックアクション</string>
   <string name="none">なし</string>
@@ -484,7 +481,6 @@
   <string name="correct_message">メッセージを修正</string>
   <string name="send_corrected_message">修正したメッセージを送信</string>
   <string name="no_keys_just_confirm">この連絡先を既に信用しています。\'done\'を選択すれば %s をグループチャットに加えることを承認します。</string>
-  <string name="select_image_and_crop">画像の選択とトリミング</string>
   <string name="this_account_is_disabled">このアカウントを無効にしました</string>
   <string name="security_error_invalid_file_access">セキュリティエラー: 不正なファイルアクセス</string>
   <string name="no_application_to_share_uri">URI を共有するアプリケーションが見つかりません</string>
@@ -620,6 +616,7 @@
   <string name="copy_to_clipboard">クリップボードにコピー</string>
   <string name="message_copied_to_clipboard">メッセージをクリップボードにコピーしました</string>
   <string name="message">メッセージ</string>
+  <string name="mtm_connect_anyway">それでも接続を希望しますか?</string>
   <string name="mtm_cert_details">証明書の詳細:</string>
   <string name="edit_status_message_title">在席状況メッセージを編集</string>
   <string name="edit_status_message">在席状況メッセージを編集</string>
@@ -630,7 +627,9 @@
   <string name="pref_omemo_setting">OMEMO 暗号化</string>
   <string name="pref_omemo_setting_summary_always">OMEMO は1対1の会話とグループチャットで常に使用されます。</string>
   <string name="pref_omemo_setting_summary_default_on">デフォルトで新しい会話で OMEMO を使用します。</string>
+  <string name="create_shortcut">ショートカットを作成</string>
   <string name="pref_font_size">フォントの大きさ</string>
+  <string name="pref_font_size_summary">このアプリで使用される相対フォントサイズ</string>
   <string name="default_on">デフォルトでオン</string>
   <string name="default_off">デフォルトでオフ</string>
   <string name="small">小</string>
@@ -638,4 +637,12 @@
   <string name="large">大</string>
   <string name="not_encrypted_for_this_device">このデバイス向けにメッセージは暗号化されませんでした。</string>
   <string name="undo">元に戻す</string>
+  <string name="action_fix_to_location">位置を固定</string>
+  <string name="action_unfix_from_location">位置を固定しない</string>
+  <string name="action_copy_location">場所をコピー</string>
+  <string name="please_wait">しばらくお待ちください…</string>
+  <string name="search_messages">メッセージを検索</string>
+  <string name="gif">GIF</string>
+  <string name="copy_link">ウェブアドレスをコピー</string>
+  <string name="copy_jabber_id">Jabber ID をコピー</string>
 </resources>

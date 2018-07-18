@@ -61,39 +61,27 @@ public class ContactDetailsActivity extends OmemoActivity implements OnAccountUp
 	private OnCheckedChangeListener mOnSendCheckedChange = new OnCheckedChangeListener() {
 
 		@Override
-		public void onCheckedChanged(CompoundButton buttonView,
-		                             boolean isChecked) {
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 			if (isChecked) {
-				if (contact
-						.getOption(Contact.Options.PENDING_SUBSCRIPTION_REQUEST)) {
-					xmppConnectionService.sendPresencePacket(contact
-									.getAccount(),
-							xmppConnectionService.getPresenceGenerator()
-									.sendPresenceUpdatesTo(contact));
+				if (contact.getOption(Contact.Options.PENDING_SUBSCRIPTION_REQUEST)) {
+					xmppConnectionService.sendPresencePacket(contact.getAccount(), xmppConnectionService.getPresenceGenerator().sendPresenceUpdatesTo(contact));
 				} else {
 					contact.setOption(Contact.Options.PREEMPTIVE_GRANT);
 				}
 			} else {
 				contact.resetOption(Contact.Options.PREEMPTIVE_GRANT);
-				xmppConnectionService.sendPresencePacket(contact.getAccount(),
-						xmppConnectionService.getPresenceGenerator()
-								.stopPresenceUpdatesTo(contact));
+				xmppConnectionService.sendPresencePacket(contact.getAccount(),xmppConnectionService.getPresenceGenerator().stopPresenceUpdatesTo(contact));
 			}
 		}
 	};
 	private OnCheckedChangeListener mOnReceiveCheckedChange = new OnCheckedChangeListener() {
 
 		@Override
-		public void onCheckedChanged(CompoundButton buttonView,
-		                             boolean isChecked) {
+		public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
 			if (isChecked) {
-				xmppConnectionService.sendPresencePacket(contact.getAccount(),
-						xmppConnectionService.getPresenceGenerator()
-								.requestPresenceUpdatesFrom(contact));
+				xmppConnectionService.sendPresencePacket(contact.getAccount(), xmppConnectionService.getPresenceGenerator().requestPresenceUpdatesFrom(contact));
 			} else {
-				xmppConnectionService.sendPresencePacket(contact.getAccount(),
-						xmppConnectionService.getPresenceGenerator()
-								.stopPresenceUpdatesFrom(contact));
+				xmppConnectionService.sendPresencePacket(contact.getAccount(), xmppConnectionService.getPresenceGenerator().stopPresenceUpdatesFrom(contact));
 			}
 		}
 	};
@@ -240,16 +228,12 @@ public class ContactDetailsActivity extends OmemoActivity implements OnAccountUp
 			case R.id.action_edit_contact:
 				Uri systemAccount = contact.getSystemAccount();
 				if (systemAccount == null) {
-					quickEdit(contact.getDisplayName(), 0, new OnValueEdited() {
-
-						@Override
-						public String onValueEdited(String value) {
-							contact.setServerName(value);
-							ContactDetailsActivity.this.xmppConnectionService.pushContactToServer(contact);
-							populateView();
-							return null;
-						}
-					});
+					quickEdit(contact.getServerName(), R.string.contact_name, value -> {
+						contact.setServerName(value);
+						ContactDetailsActivity.this.xmppConnectionService.pushContactToServer(contact);
+						populateView();
+						return null;
+					}, true);
 				} else {
 					Intent intent = new Intent(Intent.ACTION_EDIT);
 					intent.setDataAndType(systemAccount, Contacts.CONTENT_ITEM_TYPE);
@@ -390,7 +374,7 @@ public class ContactDetailsActivity extends OmemoActivity implements OnAccountUp
 			account = contact.getAccount().getJid().asBareJid().toString();
 		}
 		binding.detailsAccount.setText(getString(R.string.using_account, account));
-		binding.detailsContactBadge.setImageBitmap(avatarService().get(contact, getPixel(72)));
+		binding.detailsContactBadge.setImageBitmap(avatarService().get(contact, (int) getResources().getDimension(R.dimen.avatar_on_details_screen_size)));
 		binding.detailsContactBadge.setOnClickListener(this.onBadgeClick);
 
 		binding.detailsContactKeys.removeAllViews();

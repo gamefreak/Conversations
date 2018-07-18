@@ -3,8 +3,12 @@ package eu.siacs.conversations.utils;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
+import android.support.annotation.ColorInt;
+import android.text.SpannableString;
+import android.text.SpannableStringBuilder;
 import android.text.format.DateFormat;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.util.Pair;
 import android.widget.PopupMenu;
 
@@ -12,6 +16,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Date;
@@ -251,7 +256,11 @@ public class UIHelper {
 		}
 	}
 
-	public static Pair<String, Boolean> getMessagePreview(final Context context, final Message message) {
+	public static Pair<CharSequence, Boolean> getMessagePreview(final Context context, final Message message) {
+		return getMessagePreview(context, message, 0);
+	}
+
+	public static Pair<CharSequence, Boolean> getMessagePreview(final Context context, final Message message, @ColorInt int textColor) {
 		final Transferable d = message.getTransferable();
 		if (d != null) {
 			switch (d.getStatus()) {
@@ -300,14 +309,17 @@ public class UIHelper {
 				return new Pair<>(context.getString(R.string.x_file_offered_for_download,
 						getFileDescriptionString(context, message)), true);
 			} else {
-				String[] lines = body.split("\n");
-				StringBuilder builder = new StringBuilder();
-				for (String l : lines) {
+				SpannableStringBuilder styledBody = new SpannableStringBuilder(body);
+				if (textColor != 0) {
+					StylingHelper.format(styledBody, 0, styledBody.length() - 1, textColor);
+				}
+				SpannableStringBuilder builder = new SpannableStringBuilder();
+				for (CharSequence l : CharSequenceUtils.split(styledBody, '\n')) {
 					if (l.length() > 0) {
 						char first = l.charAt(0);
 						if ((first != '>' || !isPositionFollowedByQuoteableCharacter(l, 0)) && first != '\u00bb') {
-							String line = l.trim();
-							if (line.isEmpty()) {
+							CharSequence line = CharSequenceUtils.trim(l);
+							if (line.length() == 0) {
 								continue;
 							}
 							char last = line.charAt(line.length() - 1);
@@ -324,9 +336,29 @@ public class UIHelper {
 				if (builder.length() == 0) {
 					builder.append(body.trim());
 				}
-				return new Pair<>(builder.length() > 256 ? builder.substring(0, 256) : builder.toString(), false);
+				return new Pair<>(builder, false);
 			}
 		}
+	}
+
+	public static boolean isLastLineQuote(String body) {
+		if (body.endsWith("\n")) {
+			return false;
+		}
+		String[] lines = body.split("\n");
+		if (lines.length == 0) {
+			return false;
+		}
+		String line = lines[lines.length - 1];
+		if (line.isEmpty()) {
+			return false;
+		}
+		char first = line.charAt(0);
+		return first == '>' && isPositionFollowedByQuoteableCharacter(line,0) || first == '\u00bb';
+	}
+
+	public static CharSequence shorten(CharSequence input) {
+		return input.length() > 256 ? StylingHelper.subSequence(input, 0, 256) : input;
 	}
 
 	public static boolean isPositionFollowedByQuoteableCharacter(CharSequence body, int pos) {

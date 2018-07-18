@@ -9,17 +9,19 @@
 
         <item name="color_background_primary">@color/grey50</item>
         <item name="color_background_secondary">@color/grey200</item>
+        <item name="color_background_tertiary">@color/grey300</item>
         <item name="color_warning">@color/red_a700</item>
         <item name="TextColorOnline">@color/green600</item>
         <item name="TextColorError">@color/red800</item>
 
         <item name="activity_background_search">@drawable/search_background_light</item>
         <item name="activity_background_no_results">@drawable/no_results_background_light</item>
+        <item name="list_item_background">@drawable/list_item_background_light</item>
 
         <item name="EmojiColor">@color/black</item>
 
         <item name="windowActionModeOverlay">true</item>
-        <item name="android:actionModeBackground">@color/blue_a200</item>
+        <item name="android:actionModeBackground">?colorPrimary</item>
 
         <item name="TextSizeCaption">12sp</item>
         <item name="TextSizeBody1">14sp</item>
@@ -62,12 +64,13 @@
 
         <item type="reference" name="icon_add_group">@drawable/ic_group_add_white_24dp</item>
         <item type="reference" name="icon_add_person">@drawable/ic_person_add_white_24dp</item>
-        <item type="reference" name="icon_cancel">@drawable/ic_cancel_white_24dp</item>
+        <item type="reference" name="icon_cancel">@drawable/ic_cancel_black_24dp</item>
         <item type="reference" name="icon_copy">@drawable/ic_content_copy_black_24dp</item>
         <item type="reference" name="icon_discard">@drawable/ic_delete_white_24dp</item>
         <item type="reference" name="icon_download">@drawable/ic_file_download_white_24dp</item>
         <item type="reference" name="icon_edit">@drawable/ic_edit_white_24dp</item>
         <item type="reference" name="icon_edit_body">@drawable/ic_edit_black_24dp</item>
+        <item type="reference" name="icon_save">@drawable/ic_save_black_24dp</item>
         <item type="reference" name="icon_done">@drawable/ic_done_black_24dp</item>
         <item type="reference" name="icon_group">@drawable/ic_group_white_24dp</item>
         <item type="reference" name="icon_new">@drawable/ic_add_white_24dp</item>
@@ -96,7 +99,9 @@
         <item type="reference" name="icon_enable_undecided_device">@drawable/ic_new_releases_black_24dp</item>
     </style>
 
-    <style name="ConversationsTheme.Dark" parent="Theme.AppCompat.NoActionBar">
+    <style name="ConversationsTheme.Dark" parent="ConversationsTheme.Dark.Base" />
+
+    <style name="ConversationsTheme.Dark.Base" parent="Theme.AppCompat.NoActionBar">
         <item name="colorPrimary">@color/green800</item>
         <item name="colorPrimaryDark">@color/green900</item>
         <item name="colorAccent">@color/blue_a100</item>
@@ -104,8 +109,10 @@
 
         <item name="color_background_primary">@color/grey800</item>
         <item name="color_background_secondary">@color/grey900</item>
+        <item name="color_background_tertiary">@color/grey700</item>
         <item name="activity_background_search">@drawable/search_background_dark</item>
         <item name="activity_background_no_results">@drawable/no_results_background_dark</item>
+        <item name="list_item_background">@drawable/list_item_background_dark</item>
         <item name="color_warning">@color/red_a100</item>
 
         <item name="TextColorOnline">@color/green500</item>
@@ -114,7 +121,7 @@
         <item name="EmojiColor">@color/white</item>
 
         <item name="windowActionModeOverlay">true</item>
-        <item name="android:actionModeBackground">@color/blue_a100</item>
+        <item name="android:actionModeBackground">?colorPrimary</item>
 
         <item name="TextSizeCaption">12sp</item>
         <item name="TextSizeBody1">14sp</item>
@@ -163,6 +170,7 @@
         <item type="reference" name="icon_download">@drawable/ic_file_download_white_24dp</item>
         <item type="reference" name="icon_edit">@drawable/ic_edit_white_24dp</item>
         <item type="reference" name="icon_edit_body">@drawable/ic_edit_white_24dp</item>
+        <item type="reference" name="icon_save">@drawable/ic_save_white_24dp</item>
         <item type="reference" name="icon_done">@drawable/ic_done_black_24dp</item>
         <item type="reference" name="icon_group">@drawable/ic_group_white_24dp</item>
         <item type="reference" name="icon_new">@drawable/ic_add_white_24dp</item>

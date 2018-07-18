@@ -40,10 +40,10 @@
 
                         <com.makeramen.roundedimageview.RoundedImageView
                             android:id="@+id/avater"
-                            android:layout_width="72dp"
-                            android:layout_height="72dp"
+                            android:layout_width="@dimen/avatar_on_details_screen_size"
+                            android:layout_height="@dimen/avatar_on_details_screen_size"
                             android:layout_alignParentTop="true"
-                            android:layout_marginRight="16dp"
+                            android:layout_marginRight="@dimen/avatar_item_distance"
                             android:contentDescription="@string/account_image_description"
                             app:riv_corner_radius="2dp"/>
 
@@ -451,6 +451,7 @@
                                 android:layout_height="wrap_content">
 
                                 <TextView
+                                    android:id="@+id/server_info_http_upload_description"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
                                     android:ellipsize="end"

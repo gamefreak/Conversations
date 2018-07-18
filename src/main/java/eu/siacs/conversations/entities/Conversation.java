@@ -23,6 +23,8 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
+import eu.siacs.conversations.utils.JidHelper;
+import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import rocks.xmpp.addr.Jid;
@@ -53,7 +55,6 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private static final String ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP = "next_message_timestamp";
 	private static final String ATTRIBUTE_CRYPTO_TARGETS = "crypto_targets";
 	private static final String ATTRIBUTE_NEXT_ENCRYPTION = "next_encryption";
-	public static final String ATTRIBUTE_ALLOW_PM = "allow_pm";
 	public static final String ATTRIBUTE_MEMBERS_ONLY = "members_only";
 	public static final String ATTRIBUTE_MODERATED = "moderated";
 	public static final String ATTRIBUTE_NON_ANONYMOUS = "non_anonymous";
@@ -104,18 +105,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public static Conversation fromCursor(Cursor cursor) {
-		Jid jid;
-		try {
-			jid = Jid.of(cursor.getString(cursor.getColumnIndex(CONTACTJID)));
-		} catch (final IllegalArgumentException e) {
-			// Borked DB..
-			jid = null;
-		}
 		return new Conversation(cursor.getString(cursor.getColumnIndex(UUID)),
 				cursor.getString(cursor.getColumnIndex(NAME)),
 				cursor.getString(cursor.getColumnIndex(CONTACT)),
 				cursor.getString(cursor.getColumnIndex(ACCOUNT)),
-				jid,
+				JidHelper.parseOrFallbackToInvalid(cursor.getString(cursor.getColumnIndex(CONTACTJID))),
 				cursor.getLong(cursor.getColumnIndex(CREATED)),
 				cursor.getInt(cursor.getColumnIndex(STATUS)),
 				cursor.getInt(cursor.getColumnIndex(MODE)),
@@ -483,10 +477,13 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public @NonNull CharSequence getName() {
 		if (getMode() == MODE_MULTI) {
+			final String roomName = getMucOptions().getName();
 			final String subject = getMucOptions().getSubject();
 			final Bookmark bookmark = getBookmark();
 			final String bookmarkName = bookmark != null ? bookmark.getBookmarkName() : null;
-			if (printableValue(subject)) {
+			if (printableValue(roomName)) {
+				return roomName;
+			} else if (printableValue(subject)) {
 				return subject;
 			} else if (printableValue(bookmarkName, false)) {
 				return bookmarkName;
@@ -652,11 +649,12 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return null;
 	}
 
-	public boolean setNextMessage(String message) {
+	public boolean setNextMessage(final String input) {
+		final String message = input == null || input.trim().isEmpty() ? null : input;
 		boolean changed = !getNextMessage().equals(message);
 		this.setAttribute(ATTRIBUTE_NEXT_MESSAGE, message);
 		if (changed) {
-			this.setAttribute(ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP, TextUtils.isEmpty(message) ? 0 : System.currentTimeMillis());
+			this.setAttribute(ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP, message == null ? 0 : System.currentTimeMillis());
 		}
 		return changed;
 	}
@@ -743,10 +741,20 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public boolean setAttribute(String key, String value) {
 		synchronized (this.attributes) {
 			try {
-				this.attributes.put(key, value == null ? "" : value);
-				return true;
+				if (value == null) {
+					if (this.attributes.has(key)) {
+						this.attributes.remove(key);
+						return true;
+					} else {
+						return false;
+					}
+				} else {
+					final String prev = this.attributes.optString(key, null);
+					this.attributes.put(key, value);
+					return !value.equals(prev);
+				}
 			} catch (JSONException e) {
-				return false;
+				throw new AssertionError(e);
 			}
 		}
 	}
@@ -761,7 +769,6 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				this.attributes.put(key, array);
 				return true;
 			} catch (JSONException e) {
-				e.printStackTrace();
 				return false;
 			}
 		}
@@ -769,11 +776,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public String getAttribute(String key) {
 		synchronized (this.attributes) {
-			try {
-				return this.attributes.getString(key);
-			} catch (JSONException e) {
-				return null;
-			}
+		    return this.attributes.optString(key, null);
 		}
 	}
 
@@ -907,7 +910,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		return count;
 	}
 
-	private int sentMessagesCount() {
+	public int sentMessagesCount() {
 		int count = 0;
 		synchronized (this.messages) {
 			for (Message message : messages) {

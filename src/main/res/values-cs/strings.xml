@@ -355,12 +355,8 @@
   <plurals name="toast_delete_certificates">
     <item quantity="one">%d certifikát smazán</item>
     <item quantity="few">%d certifikáty smazány</item>
+    <item quantity="many">%d certifikátů smazáno</item>
     <item quantity="other">%d certifikátů smazáno</item>
-  </plurals>
-  <plurals name="select_contact">
-    <item quantity="one">Vybrat %d kontakt</item>
-    <item quantity="few">Vybrat %d kontakty</item>
-    <item quantity="other">Vybrat %d kontaktů</item>
   </plurals>
   <string name="pref_quick_action_summary">Nahradit tlačítko odeslání rychlou akcí</string>
   <string name="pref_quick_action">Rychlá akce</string>
@@ -412,6 +408,7 @@
   <plurals name="x_messages">
     <item quantity="one">%d zpráva</item>
     <item quantity="few">%d zprávy</item>
+    <item quantity="many">%d zpráv</item>
     <item quantity="other">%d zpráv</item>
   </plurals>
   <string name="load_more_messages">Načíst více zpráv</string>
@@ -437,7 +434,6 @@
   <string name="this_field_is_required">Toto pole je vyžadováno</string>
   <string name="correct_message">Opravit zprávu</string>
   <string name="send_corrected_message">Odeslat opravenou zprávu</string>
-  <string name="select_image_and_crop">Vybrat obrázek a oříznout</string>
   <string name="this_account_is_disabled">Tento účet byl vypnut</string>
   <string name="security_error_invalid_file_access">Chyba zabezpečení: Neplatný přístup k souboru</string>
   <string name="no_application_to_share_uri">Nebyla nalezena aplikace pro sdílení URI</string>

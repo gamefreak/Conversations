@@ -6,9 +6,8 @@ public final class Namespace {
 	public static final String REGISTER = "jabber:iq:register";
 	public static final String BYTE_STREAMS = "http://jabber.org/protocol/bytestreams";
 	public static final String HTTP_UPLOAD = "urn:xmpp:http:upload:0";
+	public static final String HTTP_UPLOAD_LEGACY = "urn:xmpp:http:upload";
 	public static final String STANZA_IDS = "urn:xmpp:sid:0";
-	public static final String MAM = "urn:xmpp:mam:2";
-	public static final String MAM_LEGACY = "urn:xmpp:mam:0";
 	public static final String IDLE = "urn:xmpp:idle:1";
 	public static final String DATA = "jabber:x:data";
 	public static final String OOB = "jabber:x:oob";
@@ -20,4 +19,5 @@ public final class Namespace {
 	public static final String NICK = "http://jabber.org/protocol/nick";
 	public static final String FLEXIBLE_OFFLINE_MESSAGE_RETRIEVAL = "http://jabber.org/protocol/offline";
 	public static final String BIND = "urn:ietf:params:xml:ns:xmpp-bind";
+	public static final String P1_S3_FILE_TRANSFER = "p1:s3filetransfer";
 }

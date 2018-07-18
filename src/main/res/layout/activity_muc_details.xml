@@ -8,8 +8,9 @@
         android:background="?attr/color_background_secondary"
         android:orientation="vertical">
 
-        <include android:id="@+id/toolbar"
-            layout="@layout/toolbar" />
+        <include
+            android:id="@+id/toolbar"
+            layout="@layout/toolbar"/>
 
         <ScrollView
             android:layout_width="fill_parent"
@@ -34,14 +35,6 @@
                         android:orientation="vertical"
                         android:padding="@dimen/card_padding_regular">
 
-                        <TextView
-                            android:id="@+id/muc_jabberid"
-                            android:layout_width="wrap_content"
-                            android:layout_height="wrap_content"
-                            android:layout_marginBottom="16dp"
-                            android:text="@string/account_settings_example_jabber_id"
-                            android:textAppearance="@style/TextAppearance.Conversations.Title"/>
-
                         <RelativeLayout
                             android:layout_width="fill_parent"
                             android:layout_height="wrap_content"
@@ -49,44 +42,97 @@
 
                             <com.makeramen.roundedimageview.RoundedImageView
                                 android:id="@+id/your_photo"
-                                android:layout_width="48dp"
-                                android:layout_height="48dp"
-                                android:layout_alignParentLeft="true"
-                                app:riv_corner_radius="2dp"/>
+                                android:layout_width="@dimen/avatar_on_details_screen_size"
+                                android:layout_height="@dimen/avatar_on_details_screen_size"
+                                android:layout_alignParentStart="true"
+                                app:riv_corner_radius="2dp"
+                                android:layout_marginEnd="@dimen/avatar_item_distance"/>
 
                             <LinearLayout
                                 android:layout_width="fill_parent"
                                 android:layout_height="wrap_content"
-                                android:layout_centerVertical="true"
-                                android:layout_toRightOf="@+id/your_photo"
-                                android:orientation="vertical"
-                                android:paddingLeft="@dimen/avatar_item_distance">
+                                android:layout_alignParentTop="true"
+                                android:layout_toEndOf="@+id/your_photo"
+                                android:orientation="vertical">
 
-                                <TextView
-                                    android:id="@+id/muc_your_nick"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textAppearance="@style/TextAppearance.Conversations.Subhead"/>
+                                <RelativeLayout
+                                    android:layout_width="match_parent"
+                                    android:layout_height="wrap_content">
 
-                                <TextView
-                                    android:id="@+id/muc_role"
-                                    android:layout_width="wrap_content"
-                                    android:layout_height="wrap_content"
-                                    android:singleLine="true"
-                                    android:textAppearance="@style/TextAppearance.Conversations.Body1.Secondary"/>
+                                    <LinearLayout
+                                        android:id="@+id/muc_display"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_alignParentStart="true"
+                                        android:layout_toStartOf="@+id/edit_muc_name_button"
+                                        android:orientation="vertical">
+
+                                        <TextView
+                                            android:id="@+id/muc_title"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:textAppearance="@style/TextAppearance.Conversations.Title"/>
+
+                                        <TextView
+                                            android:id="@+id/muc_subject"
+                                            android:layout_width="wrap_content"
+                                            android:layout_height="wrap_content"
+                                            android:autoLink="web"
+                                            android:textAppearance="@style/TextAppearance.Conversations.Subhead"/>
+                                    </LinearLayout>
+
+
+                                    <LinearLayout
+                                        android:id="@+id/muc_editor"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_alignParentStart="true"
+                                        android:layout_toStartOf="@+id/edit_muc_name_button"
+                                        android:orientation="vertical"
+                                        android:visibility="gone">
+
+                                        <android.support.design.widget.TextInputLayout
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            app:errorTextAppearance="@style/TextAppearance.Conversations.Design.Error"
+                                            app:hintTextAppearance="@style/TextAppearance.Conversations.Design.Hint">
+
+                                            <eu.siacs.conversations.ui.widget.EmojiWrapperEditText
+                                                android:id="@+id/muc_edit_title"
+                                                android:layout_width="match_parent"
+                                                android:layout_height="wrap_content"
+                                                android:hint="@string/group_chat_name"
+                                                android:textAppearance="@style/Widget.Conversations.EditText"/>
+                                        </android.support.design.widget.TextInputLayout>
+
+                                        <android.support.design.widget.TextInputLayout
+                                            android:layout_width="match_parent"
+                                            android:layout_height="wrap_content"
+                                            app:errorTextAppearance="@style/TextAppearance.Conversations.Design.Error"
+                                            app:hintTextAppearance="@style/TextAppearance.Conversations.Design.Hint">
+
+                                            <eu.siacs.conversations.ui.widget.EmojiWrapperEditText
+                                                android:id="@+id/muc_edit_subject"
+                                                android:layout_width="match_parent"
+                                                android:layout_height="wrap_content"
+                                                android:hint="@string/topic"
+                                                android:textAppearance="@style/Widget.Conversations.EditText"/>
+                                        </android.support.design.widget.TextInputLayout>
+
+                                    </LinearLayout>
+
+                                    <ImageButton
+                                        android:id="@+id/edit_muc_name_button"
+                                        android:layout_width="wrap_content"
+                                        android:layout_height="wrap_content"
+                                        android:layout_alignParentEnd="true"
+                                        android:layout_alignParentTop="true"
+                                        android:alpha="?attr/icon_alpha"
+                                        android:background="?attr/selectableItemBackgroundBorderless"
+                                        android:padding="@dimen/image_button_padding"
+                                        android:src="?attr/icon_edit_body"/>
+                                </RelativeLayout>
                             </LinearLayout>
-
-                            <ImageButton
-                                android:id="@+id/edit_nick_button"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentRight="true"
-                                android:layout_centerVertical="true"
-                                android:alpha="?attr/icon_alpha"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:padding="@dimen/image_button_padding"
-                                android:src="?attr/icon_edit_body"/>
                         </RelativeLayout>
 
                         <RelativeLayout
@@ -124,9 +170,9 @@
                                 android:id="@+id/muc_conference_type"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignParentLeft="true"
+                                android:layout_alignParentStart="true"
                                 android:layout_centerVertical="true"
-                                android:layout_toLeftOf="@+id/change_conference_button"
+                                android:layout_toStartOf="@+id/change_conference_button"
                                 android:text="@string/private_conference"
                                 android:textAppearance="@style/TextAppearance.Conversations.Body1"
                                 />
@@ -136,42 +182,13 @@
                                 style="?android:attr/buttonStyleSmall"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:layout_alignParentRight="true"
+                                android:layout_alignParentEnd="true"
                                 android:layout_centerVertical="true"
                                 android:layout_gravity="center_horizontal"
                                 android:alpha="?attr/icon_alpha"
                                 android:background="?attr/selectableItemBackgroundBorderless"
                                 android:padding="@dimen/image_button_padding"
                                 android:src="?attr/icon_settings"/>
-                        </RelativeLayout>
-
-                        <RelativeLayout
-                            android:layout_width="fill_parent"
-                            android:layout_height="wrap_content">
-
-                            <TextView
-                                android:id="@+id/notification_status_text"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentLeft="true"
-                                android:layout_centerVertical="true"
-                                android:layout_toLeftOf="@+id/notification_status_button"
-                                android:text="@string/notify_on_all_messages"
-                                android:textAppearance="@style/TextAppearance.Conversations.Body1"
-                                />
-
-                            <ImageButton
-                                android:id="@+id/notification_status_button"
-                                style="?android:attr/buttonStyleSmall"
-                                android:layout_width="wrap_content"
-                                android:layout_height="wrap_content"
-                                android:layout_alignParentRight="true"
-                                android:layout_centerVertical="true"
-                                android:layout_gravity="center_horizontal"
-                                android:alpha="?attr/icon_alpha"
-                                android:background="?attr/selectableItemBackgroundBorderless"
-                                android:padding="@dimen/image_button_padding"
-                                android:src="?attr/icon_notifications"/>
                         </RelativeLayout>
 
                         <TableLayout
@@ -198,18 +215,108 @@
                                     android:id="@+id/muc_info_mam"
                                     android:layout_width="wrap_content"
                                     android:layout_height="wrap_content"
-                                    android:layout_gravity="right"
-                                    android:paddingLeft="4dp"
+                                    android:layout_gravity="end"
+                                    android:paddingStart="4dp"
                                     android:textAppearance="@style/TextAppearance.Conversations.Body1"/>
                             </TableRow>
 
                         </TableLayout>
 
                         <TextView
+                            android:id="@+id/jid"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_gravity="end"
+                            android:layout_marginTop="32dp"
+                            android:textAppearance="@style/TextAppearance.Conversations.Caption"/>
+                    </LinearLayout>
+                </android.support.v7.widget.CardView>
+
+                <android.support.v7.widget.CardView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/activity_vertical_margin"
+                    android:layout_marginLeft="@dimen/activity_horizontal_margin"
+                    android:layout_marginRight="@dimen/activity_horizontal_margin"
+                    android:layout_marginTop="@dimen/activity_vertical_margin">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:padding="@dimen/card_padding_regular">
+
+                        <RelativeLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
+
+                            <LinearLayout
+                                android:layout_width="fill_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_centerVertical="true"
+                                android:orientation="vertical">
+
+                                <TextView
+                                    android:id="@+id/muc_your_nick"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textAppearance="@style/TextAppearance.Conversations.Subhead"/>
+
+                                <TextView
+                                    android:id="@+id/muc_role"
+                                    android:layout_width="wrap_content"
+                                    android:layout_height="wrap_content"
+                                    android:singleLine="true"
+                                    android:textAppearance="@style/TextAppearance.Conversations.Body1.Secondary"/>
+                            </LinearLayout>
+
+                            <ImageButton
+                                android:id="@+id/edit_nick_button"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:alpha="?attr/icon_alpha"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:padding="@dimen/image_button_padding"
+                                android:src="?attr/icon_edit_body"/>
+                        </RelativeLayout>
+
+                        <RelativeLayout
+                            android:layout_width="fill_parent"
+                            android:layout_height="wrap_content">
+
+                            <TextView
+                                android:id="@+id/notification_status_text"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentStart="true"
+                                android:layout_centerVertical="true"
+                                android:layout_toStartOf="@+id/notification_status_button"
+                                android:text="@string/notify_on_all_messages"
+                                android:textAppearance="@style/TextAppearance.Conversations.Body1"
+                                />
+
+                            <ImageButton
+                                android:id="@+id/notification_status_button"
+                                style="?android:attr/buttonStyleSmall"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_alignParentEnd="true"
+                                android:layout_centerVertical="true"
+                                android:layout_gravity="center_horizontal"
+                                android:alpha="?attr/icon_alpha"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:padding="@dimen/image_button_padding"
+                                android:src="?attr/icon_notifications"/>
+                        </RelativeLayout>
+
+                        <TextView
                             android:id="@+id/details_account"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:layout_gravity="right"
+                            android:layout_gravity="end"
                             android:layout_marginTop="32dp"
                             android:text="@string/using_account"
                             android:textAppearance="@style/TextAppearance.Conversations.Caption"/>
@@ -218,7 +325,7 @@
 
                 <android.support.v7.widget.CardView
                     android:id="@+id/muc_more_details"
-                    android:layout_width="fill_parent"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"

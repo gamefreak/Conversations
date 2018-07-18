@@ -317,9 +317,6 @@
   <plurals name="toast_delete_certificates">
     <item quantity="other">%d sertifikat dihapus</item>
   </plurals>
-  <plurals name="select_contact">
-    <item quantity="other">Pilih %d kontak</item>
-  </plurals>
   <string name="pref_quick_action_summary">Timpa tombol kirim dengan aksi cepat</string>
   <string name="pref_quick_action">Aksi Cepat</string>
   <string name="none">Tak satupun</string>
@@ -355,7 +352,6 @@
   <string name="this_field_is_required">Bagian ini wajib diisi</string>
   <string name="correct_message">Perbaiki pesan</string>
   <string name="send_corrected_message">Kirim perbaikan pesan</string>
-  <string name="select_image_and_crop">Pilih gambar dan sesuaikan</string>
   <string name="share_uri_with">Bagikan URI dengan...</string>
   <string name="your_full_jid_will_be">Jabber ID anda akan seperti: %s</string>
   <string name="create_account">Buat Akun</string>

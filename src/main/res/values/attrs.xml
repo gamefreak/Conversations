@@ -12,6 +12,7 @@
 
     <attr name="IconSize" format="dimension"/>
 
+    <attr name="color_background_tertiary" format="reference|color"/>
     <attr name="color_background_secondary" format="reference|color"/>
     <attr name="color_background_primary" format="reference|color"/>
     <attr name="color_warning" format="reference|color"/>
@@ -19,6 +20,8 @@
 
     <attr name="activity_background_search" format="reference"/>
     <attr name="activity_background_no_results" format="reference"/>
+
+    <attr name="list_item_background" format="reference"/>
 
     <attr name="TextColorOnline" format="reference|color"/>
     <attr name="TextColorError" format="reference|color"/>
@@ -56,6 +59,7 @@
     <attr name="icon_download" format="reference"/>
     <attr name="icon_edit" format="reference"/>
     <attr name="icon_edit_body" format="reference"/>
+    <attr name="icon_save" format="reference"/>
     <attr name="icon_done" format="reference"/>
     <attr name="icon_group" format="reference"/>
     <attr name="icon_new" format="reference"/>

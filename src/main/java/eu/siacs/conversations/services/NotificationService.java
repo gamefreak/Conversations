@@ -26,6 +26,7 @@ import android.util.Pair;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
@@ -180,7 +181,7 @@ public class NotificationService {
 	public void push(final Message message) {
 		synchronized (CATCHUP_LOCK) {
 			final XmppConnection connection = message.getConversation().getAccount().getXmppConnection();
-			if (connection.isWaitingForSmCatchup()) {
+			if (connection != null && connection.isWaitingForSmCatchup()) {
 				connection.incrementSmCatchupMessageCounter();
 				pushFromBacklog(message);
 			} else {
@@ -504,7 +505,7 @@ public class NotificationService {
 				builder.setContentText(UIHelper.getFileDescriptionString(mXmppConnectionService, message));
 			}
 			builder.setStyle(bigPictureStyle);
-		} catch (final FileNotFoundException e) {
+		} catch (final IOException e) {
 			modifyForTextOnly(builder, uBuilder, messages);
 		}
 	}
@@ -548,10 +549,10 @@ public class NotificationService {
 		}
 		/** message preview for Android Auto **/
 		for (Message message : messages) {
-			Pair<String, Boolean> preview = UIHelper.getMessagePreview(mXmppConnectionService, message);
+			Pair<CharSequence, Boolean> preview = UIHelper.getMessagePreview(mXmppConnectionService, message);
 			// only show user written text
 			if (!preview.second) {
-				uBuilder.addMessage(preview.first);
+				uBuilder.addMessage(preview.first.toString());
 				uBuilder.setLatestTimestamp(message.getTimeSent());
 			}
 		}
@@ -709,7 +710,7 @@ public class NotificationService {
 	}
 
 	public static Pattern generateNickHighlightPattern(final String nick) {
-		return Pattern.compile("(?<=(^|\\s))" + Pattern.quote(nick) + "\\b", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+		return Pattern.compile("(?<=(^|\\s))" + Pattern.quote(nick) + "\\b");
 	}
 
 	public void setOpenConversation(final Conversation conversation) {
@@ -768,6 +769,10 @@ public class NotificationService {
 	}
 
 	public void updateErrorNotification() {
+		if (Config.SUPPRESS_ERROR_NOTIFICATION) {
+			cancel(ERROR_NOTIFICATION_ID);
+			return;
+		}
 		final List<Account> errors = new ArrayList<>();
 		for (final Account account : mXmppConnectionService.getAccounts()) {
 			if (account.hasErrorStatus() && account.showErrorNotification()) {

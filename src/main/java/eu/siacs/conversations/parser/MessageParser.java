@@ -3,6 +3,7 @@ package eu.siacs.conversations.parser;
 import android.util.Log;
 import android.util.Pair;
 
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,6 +28,7 @@ import eu.siacs.conversations.entities.MucOptions;
 import eu.siacs.conversations.entities.ReadByMarker;
 import eu.siacs.conversations.entities.ReceiptRequest;
 import eu.siacs.conversations.http.HttpConnectionManager;
+import eu.siacs.conversations.http.P1S3UrlStreamHandler;
 import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.CryptoHelper;
@@ -181,10 +183,12 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 						mXmppConnectionService.updateAccountUi();
 					} else {
 						Contact contact = account.getRoster().getContact(from);
-						contact.setAvatar(avatar);
-						mXmppConnectionService.getAvatarService().clear(contact);
-						mXmppConnectionService.updateConversationUi();
-						mXmppConnectionService.updateRosterUi();
+						if (contact.setAvatar(avatar)) {
+							mXmppConnectionService.syncRoster(account);
+							mXmppConnectionService.getAvatarService().clear(contact);
+							mXmppConnectionService.updateConversationUi();
+							mXmppConnectionService.updateRosterUi();
+						}
 					}
 				} else if (mXmppConnectionService.isDataSaverDisabled()) {
 					mXmppConnectionService.fetchAvatar(account, avatar);
@@ -235,16 +239,15 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		Long timestamp = null;
 		boolean isCarbon = false;
 		String serverMsgId = null;
-		final Element fin = original.findChild("fin", Namespace.MAM_LEGACY);
+		final Element fin = original.findChild("fin", MessageArchiveService.Version.MAM_0.namespace);
 		if (fin != null) {
 			mXmppConnectionService.getMessageArchiveService().processFinLegacy(fin, original.getFrom());
 			return;
 		}
-		final boolean mamLegacy = original.hasChild("result", Namespace.MAM_LEGACY);
-		final Element result = original.findChild("result", mamLegacy ? Namespace.MAM_LEGACY : Namespace.MAM);
+		final Element result = MessageArchiveService.Version.findResult(original);
 		final MessageArchiveService.Query query = result == null ? null : mXmppConnectionService.getMessageArchiveService().findQuery(result.getAttribute("queryid"));
 		if (query != null && query.validFrom(original.getFrom())) {
-			Pair<MessagePacket, Long> f = original.getForwardedMessagePacket("result", mamLegacy ? Namespace.MAM_LEGACY : Namespace.MAM);
+			Pair<MessagePacket, Long> f = original.getForwardedMessagePacket("result", query.version.namespace);
 			if (f == null) {
 				return;
 			}
@@ -277,6 +280,8 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 		final String pgpEncrypted = packet.findChildContent("x", "jabber:x:encrypted");
 		final Element replaceElement = packet.findChild("replace", "urn:xmpp:message-correct:0");
 		final Element oob = packet.findChild("x", Namespace.OOB);
+		final Element xP1S3 = packet.findChild("x", Namespace.P1_S3_FILE_TRANSFER);
+		final URL xP1S3url = xP1S3 == null ? null : P1S3UrlStreamHandler.of(xP1S3);
 		final String oobUrl = oob != null ? oob.findChildContent("url") : null;
 		final String replacementId = replaceElement == null ? null : replaceElement.getAttribute("id");
 		final Element axolotlEncrypted = packet.findChild(XmppAxolotlMessage.CONTAINERTAG, AxolotlService.PEP_PREFIX);
@@ -324,7 +329,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 			return;
 		}
 
-		if ((body != null || pgpEncrypted != null || (axolotlEncrypted != null && axolotlEncrypted.hasChild("payload")) || oobUrl != null) && !isMucStatusMessage) {
+		if ((body != null || pgpEncrypted != null || (axolotlEncrypted != null && axolotlEncrypted.hasChild("payload")) || oobUrl != null || xP1S3 != null) && !isMucStatusMessage) {
 			final boolean conversationIsProbablyMuc = isTypeGroupChat || mucUserElement != null || account.getXmppConnection().getMucServersWithholdAccount().contains(counterpart.getDomain());
 			final Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), conversationIsProbablyMuc, false, query, false);
 			final boolean conversationMultiMode = conversation.getMode() == Conversation.MODE_MULTI;
@@ -362,7 +367,13 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 				}
 			}
 			final Message message;
-			if (pgpEncrypted != null && Config.supportOpenPgp()) {
+			if (xP1S3url != null) {
+				message = new Message(conversation, xP1S3url.toString(), Message.ENCRYPTION_NONE, status);
+				message.setOob(true);
+				if (CryptoHelper.isPgpEncryptedUrl(xP1S3url.toString())) {
+					message.setEncryption(Message.ENCRYPTION_DECRYPTED);
+				}
+			} else if (pgpEncrypted != null && Config.supportOpenPgp()) {
 				message = new Message(conversation, pgpEncrypted, Message.ENCRYPTION_PGP, status);
 			} else if (axolotlEncrypted != null && Config.supportOmemo()) {
 				Jid origin;
@@ -407,7 +418,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 						Message previouslySent = conversation.findSentMessageWithUuid(remoteMsgId);
 						if (previouslySent != null && previouslySent.getServerMsgId() == null && serverMsgId != null) {
 							previouslySent.setServerMsgId(serverMsgId);
-							mXmppConnectionService.databaseBackend.updateMessage(previouslySent);
+							mXmppConnectionService.databaseBackend.updateMessage(previouslySent, false);
 							Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": encountered previously sent OMEMO message without serverId. updating...");
 						}
 					}
@@ -519,7 +530,8 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 
 			boolean checkForDuplicates = (isTypeGroupChat && packet.hasChild("delay", "urn:xmpp:delay"))
 					|| message.getType() == Message.TYPE_PRIVATE
-					|| message.getServerMsgId() != null;
+					|| message.getServerMsgId() != null
+					|| (query == null && mXmppConnectionService.getMessageArchiveService().isCatchupInProgress(conversation));
 			if (checkForDuplicates) {
 				final Message duplicate = conversation.findDuplicateMessage(message);
 				if (duplicate != null) {
@@ -529,7 +541,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							&& duplicate.getServerMsgId() == null
 							&& message.getServerMsgId() != null) {
 						duplicate.setServerMsgId(message.getServerMsgId());
-						if (mXmppConnectionService.databaseBackend.updateMessage(duplicate)) {
+						if (mXmppConnectionService.databaseBackend.updateMessage(duplicate, false)) {
 							serverMsgIdUpdated = true;
 						} else {
 							serverMsgIdUpdated = false;
@@ -634,12 +646,6 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 						if (conversation.getMucOptions().setSubject(subject)) {
 							mXmppConnectionService.updateConversation(conversation);
 						}
-						final Bookmark bookmark = conversation.getBookmark();
-						if (bookmark != null && bookmark.getBookmarkName() == null) {
-							if (bookmark.setBookmarkName(subject)) {
-								mXmppConnectionService.pushBookmarks(account);
-							}
-						}
 						mXmppConnectionService.updateConversationUi();
 						return;
 					}
@@ -725,7 +731,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 							ReadByMarker readByMarker = ReadByMarker.from(counterpart, trueJid);
 							if (message.addReadByMarker(readByMarker)) {
 								Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": added read by (" + readByMarker.getRealJid() + ") to message '" + message.getBody() + "'");
-								mXmppConnectionService.updateMessage(message);
+								mXmppConnectionService.updateMessage(message, false);
 							}
 						}
 					}

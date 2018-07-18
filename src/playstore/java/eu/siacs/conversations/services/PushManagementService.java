@@ -1,16 +1,15 @@
 package eu.siacs.conversations.services;
 
-import android.provider.Settings;
 import android.util.Log;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
-import com.google.android.gms.gcm.GoogleCloudMessaging;
-import com.google.android.gms.iid.InstanceID;
+import com.google.firebase.iid.FirebaseInstanceId;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.entities.Account;
+import eu.siacs.conversations.utils.PhoneHelper;
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.XmppConnection;
@@ -20,8 +19,6 @@ import rocks.xmpp.addr.Jid;
 
 public class PushManagementService {
 
-	private static final Jid APP_SERVER = Jid.of("push.siacs.eu");
-
 	protected final XmppConnectionService mXmppConnectionService;
 
 	PushManagementService(XmppConnectionService service) {
@@ -30,9 +27,10 @@ public class PushManagementService {
 
 	void registerPushTokenOnServer(final Account account) {
 		Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": has push support");
-		retrieveGcmInstanceToken(token -> {
-			final String deviceId = Settings.Secure.getString(mXmppConnectionService.getContentResolver(), Settings.Secure.ANDROID_ID);
-			IqPacket packet = mXmppConnectionService.getIqGenerator().pushTokenToAppServer(APP_SERVER, token, deviceId);
+		retrieveFcmInstanceToken(token -> {
+			final String androidId = PhoneHelper.getAndroidId(mXmppConnectionService);
+			final Jid appServer = Jid.of(mXmppConnectionService.getString(R.string.app_server));
+			IqPacket packet = mXmppConnectionService.getIqGenerator().pushTokenToAppServer(appServer, token, androidId);
 			mXmppConnectionService.sendIqPacket(account, packet, (a, p) -> {
 				Element command = p.findChild("command", "http://jabber.org/protocol/commands");
 				if (p.getType() == IqPacket.TYPE.RESULT && command != null) {
@@ -68,14 +66,12 @@ public class PushManagementService {
 		});
 	}
 
-	private void retrieveGcmInstanceToken(final OnGcmInstanceTokenRetrieved instanceTokenRetrieved) {
+	private void retrieveFcmInstanceToken(final OnGcmInstanceTokenRetrieved instanceTokenRetrieved) {
 		new Thread(() -> {
-			InstanceID instanceID = InstanceID.getInstance(mXmppConnectionService);
 			try {
-				String token = instanceID.getToken(mXmppConnectionService.getString(R.string.gcm_defaultSenderId), GoogleCloudMessaging.INSTANCE_ID_SCOPE, null);
-				instanceTokenRetrieved.onGcmInstanceTokenRetrieved(token);
+				instanceTokenRetrieved.onGcmInstanceTokenRetrieved(FirebaseInstanceId.getInstance().getToken());
 			} catch (Exception e) {
-				Log.d(Config.LOGTAG, "unable to get push token");
+				Log.d(Config.LOGTAG, "unable to get push token",e);
 			}
 		}).start();
 

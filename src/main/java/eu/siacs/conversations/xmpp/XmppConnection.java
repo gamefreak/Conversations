@@ -31,6 +31,7 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -70,6 +71,7 @@ import eu.siacs.conversations.entities.ServiceDiscoveryResult;
 import eu.siacs.conversations.generator.IqGenerator;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.services.MemorizingTrustManager;
+import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.services.NotificationService;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.CryptoHelper;
@@ -260,7 +262,7 @@ public class XmppConnection implements Runnable {
 			if (useTor) {
 				String destination;
 				if (account.getHostname().isEmpty()) {
-					destination = account.getServer().toString();
+					destination = account.getServer();
 				} else {
 					destination = account.getHostname();
 					this.verifiedHostname = destination;
@@ -572,6 +574,7 @@ public class XmppConnection implements Runnable {
 				final String h = resumed.getAttribute("h");
 				try {
 					ArrayList<AbstractAcknowledgeableStanza> failedStanzas = new ArrayList<>();
+					final boolean acknowledgedMessages;
 					synchronized (this.mStanzaQueue) {
 						final int serverCount = Integer.parseInt(h);
 						if (serverCount < stanzasSent) {
@@ -581,11 +584,14 @@ public class XmppConnection implements Runnable {
 						} else {
 							Log.d(Config.LOGTAG, account.getJid().asBareJid().toString() + ": session resumed");
 						}
-						acknowledgeStanzaUpTo(serverCount);
+						acknowledgedMessages = acknowledgeStanzaUpTo(serverCount);
 						for (int i = 0; i < this.mStanzaQueue.size(); ++i) {
 							failedStanzas.add(mStanzaQueue.valueAt(i));
 						}
 						mStanzaQueue.clear();
+					}
+					if (acknowledgedMessages) {
+						mXmppConnectionService.updateConversationUi();
 					}
 					Log.d(Config.LOGTAG, "resending " + failedStanzas.size() + " stanzas");
 					for (AbstractAcknowledgeableStanza packet : failedStanzas) {
@@ -627,9 +633,13 @@ public class XmppConnection implements Runnable {
 				final Element ack = tagReader.readElement(nextTag);
 				lastPacketReceived = SystemClock.elapsedRealtime();
 				try {
+					final boolean acknowledgedMessages;
 					synchronized (this.mStanzaQueue) {
 						final int serverSequence = Integer.parseInt(ack.getAttribute("h"));
-						acknowledgeStanzaUpTo(serverSequence);
+						acknowledgedMessages = acknowledgeStanzaUpTo(serverSequence);
+					}
+					if (acknowledgedMessages) {
+						mXmppConnectionService.updateConversationUi();
 					}
 				} catch (NumberFormatException | NullPointerException e) {
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": server send ack without sequence number");
@@ -639,8 +649,12 @@ public class XmppConnection implements Runnable {
 				try {
 					final int serverCount = Integer.parseInt(failed.getAttribute("h"));
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": resumption failed but server acknowledged stanza #" + serverCount);
+					final boolean acknowledgedMessages;
 					synchronized (this.mStanzaQueue) {
-						acknowledgeStanzaUpTo(serverCount);
+						acknowledgedMessages = acknowledgeStanzaUpTo(serverCount);
+					}
+					if (acknowledgedMessages) {
+						mXmppConnectionService.updateConversationUi();
 					}
 				} catch (NumberFormatException | NullPointerException e) {
 					Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": resumption failed");
@@ -661,10 +675,11 @@ public class XmppConnection implements Runnable {
 		}
 	}
 
-	private void acknowledgeStanzaUpTo(int serverCount) {
+	private boolean acknowledgeStanzaUpTo(int serverCount) {
 		if (serverCount > stanzasSent) {
 			Log.e(Config.LOGTAG, "server acknowledged more stanzas than we sent. serverCount=" + serverCount + ", ourCount=" + stanzasSent);
 		}
+		boolean acknowledgedMessages = false;
 		for (int i = 0; i < mStanzaQueue.size(); ++i) {
 			if (serverCount >= mStanzaQueue.keyAt(i)) {
 				if (Config.EXTENDED_SM_LOGGING) {
@@ -673,12 +688,13 @@ public class XmppConnection implements Runnable {
 				AbstractAcknowledgeableStanza stanza = mStanzaQueue.valueAt(i);
 				if (stanza instanceof MessagePacket && acknowledgedListener != null) {
 					MessagePacket packet = (MessagePacket) stanza;
-					acknowledgedListener.onMessageAcknowledged(account, packet.getId());
+					acknowledgedMessages |= acknowledgedListener.onMessageAcknowledged(account, packet.getId());
 				}
 				mStanzaQueue.removeAt(i);
 				i--;
 			}
 		}
+		return acknowledgedMessages;
 	}
 
 	private @NonNull
@@ -1541,6 +1557,7 @@ public class XmppConnection implements Runnable {
 			for (final Entry<Jid, ServiceDiscoveryResult> cursor : disco.entrySet()) {
 				final ServiceDiscoveryResult value = cursor.getValue();
 				if (value.getFeatures().contains("http://jabber.org/protocol/muc")
+						&& value.hasIdentity("conference", "text")
 						&& !value.getFeatures().contains("jabber:iq:gateway")
 						&& !value.hasIdentity("conference", "irc")) {
 					servers.add(cursor.getKey().toString());
@@ -1785,13 +1802,12 @@ public class XmppConnection implements Runnable {
 		}
 
 		public boolean mam() {
-			return hasDiscoFeature(account.getJid().asBareJid(), Namespace.MAM)
-					|| hasDiscoFeature(account.getJid().asBareJid(), Namespace.MAM_LEGACY);
+			return MessageArchiveService.Version.has(getAccountFeatures());
 		}
 
-		public boolean mamLegacy() {
-			return !hasDiscoFeature(account.getJid().asBareJid(), Namespace.MAM)
-					&& hasDiscoFeature(account.getJid().asBareJid(), Namespace.MAM_LEGACY);
+		public List<String> getAccountFeatures() {
+			ServiceDiscoveryResult result = connection.disco.get(account.getJid().asBareJid());
+			return result == null ? Collections.emptyList() : result.getFeatures();
 		}
 
 		public boolean push() {
@@ -1807,40 +1823,50 @@ public class XmppConnection implements Runnable {
 			this.blockListRequested = value;
 		}
 
+		public boolean p1S3FileTransfer() {
+			return hasDiscoFeature(Jid.of(account.getServer()),Namespace.P1_S3_FILE_TRANSFER);
+		}
+
 		public boolean httpUpload(long filesize) {
 			if (Config.DISABLE_HTTP_UPLOAD) {
 				return false;
 			} else {
-				List<Entry<Jid, ServiceDiscoveryResult>> items = findDiscoItemsByFeature(Namespace.HTTP_UPLOAD);
-				if (items.size() > 0) {
-					try {
-						long maxsize = Long.parseLong(items.get(0).getValue().getExtendedDiscoInformation(Namespace.HTTP_UPLOAD, "max-file-size"));
-						if (filesize <= maxsize) {
+				for(String namespace : new String[]{Namespace.HTTP_UPLOAD, Namespace.HTTP_UPLOAD_LEGACY}) {
+					List<Entry<Jid, ServiceDiscoveryResult>> items = findDiscoItemsByFeature(namespace);
+					if (items.size() > 0) {
+						try {
+							long maxsize = Long.parseLong(items.get(0).getValue().getExtendedDiscoInformation(namespace, "max-file-size"));
+							if (filesize <= maxsize) {
+								return true;
+							} else {
+								Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": http upload is not available for files with size " + filesize + " (max is " + maxsize + ")");
+								return false;
+							}
+						} catch (Exception e) {
 							return true;
-						} else {
-							Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": http upload is not available for files with size " + filesize + " (max is " + maxsize + ")");
-							return false;
 						}
-					} catch (Exception e) {
-						return true;
 					}
-				} else {
-					return false;
 				}
+				return false;
 			}
 		}
 
+		public boolean useLegacyHttpUpload() {
+			return findDiscoItemByFeature(Namespace.HTTP_UPLOAD) == null && findDiscoItemByFeature(Namespace.HTTP_UPLOAD_LEGACY) != null;
+		}
+
 		public long getMaxHttpUploadSize() {
-			List<Entry<Jid, ServiceDiscoveryResult>> items = findDiscoItemsByFeature(Namespace.HTTP_UPLOAD);
-			if (items.size() > 0) {
-				try {
-					return Long.parseLong(items.get(0).getValue().getExtendedDiscoInformation(Namespace.HTTP_UPLOAD, "max-file-size"));
-				} catch (Exception e) {
-					return -1;
+			for(String namespace : new String[]{Namespace.HTTP_UPLOAD, Namespace.HTTP_UPLOAD_LEGACY}) {
+				List<Entry<Jid, ServiceDiscoveryResult>> items = findDiscoItemsByFeature(namespace);
+				if (items.size() > 0) {
+					try {
+						return Long.parseLong(items.get(0).getValue().getExtendedDiscoInformation(namespace, "max-file-size"));
+					} catch (Exception e) {
+						//ignored
+					}
 				}
-			} else {
-				return -1;
 			}
+			return -1;
 		}
 
 		public boolean stanzaIds() {

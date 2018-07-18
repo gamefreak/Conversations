@@ -13,10 +13,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 
 import eu.siacs.conversations.Config;
+import eu.siacs.conversations.R;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Element;
@@ -156,7 +159,7 @@ public class Contact implements ListItem, Blockable {
 	@Override
 	public List<Tag> getTags(Context context) {
 		final ArrayList<Tag> tags = new ArrayList<>();
-		for (final String group : getGroups()) {
+		for (final String group : getGroups(true)) {
 			tags.add(new Tag(group, UIHelper.getColorForName(group)));
 		}
 		Presence.Status status = getShownStatus();
@@ -164,7 +167,7 @@ public class Contact implements ListItem, Blockable {
 			tags.add(UIHelper.getTagForStatus(context, status));
 		}
 		if (isBlocked()) {
-			tags.add(new Tag("blocked", 0xff2e2f3b));
+			tags.add(new Tag(context.getString(R.string.blocked), 0xff2e2f3b));
 		}
 		return tags;
 	}
@@ -294,8 +297,8 @@ public class Contact implements ListItem, Blockable {
 		this.systemAccount = account;
 	}
 
-	private List<String> getGroups() {
-		ArrayList<String> groups = new ArrayList<>();
+	private Collection<String> getGroups(final boolean unique) {
+		final Collection<String> groups = unique ? new HashSet<>() : new ArrayList<>();
 		for (int i = 0; i < this.groups.length(); ++i) {
 			try {
 				groups.add(this.groups.getString(i));
@@ -350,7 +353,10 @@ public class Contact implements ListItem, Blockable {
 		String ask = item.getAttribute("ask");
 		String subscription = item.getAttribute("subscription");
 
-		if (subscription != null) {
+		if (subscription == null) {
+			this.resetOption(Options.FROM);
+			this.resetOption(Options.TO);
+		} else {
 			switch (subscription) {
 				case "to":
 					this.resetOption(Options.FROM);
@@ -400,7 +406,7 @@ public class Contact implements ListItem, Blockable {
 		if (this.serverName != null) {
 			item.setAttribute("name", this.serverName);
 		}
-		for (String group : getGroups()) {
+		for (String group : getGroups(false)) {
 			item.addChild("group").setContent(group);
 		}
 		return item;
@@ -500,7 +506,11 @@ public class Contact implements ListItem, Blockable {
 		return this.mLastPresence;
 	}
 
-	public final class Options {
+	public String getServerName() {
+		return serverName;
+	}
+
+    public final class Options {
 		public static final int TO = 0;
 		public static final int FROM = 1;
 		public static final int ASKING = 2;

@@ -28,7 +28,6 @@ import android.text.style.ForegroundColorSpan;
 import android.text.style.ImageSpan;
 import android.text.style.RelativeSizeSpan;
 import android.text.style.StyleSpan;
-import android.text.util.Linkify;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.ActionMode;
@@ -49,7 +48,6 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -66,6 +64,7 @@ import eu.siacs.conversations.entities.DownloadableFile;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.Message.FileParams;
 import eu.siacs.conversations.entities.Transferable;
+import eu.siacs.conversations.http.P1S3UrlStreamHandler;
 import eu.siacs.conversations.persistance.FileBackend;
 import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.services.NotificationService;
@@ -74,8 +73,8 @@ import eu.siacs.conversations.ui.ConversationFragment;
 import eu.siacs.conversations.ui.XmppActivity;
 import eu.siacs.conversations.ui.service.AudioPlayer;
 import eu.siacs.conversations.ui.text.DividerSpan;
-import eu.siacs.conversations.ui.text.FixedURLSpan;
 import eu.siacs.conversations.ui.text.QuoteSpan;
+import eu.siacs.conversations.ui.util.MyLinkify;
 import eu.siacs.conversations.ui.widget.ClickableMovementMethod;
 import eu.siacs.conversations.ui.widget.CopyTextView;
 import eu.siacs.conversations.ui.widget.ListSelectionManager;
@@ -83,10 +82,8 @@ import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.EmojiWrapper;
 import eu.siacs.conversations.utils.Emoticons;
 import eu.siacs.conversations.utils.GeoHelper;
-import eu.siacs.conversations.utils.Patterns;
 import eu.siacs.conversations.utils.StylingHelper;
 import eu.siacs.conversations.utils.UIHelper;
-import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import horse.vinylscratch.conversations.AsyncEmoteLoaderBase;
 import pl.droidsonroids.gif.GifDrawable;
@@ -99,54 +96,16 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	private static final int RECEIVED = 1;
 	private static final int STATUS = 2;
 	private static final int DATE_SEPARATOR = 3;
-
-	private List<String> highlightedTerm = null;
-
-	private static final Linkify.TransformFilter WEBURL_TRANSFORM_FILTER = (matcher, url) -> {
-		if (url == null) {
-			return null;
-		}
-		final String lcUrl = url.toLowerCase(Locale.US);
-		if (lcUrl.startsWith("http://") || lcUrl.startsWith("https://")) {
-			return removeTrailingBracket(url);
-		} else {
-			return "http://" + removeTrailingBracket(url);
-		}
-	};
-
-	private static String removeTrailingBracket(final String url) {
-		int numOpenBrackets = 0;
-		for (char c : url.toCharArray()) {
-			if (c == '(') {
-				++numOpenBrackets;
-			} else if (c == ')') {
-				--numOpenBrackets;
-			}
-		}
-		if (numOpenBrackets != 0 && url.charAt(url.length() - 1) == ')') {
-			return url.substring(0, url.length() - 1);
-		} else {
-			return url;
-		}
-	}
-
-	private static final Linkify.MatchFilter WEBURL_MATCH_FILTER = (cs, start, end) -> start < 1 || (cs.charAt(start - 1) != '@' && cs.charAt(start - 1) != '.' && !cs.subSequence(Math.max(0, start - 3), start).equals("://"));
-
-	private static final Linkify.MatchFilter XMPPURI_MATCH_FILTER = (s, start, end) -> {
-		XmppUri uri = new XmppUri(s.subSequence(start, end).toString());
-		return uri.isJidValid();
-	};
-
 	private final XmppActivity activity;
 	private final ListSelectionManager listSelectionManager = new ListSelectionManager();
 	private final AudioPlayer audioPlayer;
+	private List<String> highlightedTerm = null;
 	private DisplayMetrics metrics;
 	private OnContactPictureClicked mOnContactPictureClickedListener;
 	private OnContactPictureLongClicked mOnContactPictureLongClickedListener;
 	private boolean mIndicateReceived = false;
 	private boolean mUseGreenBackground = false;
 	private OnQuoteListener onQuoteListener;
-
 	public MessageAdapter(XmppActivity activity, List<Message> messages) {
 		super(activity, 0, messages);
 		this.audioPlayer = new AudioPlayer(this);
@@ -154,6 +113,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		metrics = getContext().getResources().getDisplayMetrics();
 		updatePreferences();
 	}
+
 
 	public static boolean cancelPotentialWork(Message message, ImageView imageView) {
 		final BitmapWorkerTask bitmapWorkerTask = getBitmapWorkerTask(imageView);
@@ -178,6 +138,12 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			}
 		}
 		return null;
+	}
+
+	private static void resetClickListener(View... views) {
+		for (View view : views) {
+			view.setOnClickListener(null);
+		}
 	}
 
 	public void flagScreenOn() {
@@ -210,7 +176,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return 4;
 	}
 
-	public int getItemViewType(Message message) {
+	private int getItemViewType(Message message) {
 		if (message.getType() == Message.TYPE_STATUS) {
 			if (DATE_SEPARATOR_BODY.equals(message.getBody())) {
 				return DATE_SEPARATOR;
@@ -229,7 +195,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return this.getItemViewType(getItem(position));
 	}
 
-	public int getMessageTextColor(boolean onDark, boolean primary) {
+	private int getMessageTextColor(boolean onDark, boolean primary) {
 		if (onDark) {
 			return ContextCompat.getColor(activity, primary ? R.color.white : R.color.white70);
 		} else {
@@ -367,7 +333,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		}
 	}
 
-	private void displayInfoMessage(ViewHolder viewHolder, String text, boolean darkBackground) {
+	private void displayInfoMessage(ViewHolder viewHolder, CharSequence text, boolean darkBackground) {
 		viewHolder.download_button.setVisibility(View.GONE);
 		viewHolder.audioPlayer.setVisibility(View.GONE);
 		viewHolder.image.setVisibility(View.GONE);
@@ -397,7 +363,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		viewHolder.messageBody.setText(EmojiWrapper.transform(span));
 	}
 
-	private int applyQuoteSpan(SpannableStringBuilder body, int start, int end, boolean darkBackground) {
+	private void applyQuoteSpan(SpannableStringBuilder body, int start, int end, boolean darkBackground) {
 		if (start > 1 && !"\n\n".equals(body.subSequence(start - 2, start).toString())) {
 			body.insert(start++, "\n");
 			body.setSpan(new DividerSpan(false), start - 2, start, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -411,7 +377,6 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				: ContextCompat.getColor(activity, R.color.green700_desaturated);
 		DisplayMetrics metrics = getContext().getResources().getDisplayMetrics();
 		body.setSpan(new QuoteSpan(color, metrics), start, end, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
-		return 0;
 	}
 
 	/**
@@ -577,7 +542,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 					}
 				}
 			}
-			Matcher matcher = Emoticons.generatePattern(body).matcher(body);
+			Matcher matcher = Emoticons.getEmojiPattern(body).matcher(body);
 			while (matcher.find()) {
 				if (matcher.start() < matcher.end()) {
 					body.setSpan(new RelativeSizeSpan(1.2f), matcher.start(), matcher.end(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
@@ -588,16 +553,11 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			if (highlightedTerm != null) {
 				StylingHelper.highlight(activity, body, highlightedTerm, StylingHelper.isDarkText(viewHolder.messageBody));
 			}
-
-			Linkify.addLinks(body, Patterns.XMPP_PATTERN, "xmpp", XMPPURI_MATCH_FILTER, null);
-			Linkify.addLinks(body, Patterns.AUTOLINK_WEB_URL, "http", WEBURL_MATCH_FILTER, WEBURL_TRANSFORM_FILTER);
-			Linkify.addLinks(body, GeoHelper.GEO_URI, "geo");
-			FixedURLSpan.fix(body);
+			MyLinkify.addLinks(body,true);
 
 			if (activity.emoticonService() != null) {
 				handleTextEmotes(viewHolder, body);
 			}
-
 			viewHolder.messageBody.setAutoLinkMask(0);
 			viewHolder.messageBody.setText(EmojiWrapper.transform(body));
 			viewHolder.messageBody.setTextIsSelectable(true);
@@ -864,11 +824,18 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			} else if (message.treatAsDownloadable()) {
 				try {
 					URL url = new URL(message.getBody());
-					displayDownloadableMessage(viewHolder,
-							message,
-							activity.getString(R.string.check_x_filesize_on_host,
-									UIHelper.getFileDescriptionString(activity, message),
-									url.getHost()));
+					if (P1S3UrlStreamHandler.PROTOCOL_NAME.equalsIgnoreCase(url.getProtocol())) {
+						displayDownloadableMessage(viewHolder,
+								message,
+								activity.getString(R.string.check_x_filesize,
+										UIHelper.getFileDescriptionString(activity, message)));
+					} else {
+						displayDownloadableMessage(viewHolder,
+								message,
+								activity.getString(R.string.check_x_filesize_on_host,
+										UIHelper.getFileDescriptionString(activity, message),
+										url.getHost()));
+					}
 				} catch (Exception e) {
 					displayDownloadableMessage(viewHolder,
 							message,
@@ -908,12 +875,6 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 
 	private void promptOpenKeychainInstall(View view) {
 		activity.showInstallPgpDialog();
-	}
-
-	private static void resetClickListener(View... views) {
-		for (View view : views) {
-			view.setOnClickListener(null);
-		}
 	}
 
 	@Override

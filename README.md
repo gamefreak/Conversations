@@ -290,8 +290,8 @@ I am available for hire. Contact me via XMPP: `inputmice@siacs.eu`
 
 #### Why are there two end-to-end encryption methods and which one should I choose?
 
-* OMEMO works even when a contact is offline, and works with multiple devices. It also allows asynchronous file-transfer when the server has [HTTP File Upload](http://xmpp.org/extensions/xep-0363.html). However, OMEMO not widely support and is currently implemented only implemented [by a handful of clients](https://omemo.top).
-* OpenPGP (XEP-0027) is a very old encryption method that has some advantages over OMEMO but should only be used by people who what they are doing.
+* OMEMO works even when a contact is offline, and works with multiple devices. It also allows asynchronous file-transfer when the server has [HTTP File Upload](http://xmpp.org/extensions/xep-0363.html). However, OMEMO not widely support and is currently implemented only [by a handful of clients](https://omemo.top).
+* OpenPGP (XEP-0027) is a very old encryption method that has some advantages over OMEMO but should only be used by people who know what they are doing.
 
 #### How do I use OpenPGP
 
@@ -319,7 +319,7 @@ For conferences only OMEMO and OpenPGP are supported as encryption method..
 
 OMEMO encryption works only in private (members only) conferences that are non-anonymous.
 
-The server of all participants need to pass the OMEMO [Compliance Test](https://conversations.im/compliance).
+The server of all participants need to pass the OMEMO [Compliance Test](https://conversations.im/compliance/).
 In other words they either need to run version 18.01+ of ejabberd or have the `omemo_all_access` module installed on Prosody.
 
 The owner of a conference can make a public conference private by going into the conference
@@ -368,7 +368,7 @@ Make sure to have ANDROID_HOME point to your Android SDK. Use the Android SDK Ma
 
     git clone https://github.com/siacs/Conversations.git
     cd Conversations
-    ./gradlew assembleFreeDebug
+    ./gradlew assembleFreeSystemDebug
 
 There are two build flavors available. *free* and *playstore*. Unless you know what you are doing you only need *free*.
 
