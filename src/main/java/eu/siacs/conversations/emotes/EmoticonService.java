@@ -1,8 +1,11 @@
 package eu.siacs.conversations.emotes;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Paint;
@@ -36,6 +39,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import eu.siacs.conversations.services.EventReceiver;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.SettingsActivity;
 import eu.siacs.conversations.utils.SerialSingleThreadExecutor;
@@ -64,6 +68,7 @@ public class EmoticonService extends Service {
 	private SerialSingleThreadExecutor executor;
 	// incremented whenever the emotes are loaded/cleared
 	private int loadedPackVersion = 0;
+	private int lastScale = 1;
 
 	public EmoticonService() {
 		this.emotes = new HashMap<>(4000);
@@ -81,10 +86,34 @@ public class EmoticonService extends Service {
 		task.execute(pack);
 	}
 
+	private EventReceiver eventReceiver = new EventReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			super.onReceive(context, intent);
+			if (intent.getAction().equals(Intent.ACTION_CONFIGURATION_CHANGED)) {
+				int newScale = (int)Math.ceil(getResources().getDisplayMetrics().density);
+				if (newScale != lastScale) {
+					images.evictAll();
+					lastScale = newScale;
+				}
+			}
+		}
+	};
+
 	@Override
 	public void onCreate() {
 		this.doLoad();
+
+		lastScale = (int)Math.ceil(getResources().getDisplayMetrics().density);
+		registerReceiver(eventReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
+
 		super.onCreate();
+	}
+
+	@Override
+	public void onDestroy() {
+		unregisterReceiver(eventReceiver);
+		super.onDestroy();
 	}
 
 	public Executor getExecutor() {
@@ -190,9 +219,7 @@ public class EmoticonService extends Service {
 				holder = new EmoteHolder(drawable, null);
 			}
 			drawable.setFilterBitmap(false);
-			int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
-			int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
-			drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
+			setDrawableScale(metrics, drawable);
 
 			this.images.put(imageName, holder);
 			return holder;
@@ -200,6 +227,12 @@ public class EmoticonService extends Service {
 			Log.e("emote service", "failed to load image " + imageName, e);
 			return null;
 		}
+	}
+
+	private void setDrawableScale(DisplayMetrics metrics, Drawable drawable) {
+		int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
+		int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
+		drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 	}
 
 	public void loadPack(final File file) {
