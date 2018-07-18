@@ -63,6 +63,10 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 			if (json.has("tag_name") && json.has("assets") && json.has("html_url")) {
 				String version = json.getString("tag_name");
 				String ownVersion = BuildConfig.VERSION_NAME;
+				if (ownVersion.contains("+")) {
+					// upstream changes caused VERSION_NAME to look like 1.2.3.4+fcd
+					ownVersion = ownVersion.substring(0, ownVersion.indexOf("+"));
+				}
 				String url = json.getString("html_url");
 				Log.i(TAG, "compare version " + version + " to " + ownVersion);
 				if (compareVersions(version, ownVersion) != 1) {
