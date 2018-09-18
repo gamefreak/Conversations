@@ -49,6 +49,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -86,6 +87,7 @@ import eu.siacs.conversations.utils.StylingHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import horse.vinylscratch.conversations.AsyncEmoteLoaderBase;
+import horse.vinylscratch.conversations.EmoticonSpan;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
 
@@ -431,6 +433,11 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return startsWithQuote;
 	}
 
+private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, MatchResult match) {
+	final String text = match.group();
+	ImageSpan imageSpan = new EmoticonSpan(drawable, text);
+	body.setSpan(imageSpan, match.start(), match.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+}
 
 	private boolean handleTextEmotes(ViewHolder viewHolder, SpannableStringBuilder body) {
 		Pattern pattern = Pattern.compile(Emote.PATTERN);
@@ -443,8 +450,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			if (!activity.emoticonService().isEmote(name)) continue;
 			Drawable drawable = activity.emoticonService().tryGetEmote(name);
 			if (drawable != null) {
-				ImageSpan span = new ImageSpan(drawable);
-				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+				this.applyImageSpan(body, drawable, matcher.toMatchResult());
 				if (drawable instanceof GifDrawable) {
 					GifDrawable gif = (GifDrawable)drawable;
 					MultiCallback callback = (MultiCallback)gif.getCallback();
@@ -454,8 +460,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				neededEmotes.add(name);
 			}
 			if (drawable == null) {
-				ImageSpan span = new ImageSpan(activity.emoticonService().makePlaceholder(name));
-				body.setSpan(span, matcher.start(), matcher.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+				this.applyImageSpan(body, activity.emoticonService().makePlaceholder(name), matcher.toMatchResult());
 			}
 		}
 		if (!neededEmotes.isEmpty()) {
