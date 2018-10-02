@@ -263,6 +263,10 @@ public class EmoticonService extends Service {
 		}
 	}
 
+	public boolean areAnimationsEnabled() {
+		return this.enableAnimations;
+	}
+
 	public List<Emote> getAllEmotes() {
 		return this.allEmotes;
 	}

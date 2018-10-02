@@ -38,6 +38,8 @@ import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.ui.XmppActivity;
 import horse.vinylscratch.conversations.entities.EmoteDbHelper;
 import horse.vinylscratch.conversations.entities.RecentEmoteContract.RecentEmote;
+import pl.droidsonroids.gif.GifDrawable;
+import pl.droidsonroids.gif.MultiCallback;
 
 
 public class EmoticonBrowserActivity extends XmppActivity {
@@ -171,6 +173,9 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				image = emoticonService.makePlaceholder(emoticon);
 			}
 
+			if (emoticonService.areAnimationsEnabled() && image instanceof GifDrawable) {
+				((MultiCallback) image.getCallback()).addView(binding.image);
+			}
 			image = new FitDrawable(image);
 
 			binding.image.setImageDrawable(image);
