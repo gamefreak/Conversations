@@ -68,8 +68,8 @@ android {
     defaultConfig {
         minSdkVersion 19
         targetSdkVersion 25
-        versionCode 281
-        versionName "2.2.7.2"
+        versionCode 282
+        versionName "2.2.7.3"
         archivesBaseName += "-$versionName"
         applicationId "horse.vinylscratch.conversations"
         resValue "string", "applicationId", applicationId
