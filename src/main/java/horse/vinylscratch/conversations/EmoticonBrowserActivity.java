@@ -167,8 +167,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			Emote emoticon = getEmote(position);
 			Drawable image = emoticonService.tryGetEmote(emoticon.getAliases().get(0));
 			if (image == null) {
+				if (binding.getLoaderTask() != null) {
+					binding.getLoaderTask().cancel(false);
+				}
 				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, binding.image);
 				task.executeOnExecutor(emoticonService().getExecutor(),  emoticon.getAliases().get(0));
+				binding.setLoaderTask(task);
 
 				image = emoticonService.makePlaceholder(emoticon);
 			}
