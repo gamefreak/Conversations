@@ -89,6 +89,7 @@ import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import horse.vinylscratch.conversations.AsyncEmoteLoaderBase;
 import horse.vinylscratch.conversations.EmoticonSpan;
+import horse.vinylscratch.conversations.FitDrawable;
 import pl.droidsonroids.gif.GifDrawable;
 import pl.droidsonroids.gif.MultiCallback;
 
@@ -440,6 +441,13 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 
 private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, MatchResult match) {
 	final String text = match.group();
+
+	int maxWidth = activity.emoticonService().getChatEmoteMaxWidth();
+	if (drawable.getBounds().width() > maxWidth) {
+		Drawable drawable2 = new FitDrawable(drawable);
+		drawable2.setBounds(0, 0, maxWidth, drawable.getBounds().height() * maxWidth / drawable.getBounds().width());
+		drawable = drawable2;
+	}
 	ImageSpan imageSpan = new EmoticonSpan(drawable, text);
 	body.setSpan(imageSpan, match.start(), match.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
 }

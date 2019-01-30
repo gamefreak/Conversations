@@ -39,6 +39,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
+import eu.siacs.conversations.Config;
 import eu.siacs.conversations.services.EventReceiver;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.SettingsActivity;
@@ -69,6 +70,7 @@ public class EmoticonService extends Service {
 	// incremented whenever the emotes are loaded/cleared
 	private int loadedPackVersion = 0;
 	private int lastScale = 1;
+	private int chatEmoteMaxWidth = 1;
 
 	public EmoticonService() {
 		this.emotes = new HashMap<>(4000);
@@ -91,7 +93,9 @@ public class EmoticonService extends Service {
 		public void onReceive(Context context, Intent intent) {
 			super.onReceive(context, intent);
 			if (intent.getAction().equals(Intent.ACTION_CONFIGURATION_CHANGED)) {
-				int newScale = (int)Math.ceil(getResources().getDisplayMetrics().density);
+				DisplayMetrics metrics = getResources().getDisplayMetrics();
+				chatEmoteMaxWidth = (int) (metrics.widthPixels * Config.MAX_EMOTE_WIDTH_FRACTION);
+				int newScale = (int)Math.ceil(metrics.density);
 				if (newScale != lastScale) {
 					images.evictAll();
 					lastScale = newScale;
@@ -105,6 +109,7 @@ public class EmoticonService extends Service {
 		this.doLoad();
 
 		lastScale = (int)Math.ceil(getResources().getDisplayMetrics().density);
+		chatEmoteMaxWidth = (int) (getResources().getDisplayMetrics().widthPixels * Config.MAX_EMOTE_WIDTH_FRACTION);
 		registerReceiver(eventReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
 
 		super.onCreate();
@@ -343,6 +348,10 @@ public class EmoticonService extends Service {
 		} catch (NullPointerException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public int getChatEmoteMaxWidth() {
+		return chatEmoteMaxWidth;
 	}
 
 	public class Binder extends android.os.Binder {
