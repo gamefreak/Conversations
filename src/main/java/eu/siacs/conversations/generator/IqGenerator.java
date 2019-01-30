@@ -24,6 +24,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.entities.Account;
+import eu.siacs.conversations.entities.Bookmark;
 import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.DownloadableFile;
 import eu.siacs.conversations.services.MessageArchiveService;
@@ -126,19 +127,33 @@ public class IqGenerator extends AbstractGenerator {
 
 	public IqPacket publishNick(String nick) {
 		final Element item = new Element("item");
-		item.addChild("nick", "http://jabber.org/protocol/nick").setContent(nick);
-		return publish("http://jabber.org/protocol/nick", item);
+		item.addChild("nick", Namespace.NICK).setContent(nick);
+		return publish(Namespace.NICK, item);
 	}
 
-	public IqPacket publishAvatar(Avatar avatar) {
+	public IqPacket deleteNode(String node) {
+		IqPacket packet = new IqPacket(IqPacket.TYPE.SET);
+		final Element pubsub = packet.addChild("pubsub", Namespace.PUBSUB_OWNER);
+		pubsub.addChild("delete").setAttribute("node",node);
+		return packet;
+	}
+
+	public IqPacket publishAvatar(Avatar avatar, Bundle options) {
 		final Element item = new Element("item");
 		item.setAttribute("id", avatar.sha1sum);
 		final Element data = item.addChild("data", "urn:xmpp:avatar:data");
 		data.setContent(avatar.image);
-		return publish("urn:xmpp:avatar:data", item);
+		return publish("urn:xmpp:avatar:data", item, options);
 	}
 
-	public IqPacket publishAvatarMetadata(final Avatar avatar) {
+	public IqPacket publishElement(final String namespace,final Element element, final Bundle options) {
+		final Element item = new Element("item");
+		item.setAttribute("id","current");
+		item.addChild(element);
+		return publish(namespace, item, options);
+	}
+
+	public IqPacket publishAvatarMetadata(final Avatar avatar, final Bundle options) {
 		final Element item = new Element("item");
 		item.setAttribute("id", avatar.sha1sum);
 		final Element metadata = item
@@ -149,7 +164,7 @@ public class IqGenerator extends AbstractGenerator {
 		info.setAttribute("height", avatar.height);
 		info.setAttribute("width", avatar.height);
 		info.setAttribute("type", avatar.type);
-		return publish("urn:xmpp:avatar:metadata", item);
+		return publish("urn:xmpp:avatar:metadata", item, options);
 	}
 
 	public IqPacket retrievePepAvatar(final Avatar avatar) {
@@ -197,6 +212,7 @@ public class IqGenerator extends AbstractGenerator {
 
 	public IqPacket publishDeviceIds(final Set<Integer> ids, final Bundle publishOptions) {
 		final Element item = new Element("item");
+		item.setAttribute("id", "current");
 		final Element list = item.addChild("list", AxolotlService.PEP_PREFIX);
 		for (Integer id : ids) {
 			final Element device = new Element("device");
@@ -209,6 +225,7 @@ public class IqGenerator extends AbstractGenerator {
 	public IqPacket publishBundles(final SignedPreKeyRecord signedPreKeyRecord, final IdentityKey identityKey,
 	                               final Set<PreKeyRecord> preKeyRecords, final int deviceId, Bundle publishOptions) {
 		final Element item = new Element("item");
+		item.setAttribute("id", "current");
 		final Element bundle = item.addChild("bundle", AxolotlService.PEP_PREFIX);
 		final Element signedPreKeyPublic = bundle.addChild("signedPreKeyPublic");
 		signedPreKeyPublic.setAttribute("signedPreKeyId", signedPreKeyRecord.getId());
@@ -231,6 +248,7 @@ public class IqGenerator extends AbstractGenerator {
 
 	public IqPacket publishVerification(byte[] signature, X509Certificate[] certificates, final int deviceId) {
 		final Element item = new Element("item");
+		item.setAttribute("id", "current");
 		final Element verification = item.addChild("verification", AxolotlService.PEP_PREFIX);
 		final Element chain = verification.addChild("chain");
 		for (int i = 0; i < certificates.length; ++i) {

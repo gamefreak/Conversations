@@ -13,6 +13,7 @@
         <item name="color_warning">@color/red_a700</item>
         <item name="TextColorOnline">@color/green600</item>
         <item name="TextColorError">@color/red800</item>
+        <item name="edit_text_color">@color/black87</item>
 
         <item name="activity_background_search">@drawable/search_background_light</item>
         <item name="activity_background_no_results">@drawable/no_results_background_light</item>
@@ -58,9 +59,21 @@
         <item name="conversations_overview_background">@color/green700</item>
 
         <item type="float" name="icon_alpha">0.54</item>
+        <item type="float" name="delete_icon_alpha">0.70</item>
 
         <item name="dialog_horizontal_padding">24dp</item>
         <item name="dialog_vertical_padding">16dp</item>
+
+        <item type="reference" name="media_preview_document">@drawable/ic_description_black_48dp</item>
+        <item type="reference" name="media_preview_recording">@drawable/ic_mic_black_48dp</item>
+        <item type="reference" name="media_preview_audio">@drawable/ic_headset_black_48dp</item>
+        <item type="reference" name="media_preview_location">@drawable/ic_room_black_48dp</item>
+        <item type="reference" name="media_preview_contact">@drawable/ic_person_black_48dp</item>
+        <item type="reference" name="media_preview_app">@drawable/ic_android_black_48dp</item>
+        <item type="reference" name="media_preview_calendar">@drawable/ic_event_black_48dp</item>
+        <item type="reference" name="media_preview_archive">@drawable/ic_archive_black_48dp</item>
+        <item type="reference" name="media_preview_ebook">@drawable/ic_book_black_48dp</item>
+        <item type="reference" name="media_preview_unknown">@drawable/ic_help_black_48dp</item>
 
         <item type="reference" name="icon_add_group">@drawable/ic_group_add_white_24dp</item>
         <item type="reference" name="icon_add_person">@drawable/ic_person_add_white_24dp</item>
@@ -117,6 +130,7 @@
 
         <item name="TextColorOnline">@color/green500</item>
         <item name="TextColorError">@color/red500</item>
+        <item name="edit_text_color">@color/white</item>
 
         <item name="EmojiColor">@color/white</item>
 
@@ -158,9 +172,21 @@
         <item name="conversations_overview_background">@color/green900</item>
 
         <item type="float" name="icon_alpha">0.7</item>
+        <item type="float" name="delete_icon_alpha">0.7</item>
 
         <item name="dialog_horizontal_padding">24dp</item>
         <item name="dialog_vertical_padding">16dp</item>
+
+        <item type="reference" name="media_preview_document">@drawable/ic_description_white_48dp</item>
+        <item type="reference" name="media_preview_recording">@drawable/ic_mic_white_48dp</item>
+        <item type="reference" name="media_preview_audio">@drawable/ic_headset_white_48dp</item>
+        <item type="reference" name="media_preview_location">@drawable/ic_room_white_48dp</item>
+        <item type="reference" name="media_preview_contact">@drawable/ic_person_white_48dp</item>
+        <item type="reference" name="media_preview_app">@drawable/ic_android_white_48dp</item>
+        <item type="reference" name="media_preview_calendar">@drawable/ic_event_white_48dp</item>
+        <item type="reference" name="media_preview_archive">@drawable/ic_archive_white_48dp</item>
+        <item type="reference" name="media_preview_ebook">@drawable/ic_book_white_48dp</item>
+        <item type="reference" name="media_preview_unknown">@drawable/ic_help_white_48dp</item>
 
         <item type="reference" name="icon_add_group">@drawable/ic_group_add_white_24dp</item>
         <item type="reference" name="icon_add_person">@drawable/ic_person_add_white_24dp</item>
@@ -264,6 +290,7 @@
         <item name="colorAccent">@color/blue_a200</item>
         <item name="color_background_primary">@color/grey50</item>
         <item name="divider">@color/black12</item>
+        <item name="TextSizeTitle">18sp</item>
         <item name="TextSizeBody2">14sp</item>
         <item name="TextSizeDisplay2">45sp</item>
         <item name="android:windowNoTitle">true</item>

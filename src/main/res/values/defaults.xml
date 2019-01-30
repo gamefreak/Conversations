@@ -3,14 +3,13 @@
     <string name="default_resource">Phone</string>
     <bool name="portrait_only">true</bool>
     <bool name="enter_is_send">false</bool>
-    <bool name="notifications_from_strangers">false</bool>
+    <bool name="notifications_from_strangers">true</bool>
     <bool name="headsup_notifications">false</bool>
     <bool name="dnd_on_silent_mode">false</bool>
     <bool name="treat_vibrate_as_silent">false</bool>
     <bool name="confirm_messages">true</bool>
     <bool name="chat_states">true</bool>
     <bool name="last_activity">false</bool>
-    <bool name="show_notification">true</bool>
     <bool name="vibrate_on_notification">true</bool>
     <bool name="led">true</bool>
     <bool name="enable_quiet_hours">false</bool>
@@ -36,7 +35,6 @@
     <bool name="indicate_received">false</bool>
     <bool name="enable_foreground_service">false</bool>
     <bool name="never_send">false</bool>
-    <bool name="return_to_previous">false</bool>
     <bool name="validate_hostname">false</bool>
     <bool name="show_qr_code_scan">true</bool>
     <bool name="scroll_to_bottom">true</bool>
@@ -47,4 +45,5 @@
     <string name="default_font_size">small</string>
     <bool name="use_share_location_plugin">false</bool>
     <bool name="start_searching">false</bool>
+    <string name="video_compression">360</string>
 </resources>

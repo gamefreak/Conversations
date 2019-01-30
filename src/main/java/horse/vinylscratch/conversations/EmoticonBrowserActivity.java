@@ -336,7 +336,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 	private void emoteClicked(String emote) {
 		Log.i(TAG, "emote clicked: " + emote);
 		if (mConversation != null) {
-			switchToConversation(mConversation, emote, false);
+			switchToConversation(mConversation, emote);
 		}
 		finish();
 	}

@@ -4,7 +4,6 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.net.Uri;
-import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
@@ -20,6 +19,9 @@ import java.util.Locale;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.android.AbstractPhoneContact;
+import eu.siacs.conversations.android.JabberIdContact;
+import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Element;
@@ -48,7 +50,7 @@ public class Contact implements ListItem, Blockable {
 	private String commonName;
 	protected Jid jid;
 	private int subscription = 0;
-	private String systemAccount;
+	private Uri systemAccount;
 	private String photoUri;
 	private final JSONObject keys;
 	private JSONArray groups = new JSONArray();
@@ -62,7 +64,7 @@ public class Contact implements ListItem, Blockable {
 
 	public Contact(final String account, final String systemName, final String serverName,
 	               final Jid jid, final int subscription, final String photoUri,
-	               final String systemAccount, final String keys, final String avatar, final long lastseen,
+	               final Uri systemAccount, final String keys, final String avatar, final long lastseen,
 	               final String presence, final String groups) {
 		this.accountUuid = account;
 		this.systemName = systemName;
@@ -105,13 +107,19 @@ public class Contact implements ListItem, Blockable {
 			// TODO: Borked DB... handle this somehow?
 			return null;
 		}
+		Uri systemAccount;
+		try {
+			systemAccount = Uri.parse(cursor.getString(cursor.getColumnIndex(SYSTEMACCOUNT)));
+		} catch (Exception e) {
+			systemAccount = null;
+		}
 		return new Contact(cursor.getString(cursor.getColumnIndex(ACCOUNT)),
 				cursor.getString(cursor.getColumnIndex(SYSTEMNAME)),
 				cursor.getString(cursor.getColumnIndex(SERVERNAME)),
 				jid,
 				cursor.getInt(cursor.getColumnIndex(OPTIONS)),
 				cursor.getString(cursor.getColumnIndex(PHOTOURI)),
-				cursor.getString(cursor.getColumnIndex(SYSTEMACCOUNT)),
+				systemAccount,
 				cursor.getString(cursor.getColumnIndex(KEYS)),
 				cursor.getString(cursor.getColumnIndex(AVATAR)),
 				cursor.getLong(cursor.getColumnIndex(LAST_TIME)),
@@ -139,7 +147,7 @@ public class Contact implements ListItem, Blockable {
 			return this.systemName;
 		} else if (!TextUtils.isEmpty(this.serverName)) {
 			return this.serverName;
-		} else if (!TextUtils.isEmpty(this.presenceName) && mutualPresenceSubscription()) {
+		} else if (!TextUtils.isEmpty(this.presenceName) && ((QuickConversationsService.isQuicksy() && Config.QUICKSY_DOMAIN.equals(jid.getDomain())) ||mutualPresenceSubscription())) {
 			return this.presenceName;
 		} else if (jid.getLocal() != null) {
 			return JidHelper.localPartOrFallback(jid);
@@ -210,7 +218,7 @@ public class Contact implements ListItem, Blockable {
 			values.put(SERVERNAME, serverName);
 			values.put(JID, jid.toString());
 			values.put(OPTIONS, subscription);
-			values.put(SYSTEMACCOUNT, systemAccount);
+			values.put(SYSTEMACCOUNT, systemAccount != null ? systemAccount.toString() : null);
 			values.put(PHOTOURI, photoUri);
 			values.put(KEYS, keys.toString());
 			values.put(AVATAR, avatar == null ? null : avatar.getFilename());
@@ -280,21 +288,11 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public Uri getSystemAccount() {
-		if (systemAccount == null) {
-			return null;
-		} else {
-			String[] parts = systemAccount.split("#");
-			if (parts.length != 2) {
-				return null;
-			} else {
-				long id = Long.parseLong(parts[0]);
-				return ContactsContract.Contacts.getLookupUri(id, parts[1]);
-			}
-		}
+		return systemAccount;
 	}
 
-	public void setSystemAccount(String account) {
-		this.systemAccount = account;
+	public void setSystemAccount(Uri lookupUri) {
+		this.systemAccount = lookupUri;
 	}
 
 	private Collection<String> getGroups(final boolean unique) {
@@ -322,13 +320,16 @@ public class Contact implements ListItem, Blockable {
 		}
 	}
 
-	public void setPgpKeyId(long keyId) {
+	public boolean setPgpKeyId(long keyId) {
+		final long previousKeyId = getPgpKeyId();
 		synchronized (this.keys) {
 			try {
 				this.keys.put("pgp_keyid", keyId);
+				return previousKeyId != keyId;
 			} catch (final JSONException ignored) {
 			}
 		}
+		return false;
 	}
 
 	public void setOption(int option) {
@@ -347,6 +348,10 @@ public class Contact implements ListItem, Blockable {
 		return (this.getOption(Contact.Options.IN_ROSTER) && (!this
 				.getOption(Contact.Options.DIRTY_DELETE)))
 				|| (this.getOption(Contact.Options.DIRTY_PUSH));
+	}
+
+	public boolean showInContactList() {
+		return showInRoster() || getOption(Options.SYNCED_VIA_OTHER);
 	}
 
 	public void parseSubscriptionFromElement(Element item) {
@@ -423,10 +428,14 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public boolean setAvatar(Avatar avatar) {
+		return setAvatar(avatar, false);
+	}
+
+	public boolean setAvatar(Avatar avatar, boolean previouslyOmittedPepFetch) {
 		if (this.avatar != null && this.avatar.equals(avatar)) {
 			return false;
 		} else {
-			if (this.avatar != null && this.avatar.origin == Avatar.Origin.PEP && avatar.origin == Avatar.Origin.VCARD) {
+			if (!previouslyOmittedPepFetch && this.avatar != null && this.avatar.origin == Avatar.Origin.PEP && avatar.origin == Avatar.Origin.VCARD) {
 				return false;
 			}
 			this.avatar = avatar;
@@ -434,8 +443,12 @@ public class Contact implements ListItem, Blockable {
 		}
 	}
 
-	public String getAvatar() {
+	public String getAvatarFilename() {
 		return avatar == null ? null : avatar.getFilename();
+	}
+
+	public Avatar getAvatar() {
+		return avatar;
 	}
 
 	public boolean mutualPresenceSubscription() {
@@ -510,6 +523,33 @@ public class Contact implements ListItem, Blockable {
 		return serverName;
 	}
 
+	public synchronized boolean setPhoneContact(AbstractPhoneContact phoneContact) {
+		setOption(getOption(phoneContact.getClass()));
+		setSystemAccount(phoneContact.getLookupUri());
+		boolean changed = setSystemName(phoneContact.getDisplayName());
+		changed |= setPhotoUri(phoneContact.getPhotoUri());
+		return changed;
+	}
+
+	public synchronized boolean unsetPhoneContact(Class<?extends AbstractPhoneContact> clazz) {
+		resetOption(getOption(clazz));
+		boolean changed = false;
+		if (!getOption(Options.SYNCED_VIA_ADDRESSBOOK) && !getOption(Options.SYNCED_VIA_OTHER)) {
+			setSystemAccount(null);
+			changed |= setPhotoUri(null);
+			changed |= setSystemName(null);
+		}
+		return changed;
+	}
+
+	public static int getOption(Class<? extends AbstractPhoneContact> clazz) {
+		if (clazz == JabberIdContact.class) {
+			return Options.SYNCED_VIA_ADDRESSBOOK;
+		} else {
+			return Options.SYNCED_VIA_OTHER;
+		}
+	}
+
     public final class Options {
 		public static final int TO = 0;
 		public static final int FROM = 1;
@@ -519,5 +559,7 @@ public class Contact implements ListItem, Blockable {
 		public static final int PENDING_SUBSCRIPTION_REQUEST = 5;
 		public static final int DIRTY_PUSH = 6;
 		public static final int DIRTY_DELETE = 7;
+		private static final int SYNCED_VIA_ADDRESSBOOK = 8;
+		public static final int SYNCED_VIA_OTHER = 9;
 	}
 }

@@ -11,9 +11,10 @@ resolutions = {
 	}
 
 images = {
-	'ic_launcher.svg' => ['ic_launcher', 48],
-	'main_logo.svg' => ['main_logo', 200],
-    'splash_logo.svg' => ['splash_logo', 144],
+	'main_logo.svg' => ['conversations/main_logo', 200],
+    'quicksy_main_logo.svg' => ['quicksy/main_logo', 200],
+    'splash_logo.svg' => ['conversations/splash_logo', 144],
+    'quicksy_splash_logo.svg' => ['quicksy/splash_logo', 144],
     'ic_search_black.svg' => ['ic_search_background_black', 144],
     'ic_search_white.svg' => ['ic_search_background_white', 144],
     'ic_no_results_white.svg' => ['ic_no_results_background_white', 144],
@@ -22,7 +23,8 @@ images = {
 	'play_gif_white.svg' => ['play_gif_white', 128],
     'play_video_black.svg' => ['play_video_black', 128],
     'play_gif_black.svg' => ['play_gif_black', 128],
-	'conversations_mono.svg' => ['ic_notification', 24],
+	'conversations_mono.svg' => ['conversations/ic_notification', 24],
+    'quicksy_mono.svg' => ['quicksy/ic_notification', 24],
 	'ic_received_indicator.svg' => ['ic_received_indicator', 12],
 	'ic_send_text_offline.svg' => ['ic_send_text_offline', 36],
 	'ic_send_text_offline_white.svg' => ['ic_send_text_offline_white', 36],
@@ -110,7 +112,13 @@ images.each do |source_filename, settings|
 			height = factor * base_height
 		end
 
-		path = "../src/main/res/drawable-#{resolution}/#{output_filename}.png"
+        output_parts = output_filename.split('/')
+
+        if output_parts.count != 2
+    		path = "../src/main/res/drawable-#{resolution}/#{output_filename}.png"
+        else
+            path = "../src/#{output_parts[0]}/res/drawable-#{resolution}/#{output_parts[1]}.png"
+        end
 		execute_cmd "#{inkscape} -f #{source_filename} -z -C -w #{width} -h #{height} -e #{path}"
 
 		top = []

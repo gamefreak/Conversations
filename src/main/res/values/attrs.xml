@@ -15,6 +15,7 @@
     <attr name="color_background_tertiary" format="reference|color"/>
     <attr name="color_background_secondary" format="reference|color"/>
     <attr name="color_background_primary" format="reference|color"/>
+    <attr name="edit_text_color" format="reference|color"/>
     <attr name="color_warning" format="reference|color"/>
     <attr name="EmojiColor" format="reference|color"/>
 
@@ -50,6 +51,19 @@
     <attr name="conversations_overview_background" format="reference|color"/>
 
     <attr name="icon_alpha" format="float"/>
+    <attr name="delete_icon_alpha" format="float"/>
+
+    <attr name="media_preview_document" format="reference"/>
+    <attr name="media_preview_recording" format="reference"/>
+    <attr name="media_preview_audio" format="reference"/>
+    <attr name="media_preview_location" format="reference"/>
+    <attr name="media_preview_contact" format="reference"/>
+    <attr name="media_preview_app" format="reference"/>
+    <attr name="media_preview_calendar" format="reference"/>
+    <attr name="media_preview_archive" format="reference" />
+    <attr name="media_preview_ebook" format="reference"/>
+    <attr name="media_preview_unknown" format="reference" />
+
 
     <attr name="icon_add_group" format="reference"/>
     <attr name="icon_add_person" format="reference"/>

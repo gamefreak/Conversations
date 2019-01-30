@@ -2,6 +2,7 @@ package eu.siacs.conversations.ui;
 
 import android.preference.CheckBoxPreference;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.app.FragmentManager;
 import android.app.Notification;
@@ -42,7 +43,8 @@ import eu.siacs.conversations.emotes.DownloadPackTask;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.ExportLogsService;
 import eu.siacs.conversations.services.MemorizingTrustManager;
-import eu.siacs.conversations.ui.util.Color;
+import eu.siacs.conversations.services.QuickConversationsService;
+import eu.siacs.conversations.ui.util.StyledAttributes;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.TimeframeUtils;
 import rocks.xmpp.addr.Jid;
@@ -82,7 +84,7 @@ public class SettingsActivity extends XmppActivity implements
 		mSettingsFragment.setActivityIntent(getIntent());
 		this.mTheme = findTheme();
 		setTheme(this.mTheme);
-		getWindow().getDecorView().setBackgroundColor(Color.get(this, R.attr.color_background_primary));
+		getWindow().getDecorView().setBackgroundColor(StyledAttributes.getColor(this, R.attr.color_background_primary));
 		setSupportActionBar(findViewById(R.id.toolbar));
 		configureActionBar(getSupportActionBar());
 	}
@@ -156,7 +158,7 @@ public class SettingsActivity extends XmppActivity implements
 
 		changeOmemoSettingSummary();
 
-		if (Config.FORCE_ORBOT) {
+		if (QuickConversationsService.isQuicksy()) {
 			PreferenceCategory connectionOptions = (PreferenceCategory) mSettingsFragment.findPreference("connection_options");
 			PreferenceScreen expert = (PreferenceScreen) mSettingsFragment.findPreference("expert");
 			if (connectionOptions != null) {
@@ -511,7 +513,7 @@ public class SettingsActivity extends XmppActivity implements
 	}
 
 	private void startExport() {
-		startService(new Intent(getApplicationContext(), ExportLogsService.class));
+		ContextCompat.startForegroundService(this, new Intent(this, ExportLogsService.class));
 	}
 
 	private void displayToast(final String msg) {

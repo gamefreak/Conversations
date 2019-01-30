@@ -3,7 +3,6 @@
   <string name="action_settings">Nastavení</string>
   <string name="action_add">Nová konverzace</string>
   <string name="action_accounts">Nastavení účtů</string>
-  <string name="action_end_conversation">Ukončit tuto konverzaci</string>
   <string name="action_contact_details">Detaily kontaktu</string>
   <string name="action_secure">Zabezpečená konverzace</string>
   <string name="action_add_account">Přidat účet</string>
@@ -68,9 +67,6 @@
   <string name="sharing_files_please_wait">Sdílení souborů. Chvíli strpení...</string>
   <string name="action_clear_history">Smazat historii</string>
   <string name="clear_conversation_history">Smaže historii konverzací</string>
-  <string name="clear_histor_msg">Chcete smazat všechny zprávy v této konverzaci?\n\n<b>Varování:</b> Toto neovlivní zprávy uložené na jiných přístrojích nebo serverech.</string>
-  <string name="delete_messages">Smazat zprávy</string>
-  <string name="also_end_conversation">Poté ukončit tuto konverzaci</string>
   <string name="choose_presence">Vybrat přístroj</string>
   <string name="send_unencrypted_message">Odeslat nešifrovanou zprávu</string>
   <string name="send_message_to_x">Odeslat zprávu pro %s</string>
@@ -95,11 +91,7 @@
   <string name="pref_accept_files">Přijímat soubory</string>
   <string name="pref_accept_files_summary">Automaticky přijímat soubory menší než…</string>
   <string name="pref_attachments">Přílohy</string>
-  <string name="pref_return_to_previous">Rychlé sdílení</string>
-  <string name="pref_return_to_previous_summary">Okamžitě se vrátit k předchozí aktivitě místo otevření konverzace po nasdílení</string>
   <string name="pref_notification_settings">Upozornění</string>
-  <string name="pref_notifications">Upozornění</string>
-  <string name="pref_notifications_summary">Upozornit při přijetí nové zprávy</string>
   <string name="pref_vibrate">Vibrovat</string>
   <string name="pref_vibrate_summary">Vibrovat při přijetí nové zprávy</string>
   <string name="pref_led">LED upozornění</string>
@@ -113,7 +105,6 @@
   <string name="pref_never_send_crash_summary">Zasláním detailů o důvodu selhání pomůžete dalšímu vývoji aplikace Konverzace</string>
   <string name="pref_confirm_messages">Potvrzovat zprávy</string>
   <string name="pref_ui_options">UI</string>
-  <string name="openpgp_error">OpenKeychain nahlásil chybu</string>
   <string name="accept">Přijmout</string>
   <string name="error">Došlo k chybě</string>
   <string name="your_account">Váš účet</string>
@@ -238,8 +229,6 @@
   <string name="pref_allow_message_correction_summary">Povolí kontaktům zpětné upravování jejich zpráv</string>
   <string name="pref_expert_options">Expertní nastavení</string>
   <string name="pref_expert_options_summary">S tímto zacházejte velmi opatrně</string>
-  <string name="title_activity_about">O aplikaci Conversations</string>
-  <string name="pref_about_conversations_summary">Informace o sestavení a licenci</string>
   <string name="title_pref_quiet_hours">Tichý režim</string>
   <string name="title_pref_quiet_hours_start_time">Odkdy</string>
   <string name="title_pref_quiet_hours_end_time">Dokdy</string>
@@ -264,7 +253,6 @@
   <string name="account_details">Detaily účtu</string>
   <string name="confirm">Potvrdit</string>
   <string name="try_again">Zkusit znovu</string>
-  <string name="conversations_foreground_service">Conversations</string>
   <string name="pref_keep_foreground_service">Ponechat službu v popředí</string>
   <string name="pref_keep_foreground_service_summary">Zamezit operačnímu systému v ukončení připojení</string>
   <string name="pref_export_logs">Exportovat historii</string>
@@ -417,12 +405,9 @@
   <string name="shared_images_with_x">Obrázky sdíleny s %s</string>
   <string name="shared_text_with_x">Text sdílen s %s</string>
   <string name="sync_with_contacts">Synchronizovat s kontakty</string>
-  <string name="sync_with_contacts_long">Aplikace Conversations by ráda porovnala svůj XMPP seznam s vašimi kontakty, aby mohla zobrazit plná jména a avatary.\n\nConversations načte a porovná kontakty pouze lokálně, bez jejich nahrávání na server.\n\nNyní budete dotázáni na udělení práv pro přístup k seznamu kontaktů.</string>
   <string name="notify_on_all_messages">Upozorňovat na všechny zprávy</string>
   <string name="notify_never">Upozornění vypnuta</string>
   <string name="notify_paused">Upozornění pozastavena</string>
-  <string name="pref_picture_compression">Komprimovat obrázky</string>
-  <string name="pref_picture_compression_summary">Upravit velikost a komprimovat obrázky</string>
   <string name="always">Vždy</string>
   <string name="automatically">Automaticky</string>
   <string name="battery_optimizations_enabled">Povolena optimalizace využití baterie</string>

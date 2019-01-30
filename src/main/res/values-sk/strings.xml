@@ -3,7 +3,6 @@
   <string name="action_settings">Nastavenia</string>
   <string name="action_add">Nová konverzácia</string>
   <string name="action_accounts">Nastavenie účtov</string>
-  <string name="action_end_conversation">Ukončiť túto konverzáciu</string>
   <string name="action_contact_details">Detaily kontaktu</string>
   <string name="action_secure">Zabezpečená konverzácia</string>
   <string name="action_add_account">Pridať účet</string>
@@ -63,9 +62,6 @@
   <string name="preparing_image">Pripravujem obrázok na prenos</string>
   <string name="action_clear_history">Vymazať históriu</string>
   <string name="clear_conversation_history">Vymazať históriu konverzácií</string>
-  <string name="clear_histor_msg">Chcete vymazať všetky správy v tejto konverzácii?\n\n<b>Varovanie:</b> Toto neovplyvní správy uložené v iných zariadeniach alebo serveroch.</string>
-  <string name="delete_messages">Vymazať správy</string>
-  <string name="also_end_conversation">Neskôr ukončiť konverzáciu</string>
   <string name="send_unencrypted_message">Poslať nezašifrovanú správu</string>
   <string name="send_omemo_message">Poslať OMEMO šifrovanú správu</string>
   <string name="send_pgp_message">Poslať OpenPGP šifrovanú správu</string>
@@ -85,13 +81,10 @@
   <string name="pref_general">Všeobecné</string>
   <string name="pref_accept_files">Prijať súbory</string>
   <string name="pref_accept_files_summary">Automaticky prijať súbory menšie ako…</string>
-  <string name="pref_notifications">Upozornenia</string>
-  <string name="pref_notifications_summary">Upozorniť pri prijatí novej správy</string>
   <string name="pref_vibrate">Vibrovať</string>
   <string name="pref_never_send_crash">Neodosielať detaily o zlyhaní aplikácie</string>
   <string name="pref_never_send_crash_summary">Zaslaním detailov o dôvode zlyhania pomáhate ďalšiemu vývoju aplikácie Conversations</string>
   <string name="pref_confirm_messages">Potvrdzovať správy</string>
-  <string name="openpgp_error">OpenKeychain nahlásil chybu</string>
   <string name="accept">Prijať</string>
   <string name="error">Došlo k chybe</string>
   <string name="your_account">Váš účet</string>
@@ -200,8 +193,6 @@
   <string name="ignore">Ignorovať</string>
   <string name="without_mutual_presence_updates"><b>Varovanie:</b> Odoslanie bez povolenia zmien stavu môže spôsobiť nečakané problémy na obidvoch stranách.\n\n<small>Prejdi na detaily kontaktu pre overenie povolenia o zmenách stavu.</small></string>
   <string name="pref_expert_options_summary">S týmto narábajte veľmi opatrne, prosím</string>
-  <string name="title_activity_about">O Conversations</string>
-  <string name="pref_about_conversations_summary">Informácie o tvorbe a licencii</string>
   <string name="title_pref_quiet_hours">Tichý režim</string>
   <string name="title_pref_quiet_hours_start_time">Čas začiatku</string>
   <string name="title_pref_quiet_hours_end_time">Čas konca</string>
@@ -224,7 +215,6 @@
   <string name="account_details">Detaily účtu</string>
   <string name="confirm">Potvrdiť</string>
   <string name="try_again">Skúste znova</string>
-  <string name="conversations_foreground_service">Konverzácie</string>
   <string name="pref_keep_foreground_service">Ponechať službu v prvom pláne</string>
   <string name="pref_keep_foreground_service_summary">Zamedzí operačnému systému ukončiť pripojenie </string>
   <string name="choose_file">Vybrať súbor</string>

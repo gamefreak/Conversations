@@ -23,6 +23,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
+import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
@@ -151,33 +152,30 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public void findWaitingMessages(OnMessageFound onMessageFound) {
+		final ArrayList<Message> results = new ArrayList<>();
 		synchronized (this.messages) {
 			for (Message message : this.messages) {
 				if (message.getStatus() == Message.STATUS_WAITING) {
-					onMessageFound.onMessageFound(message);
+					results.add(message);
 				}
 			}
+		}
+		for(Message result : results) {
+			onMessageFound.onMessageFound(result);
 		}
 	}
 
 	public void findUnreadMessages(OnMessageFound onMessageFound) {
+		final ArrayList<Message> results = new ArrayList<>();
 		synchronized (this.messages) {
 			for (Message message : this.messages) {
 				if (!message.isRead()) {
-					onMessageFound.onMessageFound(message);
+					results.add(message);
 				}
 			}
 		}
-	}
-
-	public void findMessagesWithFiles(final OnMessageFound onMessageFound) {
-		synchronized (this.messages) {
-			for (final Message message : this.messages) {
-				if ((message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE)
-						&& message.getEncryption() != Message.ENCRYPTION_PGP) {
-					onMessageFound.onMessageFound(message);
-				}
-			}
+		for(Message result : results) {
+			onMessageFound.onMessageFound(result);
 		}
 	}
 
@@ -186,12 +184,29 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 			for (final Message message : this.messages) {
 				if (message.getUuid().equals(uuid)
 						&& message.getEncryption() != Message.ENCRYPTION_PGP
-						&& (message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE || message.treatAsDownloadable())) {
+						&& (message.isFileOrImage() || message.treatAsDownloadable())) {
 					return message;
 				}
 			}
 		}
 		return null;
+	}
+
+	public boolean markAsDeleted(final List<String> uuids) {
+		boolean deleted = false;
+		final PgpDecryptionService pgpDecryptionService = account.getPgpDecryptionService();
+		synchronized (this.messages) {
+			for(Message message : this.messages) {
+				if (uuids.contains(message.getUuid())) {
+					message.setDeleted(true);
+					deleted = true;
+					if (message.getEncryption() == Message.ENCRYPTION_PGP && pgpDecryptionService != null) {
+						pgpDecryptionService.discard(message);
+					}
+				}
+			}
+		}
+		return deleted;
 	}
 
 	public void clearMessages() {
@@ -242,25 +257,17 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		}
 	}
 
-	public void findUnsentMessagesWithEncryption(int encryptionType, OnMessageFound onMessageFound) {
+	public void findUnsentTextMessages(OnMessageFound onMessageFound) {
+		final ArrayList<Message> results = new ArrayList<>();
 		synchronized (this.messages) {
 			for (Message message : this.messages) {
-				if ((message.getStatus() == Message.STATUS_UNSEND || message.getStatus() == Message.STATUS_WAITING)
-						&& (message.getEncryption() == encryptionType)) {
-					onMessageFound.onMessageFound(message);
+				if (message.getType() != Message.TYPE_IMAGE && message.getStatus() == Message.STATUS_UNSEND) {
+					results.add(message);
 				}
 			}
 		}
-	}
-
-	public void findUnsentTextMessages(OnMessageFound onMessageFound) {
-		synchronized (this.messages) {
-			for (Message message : this.messages) {
-				if (message.getType() != Message.TYPE_IMAGE
-						&& message.getStatus() == Message.STATUS_UNSEND) {
-					onMessageFound.onMessageFound(message);
-				}
-			}
+		for(Message result : results) {
+			onMessageFound.onMessageFound(result);
 		}
 	}
 
@@ -495,7 +502,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 					return contactJid.getLocal() != null ? contactJid.getLocal() : contactJid;
 				}
 			}
-		} else if (isWithStranger()) {
+		} else if ((QuickConversationsService.isConversations() || !Config.QUICKSY_DOMAIN.equals(contactJid.getDomain())) && isWithStranger()) {
 			return contactJid;
 		} else {
 			return this.getContact().getDisplayName();
@@ -696,6 +703,20 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 			}
 			return null;
 		}
+	}
+
+	public boolean possibleDuplicate(final String serverMsgId, final String remoteMsgId) {
+		if (serverMsgId == null || remoteMsgId == null) {
+			return false;
+		}
+		synchronized (this.messages) {
+			for(Message message : this.messages) {
+				if (serverMsgId.equals(message.getServerMsgId()) || remoteMsgId.equals(message.getRemoteMsgId())) {
+					return true;
+				}
+			}
+		}
+		return false;
 	}
 
 	public MamReference getLastMessageTransmitted() {
@@ -926,8 +947,9 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		final Contact contact = getContact();
 		return mode == MODE_SINGLE
 				&& !contact.isOwnServer()
-				&& !contact.showInRoster()
+				&& !contact.showInContactList()
 				&& !contact.isSelf()
+				&& !Config.QUICKSY_DOMAIN.equals(contact.getJid().toEscapedString())
 				&& sentMessagesCount() == 0;
 	}
 

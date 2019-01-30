@@ -2,8 +2,6 @@ package eu.siacs.conversations;
 
 import android.graphics.Bitmap;
 
-import org.osmdroid.util.GeoPoint;
-
 import java.util.Collections;
 import java.util.List;
 
@@ -34,19 +32,21 @@ public final class Config {
 		return (ENCRYPTION_MASK & (ENCRYPTION_MASK - 1)) != 0;
 	}
 
-	public static final String LOGTAG = "conversations";
+	public static final String LOGTAG = BuildConfig.LOGTAG;
 
 	public static final Jid BUG_REPORTS = Jid.of("bugs@conversations.im");
 
 
 	public static final String DOMAIN_LOCK = null; //only allow account creation for this domain
 	public static final String MAGIC_CREATE_DOMAIN = "friendshipismagicsquad.com";
+	public static final String QUICKSY_DOMAIN = "quicksy.im";
 	public static final boolean DISALLOW_REGISTRATION_IN_UI = false; //hide the register checkbox
 
 	public static final boolean USE_RANDOM_RESOURCE_ON_EVERY_BIND = false;
 
 	public static final boolean ALLOW_NON_TLS_CONNECTIONS = false; //very dangerous. you should have a good reason to set this to true
-	public static final boolean FORCE_ORBOT = false; // always use TOR
+
+	public static final long CONTACT_SYNC_RETRY_INTERVAL = 1000L * 60 * 5;
 
 
 	//Notification settings
@@ -67,6 +67,8 @@ public final class Config {
 	public static final int CONNECT_TIMEOUT = 90;
 	public static final int CONNECT_DISCO_TIMEOUT = 20;
 	public static final int MINI_GRACE_PERIOD = 750;
+
+	public static final boolean XEP_0392 = true; //enables XEP-0392 v0.6.0
 
 	public static final int AVATAR_SIZE = 192;
 	public static final Bitmap.CompressFormat AVATAR_FORMAT = Bitmap.CompressFormat.JPEG;
@@ -170,7 +172,6 @@ public final class Config {
 	public static final class Map {
 		public final static double INITIAL_ZOOM_LEVEL = 4;
 		public final static double FINAL_ZOOM_LEVEL = 15;
-		public final static GeoPoint INITIAL_POS = new GeoPoint(33.805278, -84.171389);
 		public final static int MY_LOCATION_INDICATOR_SIZE = 10;
 		public final static int MY_LOCATION_INDICATOR_OUTLINE_SIZE = 3;
 		public final static long LOCATION_FIX_TIME_DELTA = 1000 * 10; // ms

@@ -7,9 +7,11 @@ import android.preference.PreferenceCategory;
 import android.preference.PreferenceFragment;
 import android.preference.PreferenceScreen;
 import android.text.TextUtils;
+import android.widget.ListView;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.utils.Compatibility;
 
 public class SettingsFragment extends PreferenceFragment {
 
@@ -31,11 +33,22 @@ public class SettingsFragment extends PreferenceFragment {
 				mCategory.removePreference(cleanPrivateStorage);
 			}
 		}
+		Compatibility.removeUnusedPreferences(this);
 
 		if (!TextUtils.isEmpty(page)) {
 			openPreferenceScreen(page);
 		}
 
+	}
+
+	@Override
+	public void onActivityCreated(Bundle bundle) {
+		super.onActivityCreated(bundle);
+
+		final ListView listView = getActivity().findViewById(android.R.id.list);
+		if (listView != null) {
+			listView.setDivider(null);
+		}
 	}
 
 	public void setActivityIntent(final Intent intent) {

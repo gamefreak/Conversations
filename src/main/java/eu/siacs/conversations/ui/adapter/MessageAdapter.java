@@ -76,6 +76,7 @@ import eu.siacs.conversations.ui.service.AudioPlayer;
 import eu.siacs.conversations.ui.text.DividerSpan;
 import eu.siacs.conversations.ui.text.QuoteSpan;
 import eu.siacs.conversations.ui.util.MyLinkify;
+import eu.siacs.conversations.ui.util.ViewUtil;
 import eu.siacs.conversations.ui.widget.ClickableMovementMethod;
 import eu.siacs.conversations.ui.widget.CopyTextView;
 import eu.siacs.conversations.ui.widget.ListSelectionManager;
@@ -222,9 +223,10 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				viewHolder.edit_indicator.setVisibility(View.GONE);
 			}
 		}
+		final Transferable transferable = message.getTransferable();
 		boolean multiReceived = message.getConversation().getMode() == Conversation.MODE_MULTI
 				&& message.getMergedStatus() <= Message.STATUS_RECEIVED;
-		if (message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE || message.getTransferable() != null) {
+		if (message.isFileOrImage() || transferable != null) {
 			FileParams params = message.getFileParams();
 			if (params.size > (1.5 * 1024 * 1024)) {
 				filesize = Math.round(params.size * 1f / (1024 * 1024)) + " MiB";
@@ -233,7 +235,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			} else if (params.size > 0) {
 				filesize = params.size + " B";
 			}
-			if (message.getTransferable() != null && message.getTransferable().getStatus() == Transferable.STATUS_FAILED) {
+			if (transferable != null && transferable.getStatus() == Transferable.STATUS_FAILED) {
 				error = true;
 			}
 		}
@@ -242,9 +244,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				info = getContext().getString(R.string.waiting);
 				break;
 			case Message.STATUS_UNSEND:
-				Transferable d = message.getTransferable();
-				if (d != null) {
-					info = getContext().getString(R.string.sending_file, d.getProgress());
+				if (transferable != null) {
+					info = getContext().getString(R.string.sending_file, transferable.getProgress());
 				} else {
 					info = getContext().getString(R.string.sending);
 				}
@@ -263,7 +264,11 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				}
 				break;
 			case Message.STATUS_SEND_FAILED:
-				info = getContext().getString(R.string.send_failed);
+				if (Message.ERROR_MESSAGE_CANCELLED.equals(message.getErrorMessage())) {
+					info = getContext().getString(R.string.cancelled);
+				} else {
+					info = getContext().getString(R.string.send_failed);
+				}
 				error = true;
 				break;
 			default:
@@ -781,7 +786,7 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 		viewHolder.contact_picture.setOnLongClickListener(v -> {
 			if (MessageAdapter.this.mOnContactPictureLongClickedListener != null) {
 				MessageAdapter.this.mOnContactPictureLongClickedListener
-						.onContactPictureLongClicked(message);
+						.onContactPictureLongClicked(v, message);
 				return true;
 			} else {
 				return false;
@@ -789,10 +794,10 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 		});
 
 		final Transferable transferable = message.getTransferable();
-		if (transferable != null && transferable.getStatus() != Transferable.STATUS_UPLOADING) {
-			if (transferable.getStatus() == Transferable.STATUS_OFFER) {
+		if (message.isDeleted() || (transferable != null && transferable.getStatus() != Transferable.STATUS_UPLOADING)) {
+			if (transferable != null && transferable.getStatus() == Transferable.STATUS_OFFER) {
 				displayDownloadableMessage(viewHolder, message, activity.getString(R.string.download_x_file, UIHelper.getFileDescriptionString(activity, message)));
-			} else if (transferable.getStatus() == Transferable.STATUS_OFFER_CHECK_FILESIZE) {
+			} else if (transferable != null && transferable.getStatus() == Transferable.STATUS_OFFER_CHECK_FILESIZE) {
 				displayDownloadableMessage(viewHolder, message, activity.getString(R.string.check_x_filesize, UIHelper.getFileDescriptionString(activity, message)));
 			} else {
 				displayInfoMessage(viewHolder, UIHelper.getMessagePreview(activity, message).first, darkBackground);
@@ -821,6 +826,8 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 			displayInfoMessage(viewHolder, activity.getString(R.string.decryption_failed), darkBackground);
 		} else if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE) {
 			displayInfoMessage(viewHolder, activity.getString(R.string.not_encrypted_for_this_device), darkBackground);
+		} else if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL_FAILED) {
+			displayInfoMessage(viewHolder, activity.getString(R.string.omemo_decryption_failed), darkBackground);
 		} else {
 			if (message.isGeoUri()) {
 				displayLocationMessage(viewHolder, message);
@@ -928,6 +935,10 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 		audioPlayer.stop();
 	}
 
+	public void unregisterListenerInAudioPlayer() {
+		audioPlayer.unregisterListener();
+	}
+
 	public void startStopPending() {
 		audioPlayer.startStopPending();
 	}
@@ -938,36 +949,8 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 			ActivityCompat.requestPermissions(activity, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, ConversationsActivity.REQUEST_OPEN_MESSAGE);
 			return;
 		}
-		DownloadableFile file = activity.xmppConnectionService.getFileBackend().getFile(message);
-		if (!file.exists()) {
-			Toast.makeText(activity, R.string.file_deleted, Toast.LENGTH_SHORT).show();
-			return;
-		}
-		Intent openIntent = new Intent(Intent.ACTION_VIEW);
-		String mime = file.getMimeType();
-		if (mime == null) {
-			mime = "*/*";
-		}
-		Uri uri;
-		try {
-			uri = FileBackend.getUriForFile(activity, file);
-		} catch (SecurityException e) {
-			Log.d(Config.LOGTAG, "No permission to access " + file.getAbsolutePath(), e);
-			Toast.makeText(activity, activity.getString(R.string.no_permission_to_access_x, file.getAbsolutePath()), Toast.LENGTH_SHORT).show();
-			return;
-		}
-		openIntent.setDataAndType(uri, mime);
-		openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-		PackageManager manager = activity.getPackageManager();
-		List<ResolveInfo> info = manager.queryIntentActivities(openIntent, 0);
-		if (info.size() == 0) {
-			openIntent.setDataAndType(uri, "*/*");
-		}
-		try {
-			getContext().startActivity(openIntent);
-		} catch (ActivityNotFoundException e) {
-			Toast.makeText(activity, R.string.no_application_found_to_open_file, Toast.LENGTH_SHORT).show();
-		}
+		final DownloadableFile file = activity.xmppConnectionService.getFileBackend().getFile(message);
+		ViewUtil.view(activity, file);
 	}
 
 	public void showLocation(Message message) {
@@ -1026,7 +1009,7 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 	}
 
 	public interface OnContactPictureLongClicked {
-		void onContactPictureLongClicked(Message message);
+		void onContactPictureLongClicked(View v, Message message);
 	}
 
 	private static class ViewHolder {

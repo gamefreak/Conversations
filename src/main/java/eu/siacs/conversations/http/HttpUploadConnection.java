@@ -2,10 +2,8 @@ package eu.siacs.conversations.http;
 
 import android.os.PowerManager;
 import android.util.Log;
-import android.util.Pair;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -31,7 +29,7 @@ import eu.siacs.conversations.utils.WakeLockHelper;
 
 public class HttpUploadConnection implements Transferable {
 
-	public static final List<String> WHITE_LISTED_HEADERS = Arrays.asList(
+	static final List<String> WHITE_LISTED_HEADERS = Arrays.asList(
 			"Authorization",
 			"Cookie",
 			"Expires"
@@ -42,7 +40,7 @@ public class HttpUploadConnection implements Transferable {
 	private final SlotRequester mSlotRequester;
 	private final Method method;
 	private final boolean mUseTor;
-	private boolean canceled = false;
+	private boolean cancelled = false;
 	private boolean delayed = false;
 	private DownloadableFile file;
 	private Message message;
@@ -51,8 +49,6 @@ public class HttpUploadConnection implements Transferable {
 	private byte[] key = null;
 
 	private long transmitted = 0;
-
-	private InputStream mFileInputStream;
 
 	public HttpUploadConnection(Method method, HttpConnectionManager httpConnectionManager) {
 		this.method = method;
@@ -87,14 +83,13 @@ public class HttpUploadConnection implements Transferable {
 
 	@Override
 	public void cancel() {
-		this.canceled = true;
+		this.cancelled = true;
 	}
 
 	private void fail(String errorMessage) {
 		mHttpConnectionManager.finishUploadConnection(this);
 		message.setTransferable(null);
-		mXmppConnectionService.markMessage(message, Message.STATUS_SEND_FAILED, errorMessage);
-		FileBackend.close(mFileInputStream);
+		mXmppConnectionService.markMessage(message, Message.STATUS_SEND_FAILED, cancelled ? Message.ERROR_MESSAGE_CANCELLED : errorMessage);
 	}
 
 	public void init(Message message, boolean delay) {
@@ -110,7 +105,7 @@ public class HttpUploadConnection implements Transferable {
 		if (Config.ENCRYPT_ON_HTTP_UPLOADED
 				|| message.getEncryption() == Message.ENCRYPTION_AXOLOTL
 				|| message.getEncryption() == Message.ENCRYPTION_OTR) {
-			this.key = new byte[48]; // todo: change this to 44 for 12-byte IV instead of 16-byte at some point in future
+			this.key = new byte[48];
 			mXmppConnectionService.getRNG().nextBytes(this.key);
 			this.file.setKeyAndIv(this.key);
 		}
@@ -119,7 +114,7 @@ public class HttpUploadConnection implements Transferable {
 
 		if (method == Method.P1_S3) {
 			try {
-				md5 = Checksum.md5(AbstractConnectionManager.createInputStream(file, true).first);
+				md5 = Checksum.md5(AbstractConnectionManager.upgrade(file, new FileInputStream(file)));
 			} catch (Exception e) {
 				Log.d(Config.LOGTAG, account.getJid().asBareJid()+": unable to calculate md5()", e);
 				fail(e.getMessage());
@@ -129,21 +124,12 @@ public class HttpUploadConnection implements Transferable {
 			md5 = null;
 		}
 
-		Pair<InputStream,Integer> pair;
-		try {
-			pair = AbstractConnectionManager.createInputStream(file, true);
-		} catch (FileNotFoundException e) {
-			Log.d(Config.LOGTAG, account.getJid().asBareJid()+": could not find file to upload - "+e.getMessage());
-			fail(e.getMessage());
-			return;
-		}
-		this.file.setExpectedSize(pair.second);
+		this.file.setExpectedSize(file.getSize() + (file.getKey() != null ? 16 : 0));
 		message.resetFileParams();
-		this.mFileInputStream = pair.first;
 		this.mSlotRequester.request(method, account, file, mime, md5, new SlotRequester.OnSlotRequested() {
 			@Override
 			public void success(SlotRequester.Slot slot) {
-				if (!canceled) {
+				if (!cancelled) {
 					HttpUploadConnection.this.slot = slot;
 					new Thread(HttpUploadConnection.this::upload).start();
 				}
@@ -160,9 +146,11 @@ public class HttpUploadConnection implements Transferable {
 
 	private void upload() {
 		OutputStream os = null;
+		InputStream fileInputStream = null;
 		HttpURLConnection connection = null;
 		PowerManager.WakeLock wakeLock = mHttpConnectionManager.createWakeLock("http_upload_"+message.getUuid());
 		try {
+			fileInputStream = new FileInputStream(file);
 			final int expectedFileSize = (int) file.getExpectedSize();
 			final int readTimeout = (expectedFileSize / 2048) + Config.SOCKET_TIMEOUT; //assuming a minimum transfer speed of 16kbit/s
 			wakeLock.acquire(readTimeout);
@@ -178,7 +166,7 @@ public class HttpUploadConnection implements Transferable {
 			connection.setUseCaches(false);
 			connection.setRequestMethod("PUT");
 			connection.setFixedLengthStreamingMode(expectedFileSize);
-			connection.setRequestProperty("User-Agent",mXmppConnectionService.getIqGenerator().getIdentityName());
+			connection.setRequestProperty("User-Agent",mXmppConnectionService.getIqGenerator().getUserAgent());
 			if(slot.getHeaders() != null) {
 				for(HashMap.Entry<String,String> entry : slot.getHeaders().entrySet()) {
 					connection.setRequestProperty(entry.getKey(),entry.getValue());
@@ -189,18 +177,18 @@ public class HttpUploadConnection implements Transferable {
 			connection.setConnectTimeout(Config.SOCKET_TIMEOUT * 1000);
 			connection.setReadTimeout(readTimeout * 1000);
 			connection.connect();
+			final InputStream innerInputStream = AbstractConnectionManager.upgrade(file, fileInputStream);
 			os = connection.getOutputStream();
 			transmitted = 0;
 			int count;
 			byte[] buffer = new byte[4096];
-			while (((count = mFileInputStream.read(buffer)) != -1) && !canceled) {
+			while (((count = innerInputStream.read(buffer)) != -1) && !cancelled) {
 				transmitted += count;
 				os.write(buffer, 0, count);
 				mHttpConnectionManager.updateConversationUi(false);
 			}
 			os.flush();
 			os.close();
-			mFileInputStream.close();
 			int code = connection.getResponseCode();
 			InputStream is = connection.getErrorStream();
 			if (is != null) {
@@ -235,7 +223,7 @@ public class HttpUploadConnection implements Transferable {
 			Log.d(Config.LOGTAG,"http upload failed "+e.getMessage());
 			fail(e.getMessage());
 		} finally {
-			FileBackend.close(mFileInputStream);
+			FileBackend.close(fileInputStream);
 			FileBackend.close(os);
 			if (connection != null) {
 				connection.disconnect();

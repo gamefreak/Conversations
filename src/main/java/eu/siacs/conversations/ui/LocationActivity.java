@@ -16,7 +16,6 @@ import android.preference.PreferenceManager;
 import android.provider.Settings;
 import android.support.annotation.BoolRes;
 import android.support.annotation.NonNull;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.MenuItem;
 
@@ -36,9 +35,11 @@ import eu.siacs.conversations.BuildConfig;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.http.HttpConnectionManager;
+import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.ui.util.LocationHelper;
 import eu.siacs.conversations.ui.widget.Marker;
 import eu.siacs.conversations.ui.widget.MyLocation;
+import eu.siacs.conversations.utils.LocationProvider;
 import eu.siacs.conversations.utils.ThemeHelper;
 
 public abstract class LocationActivity extends ActionBarActivity implements LocationListener {
@@ -103,7 +104,7 @@ public abstract class LocationActivity extends ActionBarActivity implements Loca
 		final IConfigurationProvider config = Configuration.getInstance();
 		config.load(ctx, getPreferences());
 		config.setUserAgentValue(BuildConfig.APPLICATION_ID + "_" + BuildConfig.VERSION_CODE);
-		if (Config.FORCE_ORBOT || getBooleanPreference("use_tor", R.bool.use_tor)) {
+		if (QuickConversationsService.isConversations() && getBooleanPreference("use_tor", R.bool.use_tor)) {
 			try {
 				config.setHttpProxy(HttpConnectionManager.getProxy());
 			} catch (IOException e) {

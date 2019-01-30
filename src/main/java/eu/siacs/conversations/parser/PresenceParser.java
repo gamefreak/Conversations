@@ -119,6 +119,14 @@ public class PresenceParser extends AbstractParser implements
 								if (user.setAvatar(avatar)) {
 									mXmppConnectionService.getAvatarService().clear(user);
 								}
+								if (user.getRealJid() != null) {
+									Contact c = conversation.getAccount().getRoster().getContact(user.getRealJid());
+									if (c.setAvatar(avatar)) {
+										mXmppConnectionService.syncRoster(conversation.getAccount());
+										mXmppConnectionService.getAvatarService().clear(c);
+										mXmppConnectionService.updateRosterUi();
+									}
+								}
 							} else if (mXmppConnectionService.isDataSaverDisabled()) {
 								mXmppConnectionService.fetchAvatar(mucOptions.getAccount(), avatar);
 							}
@@ -180,6 +188,8 @@ public class PresenceParser extends AbstractParser implements
 					mucOptions.setError(MucOptions.Error.MEMBERS_ONLY);
 				} else if (error.hasChild("resource-constraint")) {
 					mucOptions.setError(MucOptions.Error.RESOURCE_CONSTRAINT);
+				} else if (error.hasChild("remote-server-timeout")) {
+					mucOptions.setError(MucOptions.Error.REMOTE_SERVER_TIMEOUT);
 				} else if (error.hasChild("gone")) {
 					final String gone = error.findChildContent("gone");
 					final Jid alternate;
@@ -240,7 +250,7 @@ public class PresenceParser extends AbstractParser implements
 		return codes;
 	}
 
-	public void parseContactPresence(final PresencePacket packet, final Account account) {
+	private void parseContactPresence(final PresencePacket packet, final Account account) {
 		final PresenceGenerator mPresenceGenerator = mXmppConnectionService.getPresenceGenerator();
 		final Jid from = packet.getFrom();
 		if (from == null || from.equals(account.getJid())) {
@@ -250,9 +260,6 @@ public class PresenceParser extends AbstractParser implements
 		final Contact contact = account.getRoster().getContact(from);
 		if (type == null) {
 			final String resource = from.isBareJid() ? "" : from.getResource();
-			if (contact.setPresenceName(packet.findChildContent("nick", Namespace.NICK))) {
-				mXmppConnectionService.getAvatarService().clear(contact);
-			}
 			Avatar avatar = Avatar.parsePresence(packet.findChild("x", "vcard-temp:x:update"));
 			if (avatar != null && (!contact.isSelf() || account.getAvatar() == null)) {
 				avatar.owner = from.asBareJid();
@@ -273,6 +280,11 @@ public class PresenceParser extends AbstractParser implements
 					mXmppConnectionService.fetchAvatar(account, avatar);
 				}
 			}
+
+			if (mXmppConnectionService.isMuc(account, from)) {
+				return;
+			}
+
 			int sizeBefore = contact.getPresences().size();
 
 			final String show = packet.findChildContent("show");
@@ -306,7 +318,9 @@ public class PresenceParser extends AbstractParser implements
 			if (pgp != null && x != null) {
 				Element status = packet.findChild("status");
 				String msg = status != null ? status.getContent() : "";
-				contact.setPgpKeyId(pgp.fetchKeyId(account, msg, x.getContent()));
+				if (contact.setPgpKeyId(pgp.fetchKeyId(account, msg, x.getContent()))) {
+					mXmppConnectionService.syncRoster(account);
+				}
 			}
 			boolean online = sizeBefore < contact.getPresences().size();
 			mXmppConnectionService.onContactStatusChanged.onContactStatusChanged(contact, online);
@@ -324,6 +338,9 @@ public class PresenceParser extends AbstractParser implements
 			}
 			mXmppConnectionService.onContactStatusChanged.onContactStatusChanged(contact, false);
 		} else if (type.equals("subscribe")) {
+			if (contact.setPresenceName(packet.findChildContent("nick", Namespace.NICK))) {
+				mXmppConnectionService.getAvatarService().clear(contact);
+			}
 			if (contact.getOption(Contact.Options.PREEMPTIVE_GRANT)) {
 				mXmppConnectionService.sendPresencePacket(account,
 						mPresenceGenerator.sendPresenceUpdatesTo(contact));
@@ -352,6 +369,8 @@ public class PresenceParser extends AbstractParser implements
 		if (packet.hasChild("x", "http://jabber.org/protocol/muc#user")) {
 			this.parseConferencePresence(packet, account);
 		} else if (packet.hasChild("x", "http://jabber.org/protocol/muc")) {
+			this.parseConferencePresence(packet, account);
+		} else if ("error".equals(packet.getAttribute("type")) && mXmppConnectionService.isMuc(account, packet.getFrom())) {
 			this.parseConferencePresence(packet, account);
 		} else {
 			this.parseContactPresence(packet, account);

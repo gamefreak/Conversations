@@ -14,6 +14,14 @@
         <item name="android:textSize">?TextSizeSubhead</item>
     </style>
 
+    <style name="TextAppearance.Conversations.Subhead.Bold" parent="TextAppearance.Conversations.Subhead">
+        <item name="android:textStyle">bold</item>
+    </style>
+
+    <style name="TextAppearance.Conversations.Subhead.Bold.Secondary" parent="TextAppearance.Conversations.Subhead.Bold">
+        <item name="android:textColor">?android:textColorSecondary</item>
+    </style>
+
     <style name="TextAppearance.Conversations.Body2" parent="TextAppearance.AppCompat.Body2">
         <item name="android:textSize">?TextSizeBody2</item>
     </style>
@@ -55,6 +63,10 @@
         <item name="android:textSize">?TextSizeBody2</item>
     </style>
 
+    <style name="Widget.Conversations.Button.Borderless.Primary" parent="Widget.Conversations.Button.Borderless">
+        <item name="android:textColor">?colorAccent</item>
+    </style>
+
 
     <style name="TextAppearance.Conversations.Design.Hint" parent="TextAppearance.Design.Hint">
         <item name="android:textSize">?TextSizeCaption</item>
@@ -66,6 +78,10 @@
 
     <style name="TextAppearance.Conversations.Body1.Secondary" parent="TextAppearance.Conversations.Body1">
         <item name="android:textColor">?android:textColorSecondary</item>
+    </style>
+
+    <style name="TextAppearance.Conversations.Body1.Tertiary" parent="TextAppearance.Conversations.Body1">
+        <item name="android:textColor">?android:textColorTertiary</item>
     </style>
 
     <style name="TextAppearance.Conversations.Fingerprint" parent="TextAppearance.Conversations.Body1">

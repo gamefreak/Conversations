@@ -3,7 +3,6 @@
   <string name="action_settings">설정</string>
   <string name="action_add">새 대화</string>
   <string name="action_accounts">계정 </string>
-  <string name="action_end_conversation">이 대화 </string>
   <string name="action_contact_details">연락처 정보</string>
   <string name="action_secure">안전한 대화 </string>
   <string name="action_add_account">계정 추가 </string>
@@ -68,9 +67,6 @@
   <string name="sharing_files_please_wait">파일을 공유중입니다. 기다리세요...</string>
   <string name="action_clear_history">기록 삭제 </string>
   <string name="clear_conversation_history">대화 기록 삭제 </string>
-  <string name="clear_histor_msg">이 대화의 모든 메세지를 삭제하시겠습니까? 경고: 이것은 다른 기기나 서버에 있는 메세지에는 영향을 미치지 않습니다. </string>
-  <string name="delete_messages">메세지 삭제 </string>
-  <string name="also_end_conversation">나중에 이 대화 끝내기 </string>
   <string name="choose_presence">기기 선택</string>
   <string name="send_unencrypted_message">암호화하지 않은 메세지 전송</string>
   <string name="send_message_to_x">%s 에게 매세지 보내기 </string>
@@ -95,11 +91,7 @@
   <string name="pref_accept_files">파일 수락 </string>
   <string name="pref_accept_files_summary">이 크기보다 작은 파일을 자동으로 수락 </string>
   <string name="pref_attachments">첨부파일</string>
-  <string name="pref_return_to_previous">빠른 공유</string>
-  <string name="pref_return_to_previous_summary">공유 한 후 대화를 열지 않고 바로 이전 작업으로 돌아갑니다</string>
   <string name="pref_notification_settings">알림 </string>
-  <string name="pref_notifications">알림 </string>
-  <string name="pref_notifications_summary">새 메세지 도착시 알림 </string>
   <string name="pref_vibrate">진동 </string>
   <string name="pref_vibrate_summary">새 메세지 도착시 진동</string>
   <string name="pref_led">LED 알림</string>
@@ -113,7 +105,6 @@
   <string name="pref_confirm_messages">메세지 확인 </string>
   <string name="pref_confirm_messages_summary">당신이 메시지를 수신하고 읽을 때 친구에게 그 사실을 알려줍니다</string>
   <string name="pref_ui_options">UI</string>
-  <string name="openpgp_error">OpenKeychain이 오류를 보고합니다 </string>
   <string name="accept">수락 </string>
   <string name="error">오류가 발생했습니다 </string>
   <string name="your_account">당신의 계정 </string>
@@ -239,8 +230,6 @@
   <string name="pref_allow_message_correction_summary">친구들이 메세지를 소급 수정할 수 있도록 허가</string>
   <string name="pref_expert_options">전문가 설정</string>
   <string name="pref_expert_options_summary">설정시 주의하시기 바랍니다</string>
-  <string name="title_activity_about">Conversations에 대해서 </string>
-  <string name="pref_about_conversations_summary">빌드 및 라이센스 정보 </string>
   <string name="title_pref_quiet_hours">무음 시간대 </string>
   <string name="title_pref_quiet_hours_start_time">시작 시간 </string>
   <string name="title_pref_quiet_hours_end_time">마감 시간 </string>
@@ -268,7 +257,6 @@
   <string name="account_details">계정 정보 </string>
   <string name="confirm">확인 </string>
   <string name="try_again">다시 시도하세요 </string>
-  <string name="conversations_foreground_service">Conversations</string>
   <string name="pref_keep_foreground_service">포어그라운드에서 서비스 유지 </string>
   <string name="pref_keep_foreground_service_summary">운영체제가 접속을 해제하지 못하도록 예방합니다 </string>
   <string name="pref_export_logs">히스토리 내보내기</string>
@@ -418,12 +406,9 @@
   <string name="shared_images_with_x">%s로 이미지를 공유</string>
   <string name="shared_text_with_x">%s 에서 텍스트를 공유</string>
   <string name="sync_with_contacts">연락처와 동기화</string>
-  <string name="sync_with_contacts_long">Conversations는 XMPP 명단과 연락처 명단을 대조시켜서 이름과 아바타를 표시하고자 합니다.\n\nConversations는 당신의 서버에 업로드하지 않고 기기 내부적으로만 연락처를 읽고 대조를 할 것입니다.\n\n이제 연락처에 접근할 권한을 당신에게 물어볼 것입니다.</string>
   <string name="notify_on_all_messages">모든 메세지를 알림</string>
   <string name="notify_never">알림 해제됨</string>
   <string name="notify_paused">알림 일시중지됨</string>
-  <string name="pref_picture_compression">사진 압축</string>
-  <string name="pref_picture_compression_summary">사진 크기 조정 및 압축</string>
   <string name="always">항상</string>
   <string name="automatically">자동</string>
   <string name="battery_optimizations_enabled">배터리 최적화 사용됨</string>

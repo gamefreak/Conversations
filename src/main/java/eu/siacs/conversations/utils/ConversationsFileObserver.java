@@ -2,11 +2,15 @@ package eu.siacs.conversations.utils;
 
 
 import android.os.FileObserver;
+import android.util.Log;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import eu.siacs.conversations.Config;
 
 /**
  * Copyright (C) 2012 Bartek Przybylski
@@ -18,16 +22,26 @@ public abstract class ConversationsFileObserver {
 
     private final String path;
     private final List<SingleFileObserver> mObservers = new ArrayList<>();
+    private final AtomicBoolean shouldStop = new AtomicBoolean(true);
 
-    public ConversationsFileObserver(String path) {
+    protected ConversationsFileObserver(String path) {
         this.path = path;
     }
 
-    public synchronized void startWatching() {
+    public void startWatching() {
+        shouldStop.set(false);
+        startWatchingInternal();
+    }
+
+    private synchronized void startWatchingInternal() {
         Stack<String> stack = new Stack<>();
         stack.push(path);
 
         while (!stack.empty()) {
+            if (shouldStop.get()) {
+                Log.d(Config.LOGTAG,"file observer received command to stop");
+                return;
+            }
             String parent = stack.pop();
             mObservers.add(new SingleFileObserver(parent, FileObserver.DELETE| FileObserver.MOVED_FROM));
             final File path = new File(parent);
@@ -36,6 +50,10 @@ public abstract class ConversationsFileObserver {
                 continue;
             }
             for(File file : files) {
+                if (shouldStop.get()) {
+                    Log.d(Config.LOGTAG,"file observer received command to stop");
+                    return;
+                }
                 if (file.isDirectory() && file.getName().charAt(0) != '.') {
                     final String currentPath = file.getAbsolutePath();
                     if (depth(file) <= 8 && !stack.contains(currentPath) && !observing(currentPath)) {
@@ -66,7 +84,12 @@ public abstract class ConversationsFileObserver {
         return false;
     }
 
-    public synchronized void stopWatching() {
+    public void stopWatching() {
+        shouldStop.set(true);
+        stopWatchingInternal();
+    }
+
+    private synchronized void stopWatchingInternal() {
         for(FileObserver observer : mObservers) {
             observer.stopWatching();
         }
@@ -83,13 +106,17 @@ public abstract class ConversationsFileObserver {
     private class SingleFileObserver extends FileObserver {
         private final String path;
 
-        public SingleFileObserver(String path, int mask) {
+        SingleFileObserver(String path, int mask) {
             super(path, mask);
             this.path = path;
         }
 
         @Override
         public void onEvent(int event, String filename) {
+            if (filename == null) {
+                Log.d(Config.LOGTAG,"ignored file event with NULL filename (event="+event+")");
+                return;
+            }
             ConversationsFileObserver.this.onEvent(event, path+'/'+filename);
         }
 

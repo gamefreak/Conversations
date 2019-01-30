@@ -26,9 +26,8 @@ import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.Transferable;
 import eu.siacs.conversations.ui.ConversationFragment;
-import eu.siacs.conversations.ui.ConversationsOverviewFragment;
 import eu.siacs.conversations.ui.XmppActivity;
-import eu.siacs.conversations.ui.util.Color;
+import eu.siacs.conversations.ui.util.StyledAttributes;
 import eu.siacs.conversations.ui.widget.UnreadCountCustomView;
 import eu.siacs.conversations.utils.EmojiWrapper;
 import eu.siacs.conversations.utils.IrregularUnicodeDetector;
@@ -93,9 +92,9 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 		}
 
 		if (conversation == ConversationFragment.getConversation(activity)) {
-			viewHolder.frame.setBackgroundColor(Color.get(activity,R.attr.color_background_tertiary));
+			viewHolder.frame.setBackgroundColor(StyledAttributes.getColor(activity,R.attr.color_background_tertiary));
 		} else {
-			viewHolder.frame.setBackgroundColor(Color.get(activity,R.attr.color_background_primary));
+			viewHolder.frame.setBackgroundColor(StyledAttributes.getColor(activity,R.attr.color_background_primary));
 		}
 
 		Message message = conversation.getLatestMessage();
@@ -123,7 +122,7 @@ public class ConversationAdapter extends RecyclerView.Adapter<ConversationAdapte
 			viewHolder.lastMessage.setTypeface(null, Typeface.NORMAL);
 			viewHolder.sender.setTypeface(null, Typeface.ITALIC);
 		} else {
-			final boolean fileAvailable = message.getTransferable() == null || message.getTransferable().getStatus() != Transferable.STATUS_DELETED;
+			final boolean fileAvailable = !message.isDeleted();
 			final boolean showPreviewText;
 			if (fileAvailable && (message.isFileOrImage() || message.treatAsDownloadable() || message.isGeoUri())) {
 				final int imageResource;

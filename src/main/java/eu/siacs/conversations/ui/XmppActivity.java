@@ -25,6 +25,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
+import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -49,7 +50,6 @@ import android.view.Menu;
 import android.util.TypedValue;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -58,7 +58,6 @@ import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
@@ -74,9 +73,11 @@ import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.services.BarcodeProvider;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.services.XmppConnectionService.XmppConnectionBinder;
+import eu.siacs.conversations.ui.service.EmojiService;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PresenceSelector;
 import eu.siacs.conversations.ui.util.SoftKeyboardUtils;
+import eu.siacs.conversations.utils.AccountUtils;
 import eu.siacs.conversations.utils.ExceptionHelper;
 import eu.siacs.conversations.utils.ThemeHelper;
 import eu.siacs.conversations.utils.UIHelper;
@@ -222,7 +223,11 @@ public abstract class XmppActivity extends ActionBarActivity {
 	public void connectToBackend() {
 		Intent intent = new Intent(this, XmppConnectionService.class);
 		intent.setAction("ui");
-		startService(intent);
+		try {
+			startService(intent);
+		} catch (IllegalStateException e) {
+			Log.w(Config.LOGTAG,"unable to start service from "+getClass().getSimpleName());
+		}
 		bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 	}
 
@@ -343,7 +348,10 @@ public abstract class XmppActivity extends ActionBarActivity {
 				startActivity(new Intent(this, SettingsActivity.class));
 				break;
 			case R.id.action_accounts:
-				startActivity(new Intent(this, ManageAccountActivity.class));
+				AccountUtils.launchManageAccounts(this);
+				break;
+			case R.id.action_account:
+				AccountUtils.launchManageAccount(this);
 				break;
 			case android.R.id.home:
 				finish();
@@ -390,8 +398,10 @@ public abstract class XmppActivity extends ActionBarActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		setVolumeControlStream(AudioManager.STREAM_NOTIFICATION);
 		metrics = getResources().getDisplayMetrics();
 		ExceptionHelper.init(getApplicationContext());
+		new EmojiService(this).init();
 		this.isCameraFeatureAvailable = getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA);
 		UIHelper.init(getApplicationContext());
 
@@ -469,15 +479,19 @@ public abstract class XmppActivity extends ActionBarActivity {
 	}
 
 	public void switchToConversation(Conversation conversation) {
-		switchToConversation(conversation, null, false);
+		switchToConversation(conversation, null);
 	}
 
 	public void switchToConversationAndQuote(Conversation conversation, String text) {
 		switchToConversation(conversation, text, true, null, false, false);
 	}
 
-	public void switchToConversation(Conversation conversation, String text, boolean newTask) {
-		switchToConversation(conversation, text, false, null, false, newTask);
+	public void switchToConversation(Conversation conversation, String text) {
+		switchToConversation(conversation, text, false, null, false, false);
+	}
+
+	public void switchToConversationDoNotAppend(Conversation conversation, String text) {
+		switchToConversation(conversation, text, false, null, false, true);
 	}
 
 	public void highlightInMuc(Conversation conversation, String nick) {
@@ -488,28 +502,24 @@ public abstract class XmppActivity extends ActionBarActivity {
 		switchToConversation(conversation, null, false, nick, true, false);
 	}
 
-	private void switchToConversation(Conversation conversation, String text, boolean asQuote, String nick, boolean pm, boolean newTask) {
+	private void switchToConversation(Conversation conversation, String text, boolean asQuote, String nick, boolean pm, boolean doNotAppend) {
 		Intent intent = new Intent(this, ConversationsActivity.class);
 		intent.setAction(ConversationsActivity.ACTION_VIEW_CONVERSATION);
 		intent.putExtra(ConversationsActivity.EXTRA_CONVERSATION, conversation.getUuid());
 		if (text != null) {
-			intent.putExtra(ConversationsActivity.EXTRA_TEXT, text);
+			intent.putExtra(Intent.EXTRA_TEXT, text);
 			if (asQuote) {
-				intent.putExtra(ConversationsActivity.EXTRA_AS_QUOTE, asQuote);
+				intent.putExtra(ConversationsActivity.EXTRA_AS_QUOTE, true);
 			}
 		}
 		if (nick != null) {
 			intent.putExtra(ConversationsActivity.EXTRA_NICK, nick);
 			intent.putExtra(ConversationsActivity.EXTRA_IS_PRIVATE_MESSAGE, pm);
 		}
-		if (newTask) {
-			intent.setFlags(intent.getFlags()
-					| Intent.FLAG_ACTIVITY_NEW_TASK
-					| Intent.FLAG_ACTIVITY_SINGLE_TOP);
-		} else {
-			intent.setFlags(intent.getFlags()
-					| Intent.FLAG_ACTIVITY_CLEAR_TOP);
+		if (doNotAppend) {
+			intent.putExtra(ConversationsActivity.EXTRA_DO_NOT_APPEND, true);
 		}
+		intent.setFlags(intent.getFlags() | Intent.FLAG_ACTIVITY_CLEAR_TOP);
 		startActivity(intent);
 		finish();
 	}
@@ -552,11 +562,15 @@ public abstract class XmppActivity extends ActionBarActivity {
 	}
 
 	protected void delegateUriPermissionsToService(Uri uri) {
-		Intent intent = new Intent(this,XmppConnectionService.class);
+		Intent intent = new Intent(this, XmppConnectionService.class);
 		intent.setAction(Intent.ACTION_SEND);
 		intent.setData(uri);
 		intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-		startService(intent);
+		try {
+			startService(intent);
+		} catch (Exception e) {
+			Log.e(Config.LOGTAG,"unable to delegate uri permission",e);
+		}
 	}
 
 	protected void inviteToConversation(Conversation conversation) {
@@ -612,18 +626,6 @@ public abstract class XmppActivity extends ActionBarActivity {
 				}
 			});
 		}
-	}
-
-	protected boolean noAccountUsesPgp() {
-		if (!hasPgp()) {
-			return true;
-		}
-		for (Account account : xmppConnectionService.getAccounts()) {
-			if (account.getPgpId() != 0) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	@SuppressWarnings("deprecation")
@@ -750,6 +752,7 @@ public abstract class XmppActivity extends ActionBarActivity {
 			SoftKeyboardUtils.hideSoftKeyboard(binding.inputEditText);
 			dialog.dismiss();
 		}));
+		dialog.setCanceledOnTouchOutside(false);
 		dialog.setOnDismissListener(dialog1 -> {
 			SoftKeyboardUtils.hideSoftKeyboard(binding.inputEditText);
         });
@@ -800,10 +803,6 @@ public abstract class XmppActivity extends ActionBarActivity {
 			return true;
 		}
 		return false;
-	}
-
-	protected boolean neverCompressPictures() {
-		return getPreferences().getString("picture_compression", getResources().getString(R.string.picture_compression)).equals("never");
 	}
 
 	protected boolean manuallyChangePresence() {
@@ -997,12 +996,12 @@ public abstract class XmppActivity extends ActionBarActivity {
 		}
 
 		@Override
-		protected void onPostExecute(Bitmap bitmap) {
-			if (bitmap != null && !isCancelled()) {
+		protected void onPostExecute(final Bitmap bitmap) {
+			if (!isCancelled()) {
 				final ImageView imageView = imageViewReference.get();
 				if (imageView != null) {
 					imageView.setImageBitmap(bitmap);
-					imageView.setBackgroundColor(0x00000000);
+					imageView.setBackgroundColor(bitmap == null ? 0xff333333 : 0x00000000);
 				}
 			}
 		}

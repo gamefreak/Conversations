@@ -4,6 +4,7 @@ import android.util.Base64;
 import android.util.Log;
 import android.util.Pair;
 
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -80,6 +81,7 @@ public class JingleConnection implements Transferable {
 	private boolean sentCandidate = false;
 
 	private boolean acceptedAutomatically = false;
+	private boolean cancelled = false;
 
 	private XmppAxolotlMessage mXmppAxolotlMessage;
 
@@ -88,13 +90,9 @@ public class JingleConnection implements Transferable {
 	private OutputStream mFileOutputStream;
 	private InputStream mFileInputStream;
 
-	private OnIqPacketReceived responseListener = new OnIqPacketReceived() {
-
-		@Override
-		public void onIqPacketReceived(Account account, IqPacket packet) {
-			if (packet.getType() != IqPacket.TYPE.RESULT) {
-				fail(IqParser.extractErrorMessage(packet));
-			}
+	private OnIqPacketReceived responseListener = (account, packet) -> {
+		if (packet.getType() != IqPacket.TYPE.RESULT) {
+			fail(IqParser.extractErrorMessage(packet));
 		}
 	};
 	private byte[] expectedHash = new byte[0];
@@ -124,8 +122,11 @@ public class JingleConnection implements Transferable {
 					if (message.getEncryption() == Message.ENCRYPTION_PGP) {
 						account.getPgpDecryptionService().decrypt(message, true);
 					} else {
-						JingleConnection.this.mXmppConnectionService.getNotificationService().push(message);
+						mXmppConnectionService.getFileBackend().updateMediaScanner(file, () -> JingleConnection.this.mXmppConnectionService.getNotificationService().push(message));
+
 					}
+					Log.d(Config.LOGTAG,"successfully transmitted file:" + file.getAbsolutePath()+" ("+ CryptoHelper.bytesToHex(file.getSha1Sum())+")");
+					return;
 				}
 			} else {
 				if (ftVersion == Content.Version.FT_5) { //older Conversations will break when receiving a session-info
@@ -151,18 +152,18 @@ public class JingleConnection implements Transferable {
 		}
 	};
 
-	public InputStream getFileInputStream() {
+	InputStream getFileInputStream() {
 		return this.mFileInputStream;
 	}
 
-	public OutputStream getFileOutputStream() throws IOException {
+	OutputStream getFileOutputStream() throws IOException {
 		if (this.file == null) {
 			Log.d(Config.LOGTAG,"file object was not assigned");
 			return null;
 		}
 		this.file.getParentFile().mkdirs();
 		this.file.createNewFile();
-		this.mFileOutputStream = AbstractConnectionManager.createOutputStream(this.file,message.getEncryption() == Message.ENCRYPTION_AXOLOTL);
+		this.mFileOutputStream = AbstractConnectionManager.createOutputStream(this.file);
 		return this.mFileOutputStream;
 	}
 
@@ -468,28 +469,25 @@ public class JingleConnection implements Transferable {
 	private void sendInitRequest() {
 		JinglePacket packet = this.bootstrapPacket("session-initiate");
 		Content content = new Content(this.contentCreator, this.contentName);
-		if (message.getType() == Message.TYPE_IMAGE || message.getType() == Message.TYPE_FILE) {
+		if (message.isFileOrImage()) {
 			content.setTransportId(this.transportId);
 			this.file = this.mXmppConnectionService.getFileBackend().getFile(message, false);
-			Pair<InputStream,Integer> pair;
-			try {
-				if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL) {
-					this.file.setKey(mXmppAxolotlMessage.getInnerKey());
-					this.file.setIv(mXmppAxolotlMessage.getIV());
-					pair = AbstractConnectionManager.createInputStream(this.file, true);
-					this.file.setExpectedSize(pair.second);
-					content.setFileOffer(this.file, false, this.ftVersion).addChild(mXmppAxolotlMessage.toElement());
-				} else {
-					pair = AbstractConnectionManager.createInputStream(this.file, false);
-					this.file.setExpectedSize(pair.second);
-					content.setFileOffer(this.file, false, this.ftVersion);
-				}
-			} catch (FileNotFoundException e) {
-				cancel();
-				return;
+			if (message.getEncryption() == Message.ENCRYPTION_AXOLOTL) {
+				this.file.setKey(mXmppAxolotlMessage.getInnerKey());
+				this.file.setIv(mXmppAxolotlMessage.getIV());
+				this.file.setExpectedSize(file.getSize() + 16);
+				content.setFileOffer(this.file, false, this.ftVersion).addChild(mXmppAxolotlMessage.toElement());
+			} else {
+				this.file.setExpectedSize(file.getSize());
+				content.setFileOffer(this.file, false, this.ftVersion);
 			}
 			message.resetFileParams();
-			this.mFileInputStream = pair.first;
+			try {
+				this.mFileInputStream = new FileInputStream(file);
+			} catch (FileNotFoundException e) {
+				abort();
+				return;
+			}
 			content.setTransportId(this.transportId);
 			content.socks5transport().setChildren(getCandidatesAsElements());
 			packet.setContent(content);
@@ -865,7 +863,7 @@ public class JingleConnection implements Transferable {
 			this.mJingleStatus = JINGLE_STATUS_FINISHED;
 			this.mXmppConnectionService.markMessage(this.message, Message.STATUS_SEND_RECEIVED);
 			this.disconnectSocks5Connections();
-			if (this.transport != null && this.transport instanceof JingleInbandTransport) {
+			if (this.transport instanceof JingleInbandTransport) {
 				this.transport.disconnect();
 			}
 			this.message.setTransferable(null);
@@ -874,10 +872,15 @@ public class JingleConnection implements Transferable {
 			Log.d(Config.LOGTAG,account.getJid().asBareJid()+": received session-terminate/success while responding");
 		}
 	}
-
+	@Override
 	public void cancel() {
+		this.cancelled = true;
+		abort();
+	}
+
+	public void abort() {
 		this.disconnectSocks5Connections();
-		if (this.transport != null && this.transport instanceof JingleInbandTransport) {
+		if (this.transport instanceof JingleInbandTransport) {
 			this.transport.disconnect();
 		}
 		this.sendCancel();
@@ -889,7 +892,7 @@ public class JingleConnection implements Transferable {
 			}
 			this.mJingleConnectionManager.updateConversationUi(true);
 		} else {
-			this.mXmppConnectionService.markMessage(this.message, Message.STATUS_SEND_FAILED);
+			this.mXmppConnectionService.markMessage(this.message, Message.STATUS_SEND_FAILED, cancelled ? Message.ERROR_MESSAGE_CANCELLED : null);
 			this.message.setTransferable(null);
 		}
 	}
@@ -901,7 +904,7 @@ public class JingleConnection implements Transferable {
 	private void fail(String errorMessage) {
 		this.mJingleStatus = JINGLE_STATUS_FAILED;
 		this.disconnectSocks5Connections();
-		if (this.transport != null && this.transport instanceof JingleInbandTransport) {
+		if (this.transport instanceof JingleInbandTransport) {
 			this.transport.disconnect();
 		}
 		FileBackend.close(mFileInputStream);
@@ -916,7 +919,7 @@ public class JingleConnection implements Transferable {
 			} else {
 				this.mXmppConnectionService.markMessage(this.message,
 						Message.STATUS_SEND_FAILED,
-						errorMessage);
+						cancelled ? Message.ERROR_MESSAGE_CANCELLED : errorMessage);
 				this.message.setTransferable(null);
 			}
 		}

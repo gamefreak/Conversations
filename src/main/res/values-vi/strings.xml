@@ -3,7 +3,6 @@
   <string name="action_settings">Cài đặt</string>
   <string name="action_add">Hội thoại mới</string>
   <string name="action_accounts">Quản lý tài khoản</string>
-  <string name="action_end_conversation">Kết thúc hội thoại</string>
   <string name="action_contact_details">Thông tin liên hệ</string>
   <string name="action_secure">Bảo mật hội thoại</string>
   <string name="action_add_account">Thêm tài khoản</string>
@@ -68,9 +67,6 @@
   <string name="sharing_files_please_wait">Đang chia sẻ các tập tin. Xin chờ...</string>
   <string name="action_clear_history">Xoá lịch sử</string>
   <string name="clear_conversation_history">Xoá lịch sử hội thoại</string>
-  <string name="clear_histor_msg">Bạn có muốn xoá toàn bộ tin nhắn trong hội thoại này?\n\n<b>Cảnh báo:</b> Thao tác này sẽ không ảnh hưởng đến tin nhắn đã lưu trên các thiết bị hoặc máy chủ khác.</string>
-  <string name="delete_messages">Xoá tin nhắn</string>
-  <string name="also_end_conversation">Dừng hội thoại này sau đó</string>
   <string name="choose_presence">Chọn thiết bị</string>
   <string name="send_unencrypted_message">Gửi tin nhắn không mã hoá</string>
   <string name="send_message_to_x">Gửi tin nhắn đến %s</string>
@@ -95,11 +91,7 @@
   <string name="pref_accept_files">Chấp thuận các tập tin</string>
   <string name="pref_accept_files_summary">Tự động chấp thuận các tập tin nhỏ hơn...</string>
   <string name="pref_attachments">Tập tin đính kèm</string>
-  <string name="pref_return_to_previous">Chia sẻ nhanh</string>
-  <string name="pref_return_to_previous_summary">Lập tức quay trở lại hoạt động trước đó thay vì mở cuộc hội thoại sau khi chia sẻ </string>
   <string name="pref_notification_settings">Thông báo</string>
-  <string name="pref_notifications">Thông báo</string>
-  <string name="pref_notifications_summary">Thông báo khi có tin nhắn mới</string>
   <string name="pref_vibrate">Rung</string>
   <string name="pref_vibrate_summary">Rung khi có tin nhắn mới</string>
   <string name="pref_led">Thông báo đèn LED</string>
@@ -114,7 +106,6 @@
   <string name="pref_confirm_messages">Xác nhận tin nhắn</string>
   <string name="pref_confirm_messages_summary">Báo cho liên hệ của bạn biết khi bạn đã nhận và đọc tin nhắn</string>
   <string name="pref_ui_options">UI</string>
-  <string name="openpgp_error">OpenKeychain đã báo cáo một lỗi</string>
   <string name="accept">Chấp thuận</string>
   <string name="error">Đã có lỗi xảy ra</string>
   <string name="your_account">Tài khoản của bạn</string>
@@ -235,8 +226,6 @@
   <string name="ignore">Bỏ qua</string>
   <string name="without_mutual_presence_updates"><b>Cảnh báo:</b> Gửi mà không có cập nhật hiện diện của nhau có thể gây ra vấn đề khó lường.\n\n<small>Vào chi tiết liên hệ để xác minh đăng ký hiện diện của bạn.</small></string>
   <string name="pref_expert_options_summary">Xin hãy cẩn trọng với chúng</string>
-  <string name="title_activity_about">Thông tin về Conversations</string>
-  <string name="pref_about_conversations_summary">Thông tin bản dựng và giấy phép</string>
   <string name="title_pref_quiet_hours">Giờ yên lặng</string>
   <string name="title_pref_quiet_hours_start_time">Thời gian bắt đầu</string>
   <string name="title_pref_quiet_hours_end_time">Thời gian kết thúc</string>
@@ -260,7 +249,6 @@
   <string name="account_details">Chi tiết tài khoản</string>
   <string name="confirm">Xác nhận</string>
   <string name="try_again">Thử lại</string>
-  <string name="conversations_foreground_service">Conversations</string>
   <string name="pref_keep_foreground_service">Giữ dịch vụ luôn chạy</string>
   <string name="pref_keep_foreground_service_summary">Ngăn hệ điều hành ngắt kết nối của bạn</string>
   <string name="notification_export_logs_title">Đang chép nhật ký vào thẻ SD</string>
@@ -386,11 +374,9 @@
   <string name="shared_file_with_x">Chia sẻ tập tin với %s</string>
   <string name="shared_image_with_x">Chia sẻ hình với %s</string>
   <string name="sync_with_contacts">Đồng bộ với danh bạ</string>
-  <string name="sync_with_contacts_long">Conversations muốn so sánh danh sách bạn bè XMPP với danh bạ của bạn để hiện tên đầy đủ và ảnh đại diện của họ.\n\nConversations sẽ chỉ đọc danh bạ và so sánh trên thiết bị chứ không tải lên máy chủ.\n\nBây giờ, bạn sẽ được hỏi trao quyền truy cập danh bạ.</string>
   <string name="notify_on_all_messages">Thông báo tất cả tin nhắn</string>
   <string name="notify_never">Đã tắt thông báo</string>
   <string name="notify_paused">Đã dừng thông báo</string>
-  <string name="pref_picture_compression">Nén hình ảnh</string>
   <string name="always">Luôn luôn</string>
   <string name="automatically">Tự động</string>
   <string name="battery_optimizations_enabled">Đã bật tối ưu pin</string>
