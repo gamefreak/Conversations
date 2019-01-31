@@ -114,6 +114,9 @@ public class SettingsActivity extends XmppActivity implements
 			super.onPreExecute();
 			notificationManager = (NotificationManager) SettingsActivity.this.getSystemService(Context.NOTIFICATION_SERVICE);
 			builder = new Notification.Builder(SettingsActivity.this);
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+				builder.setChannelId("new_updates");
+			}
 			builder.setContentTitle("Downloading ponymotes...")
 					.setSmallIcon(R.drawable.ic_file_download_white_24dp);
 
@@ -132,7 +135,7 @@ public class SettingsActivity extends XmppActivity implements
 			.setContentText(String.format("%s of %s downloaded",
 					Formatter.formatFileSize(context, values[0]),
 					Formatter.formatFileSize(context, values[1])));
-			notificationManager.notify(NOTIFICATION_ID, builder.getNotification());
+			notificationManager.notify(NOTIFICATION_ID, builder.build());
 		}
 
 		@Override
@@ -145,7 +148,7 @@ public class SettingsActivity extends XmppActivity implements
 				notificationManager.notify(NOTIFICATION_ID, new Notification.Builder(context)
 						.setSmallIcon(android.R.drawable.stat_notify_error)
 						.setContentTitle("Emote pack download failed")
-						.getNotification());
+						.build());
 			}
 		}
 	}

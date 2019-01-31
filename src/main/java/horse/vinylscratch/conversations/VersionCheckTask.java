@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 import android.util.TypedValue;
 
@@ -106,7 +107,11 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 				.setOngoing(false)
 				.setAutoCancel(true);
 
-		notificationManager.notify(7, builder.getNotification());
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+			builder.setChannelId("new_updates");
+		}
+
+		notificationManager.notify(7, builder.build());
 	}
 
 	public static int compareVersions(String v1s, String v2s) {

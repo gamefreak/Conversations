@@ -180,6 +180,16 @@ public class NotificationService {
         quietHoursChannel.setSound(null, null);
 
         notificationManager.createNotificationChannel(quietHoursChannel);
+
+
+        final NotificationChannel newUpdatesChannel = new NotificationChannel("new_updates", c.getString(R.string.ponversations_update_channel_name), NotificationManager.IMPORTANCE_LOW);
+        newUpdatesChannel.setShowBadge(true);
+        newUpdatesChannel.setLightColor(LED_COLOR);
+        newUpdatesChannel.enableLights(true);
+        newUpdatesChannel.setGroup("status");
+        newUpdatesChannel.enableVibration(false);
+        newUpdatesChannel.setSound(null, null);
+        notificationManager.createNotificationChannel(newUpdatesChannel);
     }
 
     public boolean notify(final Message message) {
