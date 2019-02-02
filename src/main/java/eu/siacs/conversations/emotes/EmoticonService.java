@@ -187,9 +187,16 @@ public class EmoticonService extends Service {
 	}
 
 	private EmoteHolder loadImage(Emote emote) {
-		String imageName = emote.getImageName();
-		Log.i("emote service", "loading image " + imageName);
-		String emotePath = "emotes/" + imageName;
+		String imageName = emote.getImageName(), imageFileName = imageName;
+		// Find the DPI level to use and select the appropriate file
+		int emoteDpiFactor = emote.selectDpiForScreen(lastScale);
+		if (emoteDpiFactor != 1) {
+			int extensionIndex = imageName.lastIndexOf(".");
+			imageFileName = String.format("%s@%dx%s", imageName.substring(0, extensionIndex), emoteDpiFactor, imageName.substring(extensionIndex));
+		}
+
+		Log.i("emote service", "loading image " + imageFileName);
+		String emotePath = "emotes/" + imageFileName;
 		try (ZipFile zipFile = new ZipFile(this.file);
 			InputStream stream = zipFile.getInputStream(zipFile.getEntry(emotePath))) {
 			DisplayMetrics metrics = getResources().getDisplayMetrics();
@@ -224,7 +231,7 @@ public class EmoticonService extends Service {
 				holder = new EmoteHolder(drawable, null);
 			}
 			drawable.setFilterBitmap(false);
-			setDrawableScale(metrics, drawable);
+			setDrawableScale(metrics, drawable, emoteDpiFactor);
 
 			this.images.put(imageName, holder);
 			return holder;
@@ -234,9 +241,9 @@ public class EmoticonService extends Service {
 		}
 	}
 
-	private void setDrawableScale(DisplayMetrics metrics, Drawable drawable) {
-		int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density));
-		int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density));
+	private void setDrawableScale(DisplayMetrics metrics, Drawable drawable, int dpiFactor) {
+		int width = (int)(drawable.getIntrinsicWidth() * Math.ceil(metrics.density / dpiFactor));
+		int height = (int)(drawable.getIntrinsicHeight() * Math.ceil(metrics.density / dpiFactor));
 		drawable.setBounds(0, 0, width > 0 ? width : 0, height > 0 ? height : 0);
 	}
 
@@ -287,6 +294,7 @@ public class EmoticonService extends Service {
 			 Reader readerx = new InputStreamReader(inputStream, Charset.forName("UTF-8"));
 			 JsonReader reader = new JsonReader(readerx);
 		) {
+			reader.setLenient(true);
 			List<Emote> newEmotes = new ArrayList<>(2000);
 			reader.beginObject();
 			while (reader.hasNext()) {
@@ -298,6 +306,9 @@ public class EmoticonService extends Service {
 						String imageName = reader.nextName();
 						reader.beginObject();
 						int width = 0, height = 0;
+						List<Integer> dpiLevels = new ArrayList<>();
+						dpiLevels.add(1);
+
 						List<String> aliases = new ArrayList<>();
 						while (reader.hasNext()) {
 							String key2 = reader.nextName();
@@ -309,14 +320,22 @@ public class EmoticonService extends Service {
 									aliases.add(reader.nextString());
 								}
 								reader.endArray();
-							} else {
+							}
+							else if ("hidpi".equals(key2)) {
+								dpiLevels = new ArrayList<>();
+								reader.beginArray();
+								while (reader.hasNext()) dpiLevels.add(reader.nextInt());
+								reader.endArray();
+								if (!dpiLevels.contains(1)) dpiLevels.add(1);
+							}
+							else {
 								reader.skipValue();
 							}
 
 						}
 						reader.endObject();
 
-						Emote emote = new Emote(imageName, width, height, aliases);
+						Emote emote = new Emote(imageName, width, height, aliases, dpiLevels);
 						newEmotes.add(emote);
 					}
 					reader.endObject();
