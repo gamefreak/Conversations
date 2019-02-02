@@ -101,8 +101,8 @@ public class VersionCheckTask extends AsyncTask<Void, Void, Void> {
 		TypedValue tv = new TypedValue();
 		context.getTheme().resolveAttribute(R.attr.colorPrimary, tv, true);
 		builder.setSmallIcon(R.drawable.ic_file_download_white_24dp)
-				.setContentTitle("Conversations update available")
-				.setContentText(String.format("Version %s available for download.", version))
+				.setContentTitle(context.getString(R.string.ponverstations_update_available))
+				.setContentText(String.format(context.getString(R.string.new_version_notification_message), version))
 				.setContentIntent(pi)
 				.setOngoing(false)
 				.setAutoCancel(true);

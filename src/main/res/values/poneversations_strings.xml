@@ -7,4 +7,6 @@
     <string name="pref_theme_moon">Cobalt</string>
     <string name="pref_theme_moon_dark">Cobalt Dark</string>
     <string name="ponversations_update_channel_name">Updates</string>
+    <string name="ponverstations_update_available">Ponversations update available</string>
+    <string name="new_version_notification_message">Version %s available for download.</string>
 </resources>
