@@ -64,7 +64,7 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		private EmoticonService emoticonService = null;
 		private int lastPackVersion = -1;
 		private List<Emote> emotes = new ArrayList<>();
-		private SortMode mode = SortMode.ALL;
+		private SortMode mode = null;
 		private String searchFilter = null;
 		private Context context = null;
 
@@ -100,6 +100,8 @@ public class EmoticonBrowserActivity extends XmppActivity {
 				List<Emote> theEmotes = this.emoticonService.getAllEmotes();
 				Collections.sort(theEmotes, (left, right) -> left.getFirstAlias().compareTo(right.getFirstAlias()));
 				return theEmotes;
+			} else if (mode == null) {
+				return Collections.emptyList();
 			} else {
 				String sortBy = (mode == SortMode.FREQUENT ? RecentEmote.COLUMN_NAME_HIT_COUNT : RecentEmote.COLUMN_NAME_LAST_USE) + " DESC";
 				Cursor cursor = db.query(RecentEmote.TABLE_NAME, new String[]{RecentEmote.COLUMN_NAME_EMOTE}, null,  null, null, null, sortBy);
