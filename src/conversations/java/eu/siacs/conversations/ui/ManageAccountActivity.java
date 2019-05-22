@@ -137,7 +137,7 @@ public class ManageAccountActivity extends XmppActivity implements OnAccountUpda
     }
 
     @Override
-    protected onBackendConnected() {
+    protected void onBackendConnected() {
         if (selectedAccountJid != null) {
             this.selectedAccount = xmppConnectionService.findAccountByJid(selectedAccountJid);
         }
