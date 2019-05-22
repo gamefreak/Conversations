@@ -13,6 +13,7 @@ import java.util.Set;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
+import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
@@ -153,13 +154,21 @@ public class MucOptions {
     }
 
     public boolean canInvite() {
-        Field field = getRoomInfoForm().getFieldByName("muc#roomconfig_allowinvites");
-        return !membersOnly() || self.getRole().ranks(Role.MODERATOR) || (field != null && "1".equals(field.getValue()));
+        return !membersOnly() || self.getRole().ranks(Role.MODERATOR) || allowInvites();
+    }
+
+    public boolean allowInvites() {
+        final Field field = getRoomInfoForm().getFieldByName("muc#roomconfig_allowinvites");
+        return field != null && "1".equals(field.getValue());
     }
 
     public boolean canChangeSubject() {
-        Field field = getRoomInfoForm().getFieldByName("muc#roominfo_changesubject");
-        return self.getRole().ranks(Role.MODERATOR) || (field != null && "1".equals(field.getValue()));
+        return self.getRole().ranks(Role.MODERATOR) || participantsCanChangeSubject();
+    }
+
+    public boolean participantsCanChangeSubject() {
+        final Field field = getRoomInfoForm().getFieldByName("muc#roominfo_changesubject");
+        return field != null && "1".equals(field.getValue());
     }
 
     public boolean allowPm() {
@@ -382,6 +391,21 @@ public class MucOptions {
         return subset;
     }
 
+    public static List<User> sub(List<User> users, int max) {
+        ArrayList<User> subset = new ArrayList<>();
+        HashSet<Jid> jids = new HashSet<>();
+        for (User user : users) {
+            jids.add(user.getAccount().getJid().asBareJid());
+            if (user.getRealJid() == null || (user.getRealJid().getLocal() != null && jids.add(user.getRealJid()))) {
+                subset.add(user);
+            }
+            if (subset.size() >= max) {
+                break;
+            }
+        }
+        return subset;
+    }
+
     public int getUserCount() {
         synchronized (users) {
             return users.size();
@@ -487,7 +511,7 @@ public class MucOptions {
         return users;
     }
 
-    public String createNameFromParticipants() {
+    String createNameFromParticipants() {
         List<User> users = getUsersRelevantForNameAndAvatar();
         if (users.size() >= 2) {
             StringBuilder builder = new StringBuilder();
@@ -705,7 +729,7 @@ public class MucOptions {
 
     }
 
-    public static class User implements Comparable<User> {
+    public static class User implements Comparable<User>, AvatarService.Avatarable {
         private Role role = Role.NONE;
         private Affiliation affiliation = Affiliation.NONE;
         private Jid realJid;
@@ -841,7 +865,7 @@ public class MucOptions {
             }
         }
 
-        private String getComparableName() {
+        public String getComparableName() {
             Contact contact = getContact();
             if (contact != null) {
                 return contact.getDisplayName();
@@ -865,6 +889,12 @@ public class MucOptions {
             }
             this.chatState = chatState;
             return true;
+        }
+
+        @Override
+        public int getAvatarBackgroundColor() {
+            final String seed = realJid != null ? realJid.asBareJid().toString() : null;
+            return UIHelper.getColorForName(seed == null ? getName() : seed);
         }
     }
 }

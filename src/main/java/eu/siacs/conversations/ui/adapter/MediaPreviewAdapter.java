@@ -1,6 +1,5 @@
 package eu.siacs.conversations.ui.adapter;
 
-import android.app.Activity;
 import android.content.Context;
 import android.content.res.Resources;
 import android.databinding.DataBindingUtil;
@@ -8,7 +7,6 @@ import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.AsyncTask;
-import android.support.annotation.AttrRes;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -17,7 +15,6 @@ import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.RejectedExecutionException;
 
@@ -26,7 +23,6 @@ import eu.siacs.conversations.databinding.MediaPreviewBinding;
 import eu.siacs.conversations.ui.ConversationFragment;
 import eu.siacs.conversations.ui.XmppActivity;
 import eu.siacs.conversations.ui.util.Attachment;
-import eu.siacs.conversations.ui.util.StyledAttributes;
 
 public class MediaPreviewAdapter extends RecyclerView.Adapter<MediaPreviewAdapter.MediaPreviewViewHolder> {
 
@@ -157,7 +153,7 @@ public class MediaPreviewAdapter extends RecyclerView.Adapter<MediaPreviewAdapte
         }
     }
 
-    class BitmapWorkerTask extends AsyncTask<Attachment, Void, Bitmap> {
+    private static class BitmapWorkerTask extends AsyncTask<Attachment, Void, Bitmap> {
         private final WeakReference<ImageView> imageViewReference;
         private Attachment attachment = null;
 
@@ -167,14 +163,12 @@ public class MediaPreviewAdapter extends RecyclerView.Adapter<MediaPreviewAdapte
 
         @Override
         protected Bitmap doInBackground(Attachment... params) {
-            Activity activity = conversationFragment.getActivity();
-            if (activity instanceof XmppActivity) {
-                final XmppActivity xmppActivity = (XmppActivity) activity;
-                this.attachment = params[0];
-                return xmppActivity.xmppConnectionService.getFileBackend().getPreviewForUri(this.attachment, Math.round(xmppActivity.getResources().getDimension(R.dimen.media_preview_size)), false);
-            } else {
+            this.attachment = params[0];
+            final XmppActivity activity = XmppActivity.find(imageViewReference);
+            if (activity == null) {
                 return null;
             }
+            return activity.xmppConnectionService.getFileBackend().getPreviewForUri(this.attachment, Math.round(activity.getResources().getDimension(R.dimen.media_preview_size)), false);
         }
 
         @Override

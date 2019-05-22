@@ -43,6 +43,7 @@ import eu.siacs.conversations.services.XmppConnectionService.OnRosterUpdate;
 import eu.siacs.conversations.ui.adapter.MediaAdapter;
 import eu.siacs.conversations.ui.interfaces.OnMediaLoaded;
 import eu.siacs.conversations.ui.util.Attachment;
+import eu.siacs.conversations.ui.util.AvatarWorkerTask;
 import eu.siacs.conversations.ui.util.GridManager;
 import eu.siacs.conversations.ui.util.JidDialog;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
@@ -138,7 +139,11 @@ public class ContactDetailsActivity extends OmemoActivity implements OnAccountUp
             } else {
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(systemAccount);
-                startActivity(intent);
+                try {
+                    startActivity(intent);
+                } catch (ActivityNotFoundException e) {
+                    Toast.makeText(ContactDetailsActivity.this, R.string.no_application_found_to_view_contact, Toast.LENGTH_SHORT).show();
+                }
             }
         }
     };
@@ -402,7 +407,7 @@ public class ContactDetailsActivity extends OmemoActivity implements OnAccountUp
             account = contact.getAccount().getJid().asBareJid().toString();
         }
         binding.detailsAccount.setText(getString(R.string.using_account, account));
-        binding.detailsContactBadge.setImageBitmap(avatarService().get(contact, (int) getResources().getDimension(R.dimen.avatar_on_details_screen_size)));
+        AvatarWorkerTask.loadAvatar(contact,binding.detailsContactBadge,R.dimen.avatar_on_details_screen_size);
         binding.detailsContactBadge.setOnClickListener(this.onBadgeClick);
 
         binding.detailsContactKeys.removeAllViews();

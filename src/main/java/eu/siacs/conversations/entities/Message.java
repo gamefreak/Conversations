@@ -2,6 +2,7 @@ package eu.siacs.conversations.entities;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
 
@@ -19,6 +20,7 @@ import java.util.Set;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
+import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.Emoticons;
 import eu.siacs.conversations.utils.GeoHelper;
@@ -27,7 +29,7 @@ import eu.siacs.conversations.utils.MimeUtils;
 import eu.siacs.conversations.utils.UIHelper;
 import rocks.xmpp.addr.Jid;
 
-public class Message extends AbstractEntity {
+public class Message extends AbstractEntity implements AvatarService.Avatarable  {
 
 	public static final String TABLENAME = "messages";
 
@@ -54,6 +56,7 @@ public class Message extends AbstractEntity {
 	public static final int TYPE_FILE = 2;
 	public static final int TYPE_STATUS = 3;
 	public static final int TYPE_PRIVATE = 4;
+	public static final int TYPE_PRIVATE_FILE = 5;
 
 	public static final String CONVERSATION = "conversationUuid";
 	public static final String COUNTERPART = "counterpart";
@@ -177,35 +180,11 @@ public class Message extends AbstractEntity {
 	}
 
 	public static Message fromCursor(Cursor cursor, Conversation conversation) {
-		Jid jid;
-		try {
-			String value = cursor.getString(cursor.getColumnIndex(COUNTERPART));
-			if (value != null) {
-				jid = Jid.of(value);
-			} else {
-				jid = null;
-			}
-		} catch (IllegalArgumentException e) {
-			jid = null;
-		} catch (IllegalStateException e) {
-			return null; // message too long?
-		}
-		Jid trueCounterpart;
-		try {
-			String value = cursor.getString(cursor.getColumnIndex(TRUE_COUNTERPART));
-			if (value != null) {
-				trueCounterpart = Jid.of(value);
-			} else {
-				trueCounterpart = null;
-			}
-		} catch (IllegalArgumentException e) {
-			trueCounterpart = null;
-		}
 		return new Message(conversation,
 				cursor.getString(cursor.getColumnIndex(UUID)),
 				cursor.getString(cursor.getColumnIndex(CONVERSATION)),
-				jid,
-				trueCounterpart,
+				fromString(cursor.getString(cursor.getColumnIndex(COUNTERPART))),
+				fromString(cursor.getString(cursor.getColumnIndex(TRUE_COUNTERPART))),
 				cursor.getString(cursor.getColumnIndex(BODY)),
 				cursor.getLong(cursor.getColumnIndex(TIME_SENT)),
 				cursor.getInt(cursor.getColumnIndex(ENCRYPTION)),
@@ -223,6 +202,17 @@ public class Message extends AbstractEntity {
 				ReadByMarker.fromJsonString(cursor.getString(cursor.getColumnIndex(READ_BY_MARKERS))),
 				cursor.getInt(cursor.getColumnIndex(MARKABLE)) > 0,
 				cursor.getInt(cursor.getColumnIndex(DELETED)) > 0);
+	}
+
+	private static Jid fromString(String value) {
+		try {
+			if (value != null) {
+				return Jid.of(value);
+			}
+		} catch (IllegalArgumentException e) {
+			return null;
+		}
+		return null;
 	}
 
 	public static Message createStatusMessage(Conversation conversation, String body) {
@@ -491,8 +481,8 @@ public class Message extends AbstractEntity {
 		return Collections.unmodifiableSet(this.readByMarkers);
 	}
 
-	public boolean similar(Message message) {
-		if (type != TYPE_PRIVATE && this.serverMsgId != null && message.getServerMsgId() != null) {
+	boolean similar(Message message) {
+		if (!isPrivateMessage() && this.serverMsgId != null && message.getServerMsgId() != null) {
 			return this.serverMsgId.equals(message.getServerMsgId()) || Edited.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId());
 		} else if (Edited.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId())) {
 			return true;
@@ -625,6 +615,15 @@ public class Message extends AbstractEntity {
 
 	public List<MucOptions.User> getCounterparts() {
 		return this.counterparts;
+	}
+
+	@Override
+	public int getAvatarBackgroundColor() {
+		if (type == Message.TYPE_STATUS && getCounterparts() != null && getCounterparts().size() > 1) {
+			return Color.TRANSPARENT;
+		} else {
+			return UIHelper.getColorForName(UIHelper.getMessageDisplayName(this));
+		}
 	}
 
 	public static class MergeSeparator {
@@ -825,8 +824,12 @@ public class Message extends AbstractEntity {
 		this.mPreviousMessage = null;
 	}
 
+	public boolean isPrivateMessage() {
+		return type == TYPE_PRIVATE || type == TYPE_PRIVATE_FILE;
+	}
+
 	public boolean isFileOrImage() {
-		return type == TYPE_FILE || type == TYPE_IMAGE;
+		return type == TYPE_FILE || type == TYPE_IMAGE || type == TYPE_PRIVATE_FILE;
 	}
 
 	public boolean hasFileOnRemoteHost() {
@@ -902,5 +905,32 @@ public class Message extends AbstractEntity {
 			return ENCRYPTION_AXOLOTL;
 		}
 		return encryption;
+	}
+
+	public static boolean configurePrivateMessage(final Message message) {
+		return configurePrivateMessage(message, false);
+	}
+
+	public static boolean configurePrivateFileMessage(final Message message) {
+		return configurePrivateMessage(message, true);
+	}
+
+	private static boolean configurePrivateMessage(final Message message, final boolean isFile) {
+		final Conversation conversation;
+		if (message.conversation instanceof Conversation) {
+			conversation = (Conversation) message.conversation;
+		} else {
+			return false;
+		}
+		if (conversation.getMode() == Conversation.MODE_MULTI) {
+			final Jid nextCounterpart = conversation.getNextCounterpart();
+			if (nextCounterpart != null) {
+				message.setCounterpart(nextCounterpart);
+				message.setTrueCounterpart(conversation.getMucOptions().getTrueCounterpart(nextCounterpart));
+				message.setType(isFile ? Message.TYPE_PRIVATE_FILE : Message.TYPE_PRIVATE);
+				return true;
+			}
+		}
+		return false;
 	}
 }

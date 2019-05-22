@@ -2,6 +2,7 @@ package eu.siacs.conversations.entities;
 
 import android.content.ContentValues;
 import android.database.Cursor;
+import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -23,8 +24,11 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
+import eu.siacs.conversations.persistance.DatabaseBackend;
+import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.utils.JidHelper;
+import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.mam.MamReference;
@@ -33,7 +37,7 @@ import rocks.xmpp.addr.Jid;
 import static eu.siacs.conversations.entities.Bookmark.printableValue;
 
 
-public class Conversation extends AbstractEntity implements Blockable, Comparable<Conversation>, Conversational {
+public class Conversation extends AbstractEntity implements Blockable, Comparable<Conversation>, Conversational, AvatarService.Avatarable {
 	public static final String TABLENAME = "conversations";
 
 	public static final int STATUS_AVAILABLE = 0;
@@ -56,9 +60,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private static final String ATTRIBUTE_NEXT_MESSAGE_TIMESTAMP = "next_message_timestamp";
 	private static final String ATTRIBUTE_CRYPTO_TARGETS = "crypto_targets";
 	private static final String ATTRIBUTE_NEXT_ENCRYPTION = "next_encryption";
-	public static final String ATTRIBUTE_MEMBERS_ONLY = "members_only";
-	public static final String ATTRIBUTE_MODERATED = "moderated";
-	public static final String ATTRIBUTE_NON_ANONYMOUS = "non_anonymous";
+	private static final String ATTRIBUTE_CORRECTING_MESSAGE = "correcting_message";
+	static final String ATTRIBUTE_MEMBERS_ONLY = "members_only";
+	static final String ATTRIBUTE_MODERATED = "moderated";
+	static final String ATTRIBUTE_NON_ANONYMOUS = "non_anonymous";
+	public static final String ATTRIBUTE_FORMERLY_PRIVATE_NON_ANONYMOUS = "formerly_private_non_anonymous";
 	protected final ArrayList<Message> messages = new ArrayList<>();
 	public AtomicBoolean messagesLoaded = new AtomicBoolean(true);
 	protected Account account = null;
@@ -70,14 +76,13 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	private int status;
 	private long created;
 	private int mode;
-	private JSONObject attributes = new JSONObject();
+	private JSONObject attributes;
 	private Jid nextCounterpart;
 	private transient MucOptions mucOptions = null;
 	private boolean messagesLeftOnServer = true;
 	private ChatState mOutgoingChatState = Config.DEFAULT_CHATSTATE;
 	private ChatState mIncomingChatState = Config.DEFAULT_CHATSTATE;
 	private String mFirstMamReference = null;
-	private Message correctingMessage;
 
 	public Conversation(final String name, final Account account, final Jid contactJid,
 	                    final int mode) {
@@ -207,6 +212,24 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 			}
 		}
 		return deleted;
+	}
+
+	public boolean markAsChanged(final List<DatabaseBackend.FilePathInfo> files) {
+		boolean changed = false;
+		final PgpDecryptionService pgpDecryptionService = account.getPgpDecryptionService();
+		synchronized (this.messages) {
+			for(Message message : this.messages) {
+				for(final DatabaseBackend.FilePathInfo file : files)
+				if (file.uuid.toString().equals(message.getUuid())) {
+					message.setDeleted(file.deleted);
+					changed = true;
+					if (file.deleted && message.getEncryption() == Message.ENCRYPTION_PGP && pgpDecryptionService != null) {
+						pgpDecryptionService.discard(message);
+					}
+				}
+			}
+		}
+		return changed;
 	}
 
 	public void clearMessages() {
@@ -402,12 +425,13 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public boolean setCorrectingMessage(Message correctingMessage) {
-		this.correctingMessage = correctingMessage;
+		setAttribute(ATTRIBUTE_CORRECTING_MESSAGE,correctingMessage == null ? null : correctingMessage.getUuid());
 		return correctingMessage == null && draftMessage != null;
 	}
 
 	public Message getCorrectingMessage() {
-		return this.correctingMessage;
+		final String uuid = getAttribute(ATTRIBUTE_CORRECTING_MESSAGE);
+		return uuid == null ? null : findSentMessageWithUuid(uuid);
 	}
 
 	public boolean withSelf() {
@@ -462,7 +486,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 				final Message message = messages.get(i);
 				if (message.getStatus() <= Message.STATUS_RECEIVED
 						&& (message.markable || isPrivateAndNonAnonymousMuc)
-						&& message.getType() != Message.TYPE_PRIVATE) {
+						&& !message.isPrivateMessage()) {
 					return message;
 				}
 			}
@@ -631,12 +655,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		if (Config.OMEMO_EXCEPTIONS.CONTACT_DOMAINS.contains(contact) || Config.OMEMO_EXCEPTIONS.ACCOUNT_DOMAINS.contains(account)) {
 			return false;
 		}
-		final AxolotlService axolotlService = conversation.getAccount().getAxolotlService();
-		return axolotlService != null && axolotlService.isConversationAxolotlCapable(conversation);
+		return conversation.isSingleOrPrivateAndNonAnonymous() || conversation.getBooleanAttribute(ATTRIBUTE_FORMERLY_PRIVATE_NON_ANONYMOUS, false);
 	}
 
-	public void setNextEncryption(int encryption) {
-		this.setAttribute(ATTRIBUTE_NEXT_ENCRYPTION, String.valueOf(encryption));
+	public boolean setNextEncryption(int encryption) {
+		return this.setAttribute(ATTRIBUTE_NEXT_ENCRYPTION, encryption);
 	}
 
 	public String getNextMessage() {
@@ -725,7 +748,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		synchronized (this.messages) {
 			for (int i = this.messages.size() - 1; i >= 0; --i) {
 				final Message message = this.messages.get(i);
-				if (message.getType() == Message.TYPE_PRIVATE) {
+				if (message.isPrivateMessage()) {
 					continue; //it's unsafe to use private messages as anchor. They could be coming from user archive
 				}
 				if (message.getStatus() == Message.STATUS_RECEIVED || message.isCarbon() || message.getServerMsgId() != null) {
@@ -750,13 +773,15 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	}
 
 	public boolean setAttribute(String key, boolean value) {
-		boolean prev = getBooleanAttribute(key,false);
-		setAttribute(key,Boolean.toString(value));
-		return prev != value;
+		return setAttribute(key, String.valueOf(value));
 	}
 
 	private boolean setAttribute(String key, long value) {
 		return setAttribute(key, Long.toString(value));
+	}
+
+	private boolean setAttribute(String key, int value) {
+		return setAttribute(key, String.valueOf(value));
 	}
 
 	public boolean setAttribute(String key, String value) {
@@ -970,6 +995,11 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 			}
 		}
 		return 0;
+	}
+
+	@Override
+	public int getAvatarBackgroundColor() {
+		return UIHelper.getColorForName(getName().toString());
 	}
 
 	public interface OnMessageFound {

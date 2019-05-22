@@ -1,5 +1,31 @@
 # Changelog
 
+### Version 2.5.1
+* minor bug fixes
+* Set own OMEMO devices to inactive after not seeing them for 14 days. (was 7 days)
+
+### Version 2.5.0
+* Added channel search via search.jabbercat.org
+* Reworked onboarding screens
+* Warn when trying to enter domain address or channel address in Add Contact dialog
+
+### Version 2.4.3
+* Fixed display of private messages sent from another client
+* Fixed backup creation on long time installations
+
+### Version 2.4.2
+* Fix image preview on older Android version
+
+### Version 2.4.1
+* Fixed crash in message view
+
+### Version 2.4.0
+* New Backup / Restore feature
+* Clearly distinguish between (private) group chats and (public) channels
+* Redesigned participants view for group chats and channels
+* Redesigned create new contact/group chat/channel flow in Start Conversation screen
+
+
 ### Version 2.3.12
 * Fixed rare crash on start up
 * Fixed avatar not being refreshed in group chats
@@ -516,7 +542,7 @@
 ### Version 1.7.2
 * decode PGP messages in background
 
-####Versrion 1.7.1
+### Version 1.7.1
 * performance improvements when opening a conversation
 
 ### Version 1.7.0

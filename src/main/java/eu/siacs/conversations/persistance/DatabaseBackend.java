@@ -28,10 +28,8 @@ import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -751,14 +749,15 @@ public class DatabaseBackend extends SQLiteOpenHelper {
                     null, null, Message.TIME_SENT + " DESC",
                     String.valueOf(limit));
         }
-        if (cursor.getCount() > 0) {
-            cursor.moveToLast();
-            do {
-                Message message = Message.fromCursor(cursor, conversation);
+        while (cursor.moveToNext()) {
+            try {
+                final Message message = Message.fromCursor(cursor, conversation);
                 if (message != null) {
-                    list.add(message);
+                    list.add(0, message);
                 }
-            } while (cursor.moveToPrevious());
+            } catch (Exception e) {
+                Log.e(Config.LOGTAG,"unable to restore message");
+            }
         }
         cursor.close();
         return list;
@@ -771,40 +770,6 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         return db.rawQuery(SQL, new String[]{FtsUtils.toMatchString(term)});
     }
 
-    public Iterable<Message> getMessagesIterable(final Conversation conversation) {
-        return () -> {
-            class MessageIterator implements Iterator<Message> {
-                private SQLiteDatabase db = getReadableDatabase();
-                private String[] selectionArgs = {conversation.getUuid()};
-                private Cursor cursor = db.query(Message.TABLENAME, null, Message.CONVERSATION
-                        + "=?", selectionArgs, null, null, Message.TIME_SENT
-                        + " ASC", null);
-
-                private MessageIterator() {
-                    cursor.moveToFirst();
-                }
-
-                @Override
-                public boolean hasNext() {
-                    return !cursor.isAfterLast();
-                }
-
-                @Override
-                public Message next() {
-                    Message message = Message.fromCursor(cursor, conversation);
-                    cursor.moveToNext();
-                    return message;
-                }
-
-                @Override
-                public void remove() {
-                    throw new UnsupportedOperationException();
-                }
-            }
-            return new MessageIterator();
-        };
-    }
-
     public List<String> markFileAsDeleted(final File file, final boolean internal) {
         SQLiteDatabase db = this.getReadableDatabase();
         String selection;
@@ -812,14 +777,14 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         if (internal) {
             final String name = file.getName();
             if (name.endsWith(".pgp")) {
-                selection = "(" + Message.RELATIVE_FILE_PATH + " IN(?,?) OR (" + Message.RELATIVE_FILE_PATH + "=? and encryption in(1,4))) and type in (1,2)";
+                selection = "(" + Message.RELATIVE_FILE_PATH + " IN(?,?) OR (" + Message.RELATIVE_FILE_PATH + "=? and encryption in(1,4))) and type in (1,2,5)";
                 selectionArgs = new String[]{file.getAbsolutePath(), name, name.substring(0, name.length() - 4)};
             } else {
-                selection = Message.RELATIVE_FILE_PATH + " IN(?,?) and type in (1,2)";
+                selection = Message.RELATIVE_FILE_PATH + " IN(?,?) and type in (1,2,5)";
                 selectionArgs = new String[]{file.getAbsolutePath(), name};
             }
         } else {
-            selection = Message.RELATIVE_FILE_PATH + "=? and type in (1,2)";
+            selection = Message.RELATIVE_FILE_PATH + "=? and type in (1,2,5)";
             selectionArgs = new String[]{file.getAbsolutePath()};
         }
         final List<String> uuids = new ArrayList<>();
@@ -847,12 +812,25 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         db.endTransaction();
     }
 
-    public List<FilePath> getAllNonDeletedFilePath() {
+    public void markFilesAsChanged(List<FilePathInfo> files) {
+        SQLiteDatabase db = this.getReadableDatabase();
+        final String where = Message.UUID + "=?";
+        db.beginTransaction();
+        for (FilePathInfo info : files) {
+            final ContentValues contentValues = new ContentValues();
+            contentValues.put(Message.DELETED, info.deleted ? 1 : 0);
+            db.update(Message.TABLENAME, contentValues, where, new String[]{info.uuid.toString()});
+        }
+        db.setTransactionSuccessful();
+        db.endTransaction();
+    }
+
+    public List<FilePathInfo> getFilePathInfo() {
         final SQLiteDatabase db = this.getReadableDatabase();
-        final Cursor cursor = db.query(Message.TABLENAME, new String[]{Message.UUID, Message.RELATIVE_FILE_PATH}, "type in (1,2) and deleted=0 and "+Message.RELATIVE_FILE_PATH+" is not null", null, null, null, null);
-        final List<FilePath> list = new ArrayList<>();
+        final Cursor cursor = db.query(Message.TABLENAME, new String[]{Message.UUID, Message.RELATIVE_FILE_PATH, Message.DELETED}, "type in (1,2,5) and "+Message.RELATIVE_FILE_PATH+" is not null", null, null, null, null);
+        final List<FilePathInfo> list = new ArrayList<>();
         while (cursor != null && cursor.moveToNext()) {
-            list.add(new FilePath(cursor.getString(0), cursor.getString(1)));
+            list.add(new FilePathInfo(cursor.getString(0), cursor.getString(1), cursor.getInt(2) > 0));
         }
         if (cursor != null) {
             cursor.close();
@@ -862,7 +840,7 @@ public class DatabaseBackend extends SQLiteOpenHelper {
 
     public List<FilePath> getRelativeFilePaths(String account, Jid jid, int limit) {
         SQLiteDatabase db = this.getReadableDatabase();
-        final String SQL = "select uuid,relativeFilePath from messages where type in (1,2) and deleted=0 and "+Message.RELATIVE_FILE_PATH+" is not null and conversationUuid=(select uuid from conversations where accountUuid=? and (contactJid=? or contactJid like ?)) order by timeSent desc";
+        final String SQL = "select uuid,relativeFilePath from messages where type in (1,2,5) and deleted=0 and "+Message.RELATIVE_FILE_PATH+" is not null and conversationUuid=(select uuid from conversations where accountUuid=? and (contactJid=? or contactJid like ?)) order by timeSent desc";
         final String[] args = {account, jid.toEscapedString(), jid.toEscapedString() + "/%"};
         Cursor cursor = db.rawQuery(SQL + (limit > 0 ? " limit " + String.valueOf(limit) : ""), args);
         List<FilePath> filesPaths = new ArrayList<>();
@@ -880,6 +858,21 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         private FilePath(String uuid, String path) {
             this.uuid = UUID.fromString(uuid);
             this.path = path;
+        }
+    }
+
+    public static class FilePathInfo extends FilePath {
+        public boolean deleted;
+
+        private FilePathInfo(String uuid, String path, boolean deleted) {
+            super(uuid,path);
+            this.deleted = deleted;
+        }
+
+        public boolean setDeleted(boolean deleted) {
+            final boolean changed = deleted != this.deleted;
+            this.deleted = deleted;
+            return changed;
         }
     }
 
@@ -917,11 +910,11 @@ public class DatabaseBackend extends SQLiteOpenHelper {
         return getAccounts(db);
     }
 
-    public List<Jid> getAccountJids() {
+    public List<Jid> getAccountJids(final boolean enabledOnly) {
         SQLiteDatabase db = this.getReadableDatabase();
         final List<Jid> jids = new ArrayList<>();
         final String[] columns = new String[]{Account.USERNAME, Account.SERVER};
-        String where = "not options & (1 <<1)";
+        String where = enabledOnly ? "not options & (1 <<1)" : null;
         Cursor cursor = db.query(Account.TABLENAME, columns, where, null, null, null, null);
         try {
             while (cursor.moveToNext()) {

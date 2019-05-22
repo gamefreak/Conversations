@@ -3,6 +3,7 @@ package eu.siacs.conversations.ui;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.ActivityNotFoundException;
+import android.content.Context;
 import android.content.Intent;
 import android.content.IntentSender;
 import android.content.SharedPreferences;
@@ -58,6 +59,7 @@ import eu.siacs.conversations.services.XmppConnectionService.OnAccountUpdate;
 import eu.siacs.conversations.services.XmppConnectionService.OnCaptchaRequested;
 import eu.siacs.conversations.ui.adapter.KnownHostsAdapter;
 import eu.siacs.conversations.ui.adapter.PresenceTemplateAdapter;
+import eu.siacs.conversations.ui.util.AvatarWorkerTask;
 import eu.siacs.conversations.ui.util.MenuDoubleTabUtil;
 import eu.siacs.conversations.ui.util.PendingItem;
 import eu.siacs.conversations.ui.util.SoftKeyboardUtils;
@@ -81,6 +83,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
         OnKeyStatusUpdated, OnCaptchaRequested, KeyChainAliasCallback, XmppConnectionService.OnShowErrorToast, XmppConnectionService.OnMamPreferencesFetched {
 
     public static final String EXTRA_OPENED_FROM_NOTIFICATION = "opened_from_notification";
+    public static final String EXTRA_FORCE_REGISTER = "force_register";
 
     private static final int REQUEST_DATA_SAVER = 0xf244;
     private static final int REQUEST_CHANGE_STATUS = 0xee11;
@@ -90,6 +93,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
     private AlertDialog mCaptchaDialog = null;
     private Jid jidToEdit;
     private boolean mInitMode = false;
+    private Boolean mForceRegister = null;
     private boolean mUsernameMode = Config.DOMAIN_LOCK != null;
     private boolean mShowOptions = false;
     private Account mAccount;
@@ -150,7 +154,12 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
                 }
                 return;
             }
-            final boolean registerNewAccount = binding.accountRegisterNew.isChecked() && !Config.DISALLOW_REGISTRATION_IN_UI;
+            final boolean registerNewAccount;
+            if (mForceRegister != null) {
+                registerNewAccount = mForceRegister;
+            } else {
+                registerNewAccount = binding.accountRegisterNew.isChecked() && !Config.DISALLOW_REGISTRATION_IN_UI;
+            }
             if (mUsernameMode && binding.accountJid.getText().toString().contains("@")) {
                 binding.accountJidLayout.setError(getString(R.string.invalid_username));
                 removeErrorsOnAllBut(binding.accountJidLayout);
@@ -335,7 +344,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
                 binding.xa.setChecked(true);
                 break;
             case AWAY:
-                binding.xa.setChecked(true);
+                binding.away.setChecked(true);
                 break;
             default:
                 binding.online.setChecked(true);
@@ -393,7 +402,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
         }
 
         if (xmppConnectionService.getAccounts().size() == 0 && Config.MAGIC_CREATE_DOMAIN != null) {
-            Intent intent = SignupUtils.getSignUpIntent(this);
+            Intent intent = SignupUtils.getSignUpIntent(this, mForceRegister != null && mForceRegister);
             startActivity(intent);
         }
     }
@@ -604,7 +613,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
     }
 
     private void refreshAvatar() {
-        binding.avater.setImageBitmap(avatarService().get(mAccount, (int) getResources().getDimension(R.dimen.avatar_on_details_screen_size)));
+        AvatarWorkerTask.loadAvatar(mAccount,binding.avater,R.dimen.avatar_on_details_screen_size);
     }
 
     @Override
@@ -674,6 +683,9 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
             }
             boolean init = intent.getBooleanExtra("init", false);
             boolean openedFromNotification = intent.getBooleanExtra(EXTRA_OPENED_FROM_NOTIFICATION, false);
+            Log.d(Config.LOGTAG,"extras "+intent.getExtras());
+            this.mForceRegister = intent.hasExtra(EXTRA_FORCE_REGISTER) ? intent.getBooleanExtra(EXTRA_FORCE_REGISTER,false) : null;
+            Log.d(Config.LOGTAG,"force register="+mForceRegister);
             this.mInitMode = init || this.jidToEdit == null;
             this.messageFingerprint = intent.getStringExtra("fingerprint");
             if (!mInitMode) {
@@ -683,13 +695,24 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
             } else {
                 this.binding.avater.setVisibility(View.GONE);
                 configureActionBar(getSupportActionBar(), !(init && Config.MAGIC_CREATE_DOMAIN == null));
-                setTitle(R.string.action_add_account);
+                if (mForceRegister != null) {
+                    if (mForceRegister) {
+                        setTitle(R.string.register_new_account);
+                    } else {
+                        setTitle(R.string.add_existing_account);
+                    }
+                } else {
+                    setTitle(R.string.action_add_account);
+                }
             }
         }
         SharedPreferences preferences = getPreferences();
         mUseTor = QuickConversationsService.isConversations() && preferences.getBoolean("use_tor", getResources().getBoolean(R.bool.use_tor));
         this.mShowOptions = mUseTor || (QuickConversationsService.isConversations() && preferences.getBoolean("show_connection_options", getResources().getBoolean(R.bool.show_connection_options)));
         this.binding.namePort.setVisibility(mShowOptions ? View.VISIBLE : View.GONE);
+        if (mForceRegister != null) {
+            this.binding.accountRegisterNew.setVisibility(View.GONE);
+        }
     }
 
     @Override
@@ -952,7 +975,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
 
         if (!mInitMode) {
             this.binding.avater.setVisibility(View.VISIBLE);
-            this.binding.avater.setImageBitmap(avatarService().get(this.mAccount, (int) getResources().getDimension(R.dimen.avatar_on_details_screen_size)));
+            AvatarWorkerTask.loadAvatar(mAccount,binding.avater,R.dimen.avatar_on_details_screen_size);
         } else {
             this.binding.avater.setVisibility(View.GONE);
         }
@@ -965,7 +988,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
                 }
             }
             this.binding.accountRegisterNew.setVisibility(View.GONE);
-        } else if (this.mAccount.isOptionSet(Account.OPTION_REGISTER)) {
+        } else if (this.mAccount.isOptionSet(Account.OPTION_REGISTER) && mForceRegister == null) {
             this.binding.accountRegisterNew.setVisibility(View.VISIBLE);
         } else {
             this.binding.accountRegisterNew.setVisibility(View.GONE);
@@ -1021,7 +1044,7 @@ public class EditAccountActivity extends OmemoActivity implements OnAccountUpdat
                 this.binding.serverInfoPep.setText(R.string.server_info_unavailable);
             }
             if (features.httpUpload(0)) {
-                this.binding.serverInfoHttpUpload.setText(R.string.server_info_available);
+                this.binding.serverInfoHttpUpload.setText(UIHelper.filesizeToString(features.getMaxHttpUploadSize()));
             } else if (features.p1S3FileTransfer()) {
                 this.binding.serverInfoHttpUploadDescription.setText(R.string.p1_s3_filetransfer);
                 this.binding.serverInfoHttpUpload.setText(R.string.server_info_available);

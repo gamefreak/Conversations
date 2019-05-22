@@ -26,7 +26,7 @@
             android:id="@+id/account_jid_layout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="@string/conference_address"
+            android:hint="@string/xmpp_address"
             app:errorTextAppearance="@style/TextAppearance.Conversations.Design.Error"
             app:hintTextAppearance="@style/TextAppearance.Conversations.Design.Hint">
 
@@ -36,7 +36,7 @@
                 android:layout_width="fill_parent"
                 android:layout_height="wrap_content"
                 android:inputType="textEmailAddress"
-                android:imeOptions="actionDone"/>
+                android:imeOptions="actionDone|flagNoExtractUi"/>
         </android.support.design.widget.TextInputLayout>
 
         <CheckBox

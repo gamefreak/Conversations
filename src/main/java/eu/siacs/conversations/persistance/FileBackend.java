@@ -150,8 +150,12 @@ public class FileBackend {
         return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + context.getString(R.string.app_name) + "/Media/";
     }
 
-    public static String getConversationsLogsDirectory() {
-        return Environment.getExternalStorageDirectory().getAbsolutePath() + "/Conversations/";
+    public static String getBackupDirectory(Context context) {
+        return getBackupDirectory(context.getString(R.string.app_name));
+    }
+
+    public static String getBackupDirectory(String app) {
+        return Environment.getExternalStorageDirectory().getAbsolutePath() + "/"+app+"/Backup/";
     }
 
     private static Bitmap rotate(Bitmap bitmap, int degree) {
@@ -409,11 +413,16 @@ public class FileBackend {
 
     public static Uri getMediaUri(Context context, File file) {
         final String filePath = file.getAbsolutePath();
-        final Cursor cursor = context.getContentResolver().query(
-                MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
-                new String[] { MediaStore.Images.Media._ID },
-                MediaStore.Images.Media.DATA + "=? ",
-                new String[] { filePath }, null);
+        final Cursor cursor;
+        try {
+            cursor = context.getContentResolver().query(
+                    MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                    new String[]{MediaStore.Images.Media._ID},
+                    MediaStore.Images.Media.DATA + "=? ",
+                    new String[]{filePath}, null);
+        } catch (SecurityException e) {
+            return null;
+        }
         if (cursor != null && cursor.moveToFirst()) {
             final int id = cursor.getInt(cursor.getColumnIndex(MediaStore.MediaColumns._ID));
             cursor.close();
@@ -1169,6 +1178,7 @@ public class FileBackend {
     public void updateFileParams(Message message, URL url) {
         DownloadableFile file = getFile(message);
         final String mime = file.getMimeType();
+        final boolean privateMessage = message.isPrivateMessage();
         final boolean image = message.getType() == Message.TYPE_IMAGE || (mime != null && mime.startsWith("image/"));
         final boolean video = mime != null && mime.startsWith("video/");
         final boolean audio = mime != null && mime.startsWith("audio/");
@@ -1192,7 +1202,7 @@ public class FileBackend {
         }
         message.setBody(body.toString());
         message.setDeleted(false);
-        message.setType(image ? Message.TYPE_IMAGE : Message.TYPE_FILE);
+        message.setType(privateMessage ? Message.TYPE_PRIVATE_FILE : (image ? Message.TYPE_IMAGE : Message.TYPE_FILE));
     }
 
 

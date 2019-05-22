@@ -112,6 +112,8 @@ public class NotificationService {
             return;
         }
 
+        notificationManager.deleteNotificationChannel("export");
+
         notificationManager.createNotificationChannelGroup(new NotificationChannelGroup("status", c.getString(R.string.notification_group_status_information)));
         notificationManager.createNotificationChannelGroup(new NotificationChannelGroup("chats", c.getString(R.string.notification_group_messages)));
         final NotificationChannel foregroundServiceChannel = new NotificationChannel("foreground",
@@ -136,8 +138,8 @@ public class NotificationService {
         videoCompressionChannel.setGroup("status");
         notificationManager.createNotificationChannel(videoCompressionChannel);
 
-        final NotificationChannel exportChannel = new NotificationChannel("export",
-                c.getString(R.string.export_channel_name),
+        final NotificationChannel exportChannel = new NotificationChannel("backup",
+                c.getString(R.string.backup_channel_name),
                 NotificationManager.IMPORTANCE_LOW);
         exportChannel.setShowBadge(false);
         exportChannel.setGroup("status");
@@ -876,7 +878,7 @@ public class NotificationService {
                 return false;
             }
             final Matcher m = highlight.matcher(message.getBody());
-            return (m.find() || message.getType() == Message.TYPE_PRIVATE);
+            return (m.find() || message.isPrivateMessage());
         } else {
             return false;
         }
@@ -909,28 +911,24 @@ public class NotificationService {
     Notification createForegroundNotification() {
         final Notification.Builder mBuilder = new Notification.Builder(mXmppConnectionService);
         mBuilder.setContentTitle(mXmppConnectionService.getString(R.string.app_name));
-        if (Compatibility.runsAndTargetsTwentySix(mXmppConnectionService) || Config.SHOW_CONNECTED_ACCOUNTS) {
-            final List<Account> accounts = mXmppConnectionService.getAccounts();
-            int enabled = 0;
-            int connected = 0;
-            if (accounts != null) {
-                for (Account account : accounts) {
-                    if (account.isOnlineAndConnected()) {
-                        connected++;
-                        enabled++;
-                    } else if (account.isEnabled()) {
-                        enabled++;
-                    }
+        final List<Account> accounts = mXmppConnectionService.getAccounts();
+        int enabled = 0;
+        int connected = 0;
+        if (accounts != null) {
+            for (Account account : accounts) {
+                if (account.isOnlineAndConnected()) {
+                    connected++;
+                    enabled++;
+                } else if (account.isEnabled()) {
+                    enabled++;
                 }
             }
-            mBuilder.setContentText(mXmppConnectionService.getString(R.string.connected_accounts, connected, enabled));
-        } else {
-            mBuilder.setContentText(mXmppConnectionService.getString(R.string.touch_to_open_conversations));
         }
+        mBuilder.setContentText(mXmppConnectionService.getString(R.string.connected_accounts, connected, enabled));
         mBuilder.setContentIntent(createOpenConversationsIntent());
         mBuilder.setWhen(0);
         mBuilder.setPriority(Notification.PRIORITY_MIN);
-        mBuilder.setSmallIcon(R.drawable.ic_link_white_24dp);
+        mBuilder.setSmallIcon(connected > 0 ? R.drawable.ic_link_white_24dp : R.drawable.ic_link_off_white_24dp);
 
         if (Compatibility.runsTwentySix()) {
             mBuilder.setChannelId("foreground");
@@ -1026,7 +1024,7 @@ public class NotificationService {
         }
     }
 
-    private void notify(int id, Notification notification) {
+    public void notify(int id, Notification notification) {
         final NotificationManagerCompat notificationManager = NotificationManagerCompat.from(mXmppConnectionService);
         try {
             notificationManager.notify(id, notification);

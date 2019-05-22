@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <layout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools">
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -156,7 +155,6 @@
                                 android:layout_alignParentStart="true"
                                 android:layout_centerVertical="true"
                                 android:layout_toStartOf="@+id/change_conference_button"
-                                android:text="@string/private_conference"
                                 android:textAppearance="@style/TextAppearance.Conversations.Body1"
                                 android:layout_alignParentLeft="true"
                                 android:layout_toLeftOf="@+id/change_conference_button" />
@@ -219,7 +217,7 @@
                 </android.support.v7.widget.CardView>
 
                 <android.support.v7.widget.CardView
-                    android:id="@+id/media_wrapper"
+                    android:id="@+id/users_wrapper"
                     android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
@@ -232,8 +230,18 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
 
+                        <TextView
+                            android:id="@+id/no_users_hints"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:paddingTop="@dimen/card_padding_regular"
+                            android:paddingEnd="@dimen/card_padding_regular"
+                            android:paddingStart="@dimen/card_padding_regular"
+                            android:text="@string/no_users_hint_channel"
+                            android:textAppearance="@style/TextAppearance.Conversations.Body2"/>
+
                         <android.support.v7.widget.RecyclerView
-                            android:id="@+id/media"
+                            android:id="@+id/users"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:orientation="horizontal"
@@ -251,14 +259,25 @@
                             android:layout_gravity="end">
 
                             <Button
-                                android:id="@+id/show_media"
+                                android:id="@+id/invite"
                                 style="@style/Widget.Conversations.Button.Borderless"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:minWidth="0dp"
                                 android:paddingLeft="16dp"
                                 android:paddingRight="16dp"
-                                android:text="@string/view_media"
+                                android:text="@string/invite"
+                                android:textColor="?attr/colorAccent" />
+
+                            <Button
+                                android:id="@+id/show_users"
+                                style="@style/Widget.Conversations.Button.Borderless"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minWidth="0dp"
+                                android:paddingLeft="16dp"
+                                android:paddingRight="16dp"
+                                android:text="@string/view_users"
                                 android:textColor="?attr/colorAccent" />
                         </LinearLayout>
                     </LinearLayout>
@@ -357,10 +376,9 @@
                             android:textAppearance="@style/TextAppearance.Conversations.Caption"/>
                     </LinearLayout>
                 </android.support.v7.widget.CardView>
-
                 <android.support.v7.widget.CardView
-                    android:id="@+id/muc_more_details"
-                    android:layout_width="match_parent"
+                    android:id="@+id/media_wrapper"
+                    android:layout_width="fill_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginBottom="@dimen/activity_vertical_margin"
                     android:layout_marginLeft="@dimen/activity_horizontal_margin"
@@ -372,36 +390,38 @@
                         android:layout_height="wrap_content"
                         android:orientation="vertical">
 
-                        <LinearLayout
-                            android:id="@+id/muc_members"
+                        <android.support.v7.widget.RecyclerView
+                            android:id="@+id/media"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:orientation="vertical"
-                            android:padding="@dimen/card_padding_list">
-                        </LinearLayout>
+                            android:orientation="horizontal"
+                            android:paddingEnd="@dimen/card_padding_regular"
+                            android:paddingStart="@dimen/card_padding_regular"
+                            android:paddingTop="@dimen/card_padding_regular"
+                            android:paddingBottom="@dimen/card_padding_list"
+                            android:layout_marginStart="-2dp"
+                            android:layout_marginEnd="-2dp"/>
 
                         <LinearLayout
                             android:layout_width="wrap_content"
                             android:layout_height="match_parent"
-                            android:layout_gravity="center_horizontal"
-                            android:layout_marginTop="8dp"
-                            android:orientation="horizontal">
-
+                            android:orientation="horizontal"
+                            android:layout_gravity="end">
 
                             <Button
-                                android:id="@+id/invite"
+                                android:id="@+id/show_media"
                                 style="@style/Widget.Conversations.Button.Borderless"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:minWidth="0dp"
                                 android:paddingLeft="16dp"
                                 android:paddingRight="16dp"
-                                android:text="@string/invite_contact"
-                                android:textColor="?attr/colorAccent"/>
-
+                                android:text="@string/view_media"
+                                android:textColor="?attr/colorAccent" />
                         </LinearLayout>
                     </LinearLayout>
                 </android.support.v7.widget.CardView>
+
             </LinearLayout>
         </ScrollView>
     </LinearLayout>
