@@ -17,6 +17,8 @@
   <string name="action_unblock_contact">Sblocca contatto</string>
   <string name="action_block_domain">Blocca dominio</string>
   <string name="action_unblock_domain">Sblocca dominio</string>
+  <string name="action_block_participant">Blocca partecipante</string>
+  <string name="action_unblock_participant">Sblocca partecipante</string>
   <string name="title_activity_manage_accounts">Gestisci account</string>
   <string name="title_activity_settings">Impostazioni</string>
   <string name="title_activity_sharewith">Condividi con Conversation</string>
@@ -28,7 +30,7 @@
   <string name="just_now">adesso</string>
   <string name="minute_ago">1 min fa</string>
   <string name="minutes_ago">%d min fa</string>
-  <string name="unread_conversations">Conversazioni non lette</string>
+  <string name="x_unread_conversations">%d conversazioni non lette</string>
   <string name="sending">invio…</string>
   <string name="message_decrypting">Decifrazione messaggio. Attendere prego...</string>
   <string name="pgp_message">Messaggio cifrato con OpenPGP</string>
@@ -117,7 +119,7 @@
   <string name="pref_sound">Suono di notifica</string>
   <string name="pref_sound_summary">Esegui un suono quando arriva un nuovo messaggio</string>
   <string name="pref_notification_grace_period">Periodo di grazia</string>
-  <string name="pref_notification_grace_period_summary">Il periodo di tempo in cui Conversations resta silenzioso quando vede attività su un altro dispositivo</string>
+  <string name="pref_notification_grace_period_summary">Il periodo di tempo in cui le notifiche vengono silenziate dopo aver rilevato attività su uno dei tuoi altri dispositivi.</string>
   <string name="pref_advanced_options">Avanzate</string>
   <string name="pref_never_send_crash">Non inviare mai segnalazioni di errore</string>
   <string name="pref_never_send_crash_summary">Se scegli di inviare una segnalazione dell’errore aiuterai lo sviluppo di Conversations</string>
@@ -279,10 +281,6 @@
   <string name="title_pref_quiet_hours_end_time">Orario fine</string>
   <string name="title_pref_enable_quiet_hours">Attiva ore di quiete</string>
   <string name="pref_quiet_hours_summary">Le notifiche verranno silenziate durante le ore di quiete</string>
-  <string name="pref_use_send_button_to_indicate_status">Il pulsante di invio indica lo stato</string>
-  <string name="pref_use_indicate_received">Richiedi la ricevuta di ritorno</string>
-  <string name="pref_use_indicate_received_summary">I messaggi ricevuti verranno contrassegnati con una spunta verde se supportato</string>
-  <string name="pref_use_send_button_to_indicate_status_summary">Colora il pulsante di invio per indicare lo stato del contatto</string>
   <string name="pref_expert_options_other">Altro</string>
   <string name="pref_autojoin">Sincronizza con i segnalibri</string>
   <string name="pref_autojoin_summary">Entra ed esci dalle chat di gruppo rispettando l\'opzione di entrata automatica nei tuoi segnalibri.</string>
@@ -335,12 +333,13 @@
   <string name="x_file_offered_for_download">%s offerto da scaricare</string>
   <string name="cancel_transmission">Annulla trasmissione</string>
   <string name="file_transmission_failed">trasmissione del file fallita</string>
+  <string name="file_transmission_cancelled">trasmissione file annullata</string>
   <string name="file_deleted">Il file è stato eliminato</string>
   <string name="no_application_found_to_open_file">Nessuna applicazione trovata per aprire il file</string>
   <string name="no_application_found_to_open_link">Nessuna applicazione trovata per aprire il link</string>
   <string name="no_application_found_to_view_contact">Nessuna applicazione trovata per vedere il contatto</string>
-  <string name="pref_show_dynamic_tags">Tag dinamici</string>
-  <string name="pref_show_dynamic_tags_summary">Mostra tag in sola lettura sotto i contatti</string>
+  <string name="pref_show_dynamic_tags">Etichette dinamiche</string>
+  <string name="pref_show_dynamic_tags_summary">Mostra etichette in sola lettura sotto i contatti</string>
   <string name="enable_notifications">Attiva le notifiche</string>
   <string name="no_conference_server_found">Nessun server per chat di gruppo trovato</string>
   <string name="conference_creation_failed">Creazione della chat di gruppo fallita!</string>
@@ -509,9 +508,9 @@
   <string name="notify_never">Notifiche disattivate</string>
   <string name="notify_paused">Notifiche in pausa</string>
   <string name="pref_picture_compression">Compressione immagini</string>
-  <string name="pref_picture_compression_summary">Ridimensiona e comprimi le immagini</string>
+  <string name="pref_picture_compression_summary">Suggerimento: usa \"Scegli un file\" invece di \"Scegli un\'immagine\" per inviare singole immagini non compresse a prescindere da questa impostazione.</string>
   <string name="always">Sempre</string>
-  <string name="automatically">Automaticamente</string>
+  <string name="large_images_only">Solo immagini grandi</string>
   <string name="battery_optimizations_enabled">Ottimizzazioni batteria attivate</string>
   <string name="battery_optimizations_enabled_explained">Il tuo dispositivo sta facendo delle ingenti ottimizzazioni della batteria per Conversations che potrebbero portare ritardi alle notifiche o anche perdita di messaggi.\nSi consiglia di disattivarle.</string>
   <string name="battery_optimizations_enabled_dialog">Il tuo dispositivo sta facendo delle ingenti ottimizzazioni della batteria per Conversations che potrebbero portare ritardi alle notifiche o anche perdita di messaggi.\n\nTi verrà ora chiesto di disattivarle.</string>
@@ -857,11 +856,28 @@
   <string name="discover_channels">Individua i canali</string>
   <string name="search_channels">Cerca i canali</string>
   <string name="channel_discovery_opt_in_title">Possibile violazione della privacy!</string>
-  <string name="channel_discover_opt_in_message"><![CDATA[La ricerca dei canali usa un servizio di terze parti chiamato <a href="https://search.jabbercat.org">search.jabbercat.org</a>.<br><br>Usando questa opzione trasmetterai il tuo indirizzo IP e la stringa di ricerca al servizio. Controlla la loro <a href="https://search.jabbercat.org/privacy">Policy per la privacy</a> per maggiori informazioni.]]></string>
+  <string name="channel_discover_opt_in_message"><![CDATA[La scoperta dei canali usa un servizio di terze parti chiamato <a href="https://search.jabber.network">search.jabber.network</a>.<br><br>L\'uso di questa funzione trasmetterà il tuo indirizzo IP e i termini di ricerca a quel servizio. Vedi la loro <a href="https://search.jabber.network/privacy">Informativa sulla Privacy</a> per saperne di più.]]></string>
   <string name="i_already_have_an_account">Ho già un account</string>
   <string name="add_existing_account">Aggiungi un account pre-esistente</string>
   <string name="register_new_account">Registra un nuovo account</string>
   <string name="this_looks_like_a_domain">Questo sembra un indirizzo di dominio</string>
   <string name="add_anway">Aggiungere comunque</string>
   <string name="this_looks_like_channel">Questo sembra un indirizzo di canale</string>
+  <string name="share_backup_files">Condividi file di backup</string>
+  <string name="conversations_backup">Backup di Conversations</string>
+  <string name="event">Evento</string>
+  <string name="open_backup">Apri backup</string>
+  <string name="not_a_backup_file">Il file selezionato non è un file di backup di Conversations</string>
+  <string name="account_already_setup">Questo account è già stato configurato</string>
+  <string name="please_enter_password">Inserisci la password per questo account</string>
+  <string name="unable_to_perform_this_action">Impossibile eseguire questa azione</string>
+  <string name="open_join_dialog">Entra in un canale pubblico...</string>
+  <string name="sharing_application_not_grant_permission">L\'applicazione di condivisione non ha concesso l\'autorizzazione per accedere a questo file.</string>
+  <string name="group_chats_and_channels"><![CDATA[Chat di gruppo e canali]]></string>
+  <string name="jabber_network">jabber.network</string>
+  <string name="local_server">Server locale</string>
+  <string name="pref_channel_discovery_summary">La maggior parte degli utenti dovrebbe scegliere ‘jabber.network’ per migliori suggerimenti dall\'intero ecosistema XMPP pubblico.</string>
+  <string name="pref_channel_discovery">Metodo di scoperta canali</string>
+  <string name="backup">Backup</string>
+  <string name="category_about">Al riguardo</string>
 </resources>

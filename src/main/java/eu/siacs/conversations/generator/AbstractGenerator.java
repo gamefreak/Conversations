@@ -19,6 +19,7 @@ import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.PhoneHelper;
 import eu.siacs.conversations.xml.Namespace;
+import eu.siacs.conversations.xmpp.XmppConnection;
 import eu.siacs.conversations.xmpp.jingle.stanzas.Content;
 
 public abstract class AbstractGenerator {
@@ -27,8 +28,10 @@ public abstract class AbstractGenerator {
 			Content.Version.FT_3.getNamespace(),
 			Content.Version.FT_4.getNamespace(),
 			Content.Version.FT_5.getNamespace(),
-			"urn:xmpp:jingle:transports:s5b:1",
-			"urn:xmpp:jingle:transports:ibb:1",
+			Namespace.JINGLE_TRANSPORTS_S5B,
+			Namespace.JINGLE_TRANSPORTS_IBB,
+			Namespace.JINGLE_ENCRYPTED_TRANSPORT,
+			Namespace.JINGLE_ENCRYPTED_TRANSPORT_OMEMO,
 			"http://jabber.org/protocol/muc",
 			"jabber:x:conference",
 			Namespace.OOB,
@@ -36,7 +39,6 @@ public abstract class AbstractGenerator {
 			"http://jabber.org/protocol/disco#info",
 			"urn:xmpp:avatar:metadata+notify",
 			Namespace.NICK+"+notify",
-			Namespace.BOOKMARKS+"+notify",
 			"urn:xmpp:ping",
 			"jabber:iq:version",
 			"http://jabber.org/protocol/chatstates"
@@ -68,8 +70,8 @@ public abstract class AbstractGenerator {
 		return this.mVersion;
 	}
 
-	public String getIdentityName() {
-		return mXmppConnectionService.getString(R.string.app_name) + ' ' + getIdentityVersion();
+	String getIdentityName() {
+		return mXmppConnectionService.getString(R.string.app_name);
 	}
 
 	public String getUserAgent() {
@@ -97,8 +99,8 @@ public abstract class AbstractGenerator {
 		for (String feature : getFeatures(account)) {
 			s.append(feature).append('<');
 		}
-		byte[] sha1 = md.digest(s.toString().getBytes());
-		return new String(Base64.encode(sha1, Base64.DEFAULT)).trim();
+		final byte[] sha1 = md.digest(s.toString().getBytes());
+		return Base64.encodeToString(sha1, Base64.NO_WRAP);
 	}
 
 	public static String getTimestamp(long time) {
@@ -107,7 +109,8 @@ public abstract class AbstractGenerator {
 	}
 
 	public List<String> getFeatures(Account account) {
-		ArrayList<String> features = new ArrayList<>(Arrays.asList(FEATURES));
+		final XmppConnection connection = account.getXmppConnection();
+		final ArrayList<String> features = new ArrayList<>(Arrays.asList(FEATURES));
 		if (mXmppConnectionService.confirmMessages()) {
 			features.addAll(Arrays.asList(MESSAGE_CONFIRMATION_FEATURES));
 		}
@@ -123,6 +126,12 @@ public abstract class AbstractGenerator {
 		if (mXmppConnectionService.broadcastLastActivity()) {
 			features.add(Namespace.IDLE);
 		}
+		if (connection != null && connection.getFeatures().bookmarks2()) {
+			features.add(Namespace.BOOKMARKS2 +"+notify");
+		} else {
+			features.add(Namespace.BOOKMARKS+"+notify");
+		}
+
 		Collections.sort(features);
 		return features;
 	}

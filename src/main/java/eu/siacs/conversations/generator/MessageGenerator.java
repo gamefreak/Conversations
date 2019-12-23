@@ -37,16 +37,14 @@ public class MessageGenerator extends AbstractGenerator {
 		if (conversation.getMode() == Conversation.MODE_SINGLE) {
 			packet.setTo(message.getCounterpart());
 			packet.setType(MessagePacket.TYPE_CHAT);
-			if (this.mXmppConnectionService.indicateReceived() && !isWithSelf) {
+			if (!isWithSelf) {
 				packet.addChild("request", "urn:xmpp:receipts");
 			}
 		} else if (message.isPrivateMessage()) {
 			packet.setTo(message.getCounterpart());
 			packet.setType(MessagePacket.TYPE_CHAT);
 			packet.addChild("x", "http://jabber.org/protocol/muc#user");
-			if (this.mXmppConnectionService.indicateReceived()) {
-				packet.addChild("request", "urn:xmpp:receipts");
-			}
+			packet.addChild("request", "urn:xmpp:receipts");
 		} else {
 			packet.setTo(message.getCounterpart().asBareJid());
 			packet.setType(MessagePacket.TYPE_GROUPCHAT);
@@ -58,7 +56,7 @@ public class MessageGenerator extends AbstractGenerator {
 		packet.setId(message.getUuid());
 		packet.addChild("origin-id", Namespace.STANZA_IDS).setAttribute("id", message.getUuid());
 		if (message.edited()) {
-			packet.addChild("replace", "urn:xmpp:message-correct:0").setAttribute("id", message.getEditedId());
+			packet.addChild("replace", "urn:xmpp:message-correct:0").setAttribute("id", message.getEditedIdWireFormat());
 		}
 		return packet;
 	}
@@ -192,6 +190,10 @@ public class MessageGenerator extends AbstractGenerator {
 		String password = conversation.getMucOptions().getPassword();
 		if (password != null) {
 			x.setAttribute("password", password);
+		}
+		if (contact.isFullJid()) {
+			packet.addChild("no-store", "urn:xmpp:hints");
+			packet.addChild("no-copy", "urn:xmpp:hints");
 		}
 		return packet;
 	}

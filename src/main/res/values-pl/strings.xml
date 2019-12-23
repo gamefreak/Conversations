@@ -17,6 +17,8 @@
   <string name="action_unblock_contact">Odblokuj kontakt</string>
   <string name="action_block_domain">Zablokuj domenę</string>
   <string name="action_unblock_domain">Odblokuj domenę</string>
+  <string name="action_block_participant">Zablokuj użytkownika</string>
+  <string name="action_unblock_participant">Odblokuj użytkownika</string>
   <string name="title_activity_manage_accounts">Zarządzaj kontami</string>
   <string name="title_activity_settings">Ustawienia</string>
   <string name="title_activity_sharewith">Udostępnij w konwersacji</string>
@@ -28,7 +30,7 @@
   <string name="just_now">przed chwilą</string>
   <string name="minute_ago">minutę temu</string>
   <string name="minutes_ago">%d minut temu</string>
-  <string name="unread_conversations">nieprzeczytanych konwersacji</string>
+  <string name="x_unread_conversations">%d nieprzeczytanych konwersacji</string>
   <string name="sending">wysyłanie...</string>
   <string name="message_decrypting">Odszyfrowywanie wiadomości. To zajmie tylko chwilę...</string>
   <string name="pgp_message">Wiadomość zaszyfrowana OpenPGP</string>
@@ -117,7 +119,7 @@
   <string name="pref_sound">Dzwonek</string>
   <string name="pref_sound_summary">Odtwórz dźwięk gdy nadejdzie wiadomość</string>
   <string name="pref_notification_grace_period">Czas bez powiadomień</string>
-  <string name="pref_notification_grace_period_summary">Czas od ostatniej aktywności na innym urządzeniu, przez który Conversations nie odzywa się</string>
+  <string name="pref_notification_grace_period_summary">Długość czasu kiedy powiadomienia są uśpione po wykryciu aktywności na jednym z twoich innych urządzeń.</string>
   <string name="pref_advanced_options">Zaawansowane</string>
   <string name="pref_never_send_crash">Nie wysyłaj raportów awarii</string>
   <string name="pref_never_send_crash_summary">Wysyłając ślady stosu pomagasz rozwijać Conversations</string>
@@ -205,8 +207,8 @@
   <string name="openpgp_key_id">ID klucza OpenPGP</string>
   <string name="omemo_fingerprint">Odcisk OMEMO</string>
   <string name="omemo_fingerprint_x509">Odcisk v\\OMEMO</string>
-  <string name="omemo_fingerprint_selected_message">Odcisk OMEMO wiadomości</string>
-  <string name="omemo_fingerprint_x509_selected_message">Odcisk v\\OMEMO wiadomości</string>
+  <string name="omemo_fingerprint_selected_message">Odcisk OMEMO tej wiadomości</string>
+  <string name="omemo_fingerprint_x509_selected_message">Odcisk v\\OMEMO tej wiadomości</string>
   <string name="other_devices">Pozostałe urządzenia</string>
   <string name="trust_omemo_fingerprints">Zaufane odciski OMEMO</string>
   <string name="fetching_keys">Pobieranie kluczy...</string>
@@ -279,10 +281,6 @@
   <string name="title_pref_quiet_hours_end_time">Koniec</string>
   <string name="title_pref_enable_quiet_hours">Włącz godziny ciszy</string>
   <string name="pref_quiet_hours_summary">Powiadomienia będą wyciszone w wybranym przedziale czasu</string>
-  <string name="pref_use_send_button_to_indicate_status">Przycisk wysyłania wskazuje status</string>
-  <string name="pref_use_indicate_received">Raporty dostarczenia</string>
-  <string name="pref_use_indicate_received_summary">Jeżeli to możliwe, oznaczaj dostarczone wiadomości zielonym haczykiem</string>
-  <string name="pref_use_send_button_to_indicate_status_summary">Koloruj przycisk wysyłania w zależności od statusu kontaktu</string>
   <string name="pref_expert_options_other">Inne</string>
   <string name="pref_autojoin">Synchronizuj z zakładkami</string>
   <string name="pref_autojoin_summary">Dołączaj i wychodź z konferencji przy użyciu flagi automatycznego dołączania z zakładek</string>
@@ -335,6 +333,7 @@
   <string name="x_file_offered_for_download">Zaproponowano pobranie pliku %s</string>
   <string name="cancel_transmission">Anuluj przesyłanie</string>
   <string name="file_transmission_failed">Przesyłanie pliku nie powiodło się</string>
+  <string name="file_transmission_cancelled">transmisja pliku anulowana</string>
   <string name="file_deleted">Plik został usunięty</string>
   <string name="no_application_found_to_open_file">Nie odnaleziono aplikacji skojarzonej z typem pliku</string>
   <string name="no_application_found_to_open_link">Brak aplikacji do otwarcia linka</string>
@@ -513,9 +512,9 @@
   <string name="notify_never">Powiadomienia wyłączone</string>
   <string name="notify_paused">Powiadomienia wstrzymane</string>
   <string name="pref_picture_compression">Kompresja obrazów</string>
-  <string name="pref_picture_compression_summary">Zmień rozmiar i kompresuj obrazki</string>
+  <string name="pref_picture_compression_summary">Podpowiedź: Użyj \'Wybierz plik\' zamiast \'Wybierz obraz\' aby wysłać poszczególne obrazki bez kompresji bez względu na to ustawienie. </string>
   <string name="always">Zawsze</string>
-  <string name="automatically">Automatycznie</string>
+  <string name="large_images_only">Tylko duże obrazki</string>
   <string name="battery_optimizations_enabled">Optymalizacje zużycia baterii włączone</string>
   <string name="battery_optimizations_enabled_explained">Twoje urządzenie wykonuje poważnie optymalizacje zużycia baterii przez Conversations, które mogą powodować opóźnienie powiadomień lub nawet utratę wiadomości.\nZaleca się ich wyłączenie.</string>
   <string name="battery_optimizations_enabled_dialog">Twoje urządzenie wykonuje poważnie optymalizacje zużycia baterii przez Conversations, które mogą powodować opóźnienie powiadomień lub nawet utratę wiadomości.\nZostaniesz teraz poproszony o ich wyłączenie</string>
@@ -875,11 +874,28 @@ Administrator twojego serwera będzie mógł czytać twoje wiadomości, ale moż
   <string name="discover_channels">Odkryj kanały</string>
   <string name="search_channels">Wyszukaj kanał</string>
   <string name="channel_discovery_opt_in_title">Możliwe naruszenie prywatności!</string>
-  <string name="channel_discover_opt_in_message"><![CDATA[Odkrywanie kanałów używa usługi firmy trzeciej <a href="https://search.jabbercat.org">search.jabbercat.org</a>. <br><br>Używając tej funkcji twój adres IP oraz kryteria wyszukiwania zostaną wysłane do tej usługi. Sprawdź <a href="https://search.jabbercat.org/privacy">Politykę Prywatności</a> aby uzyskać więcej informacji.]]></string>
+  <string name="channel_discover_opt_in_message"><![CDATA[Odkrywanie kanałów używa usługi firmy trzeciej <a href="https://search.jabber.network">search.jabber.network</a>. <br><br>Używając tej funkcji twój adres IP oraz kryteria wyszukiwania zostaną wysłane do tej usługi. Sprawdź <a href="https://search.jabber.network/privacy">Politykę Prywatności</a> aby uzyskać więcej informacji.]]></string>
   <string name="i_already_have_an_account">Już mam konto</string>
   <string name="add_existing_account">Dodaj istniejące konto</string>
   <string name="register_new_account">Zarejestruj nowe konto</string>
   <string name="this_looks_like_a_domain">To wygląda jak nazwa domeny</string>
   <string name="add_anway">Dodaj i tak</string>
   <string name="this_looks_like_channel">To wygląda jak adres kanału</string>
+  <string name="share_backup_files">Udostępnij pliki kopii zapasowych</string>
+  <string name="conversations_backup">Kopia zapasowa Conversations</string>
+  <string name="event">Zdarzenie</string>
+  <string name="open_backup">Otwórz kopię zapasową</string>
+  <string name="not_a_backup_file">Plik, który otworzyłeś, nie jest plikiem kopii zapasowej Conversations</string>
+  <string name="account_already_setup">To konto zostało już ustawione</string>
+  <string name="please_enter_password">Proszę podać hasło dla tego konta</string>
+  <string name="unable_to_perform_this_action">Nie można wykonać tej akcji</string>
+  <string name="open_join_dialog">Dołącz do publicznego kanału...</string>
+  <string name="sharing_application_not_grant_permission">Aplikacja udostępniająca nie udzieliła pozwolenia na dostęp do tego pliku.</string>
+  <string name="group_chats_and_channels"><![CDATA[Rozmowy grupowe i kanały]]></string>
+  <string name="jabber_network">jabber.network</string>
+  <string name="local_server">Serwer lokalny</string>
+  <string name="pref_channel_discovery_summary">Większość użytkowników powinna wybrać \'jabber.network\' dla lepszych sugestii z całego ekosystemu XMPP. </string>
+  <string name="pref_channel_discovery">Metoda odkrywania kanałów</string>
+  <string name="backup">Kopia zapasowa</string>
+  <string name="category_about">O aplikacji</string>
 </resources>

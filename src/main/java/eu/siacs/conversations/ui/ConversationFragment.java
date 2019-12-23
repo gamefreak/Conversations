@@ -646,7 +646,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
             }
 
             @Override
-            public void userInputRequried(PendingIntent pi, Message object) {
+            public void userInputRequired(PendingIntent pi, Message object) {
 
             }
         });
@@ -680,7 +680,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
             }
 
             @Override
-            public void userInputRequried(PendingIntent pi, Message message) {
+            public void userInputRequired(PendingIntent pi, Message message) {
                 hidePrepareFileToast(prepareFileToast);
             }
         });
@@ -702,7 +702,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                 new UiCallback<Message>() {
 
                     @Override
-                    public void userInputRequried(PendingIntent pi, Message object) {
+                    public void userInputRequired(PendingIntent pi, Message object) {
                         hidePrepareFileToast(prepareFileToast);
                     }
 
@@ -1095,6 +1095,10 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                 return;
             }
 
+            if (m.getStatus() == Message.STATUS_RECEIVED && t != null && (t.getStatus() == Transferable.STATUS_CANCELLED || t.getStatus() == Transferable.STATUS_FAILED)) {
+                return;
+            }
+
             final boolean deleted = m.isDeleted();
             final boolean encrypted = m.getEncryption() == Message.ENCRYPTION_DECRYPTION_FAILED
                     || m.getEncryption() == Message.ENCRYPTION_PGP;
@@ -1377,7 +1381,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                             new UiCallback<Contact>() {
 
                                 @Override
-                                public void userInputRequried(PendingIntent pi, Contact contact) {
+                                public void userInputRequired(PendingIntent pi, Contact contact) {
                                     startPendingIntent(pi, attachmentChoice);
                                 }
 
@@ -1603,7 +1607,8 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                 intent = GeoHelper.getFetchIntent(activity);
                 break;
         }
-        if (intent.resolveActivity(getActivity().getPackageManager()) != null) {
+        final Context context = getActivity();
+        if (context != null && intent.resolveActivity(context.getPackageManager()) != null) {
             if (chooser) {
                 startActivityForResult(
                         Intent.createChooser(intent, getString(R.string.perform_action_with)),
@@ -2055,8 +2060,12 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
         final boolean doNotAppend = extras.getBoolean(ConversationsActivity.EXTRA_DO_NOT_APPEND, false);
         final List<Uri> uris = extractUris(extras);
         if (uris != null && uris.size() > 0) {
-            final List<Uri> cleanedUris = cleanUris(new ArrayList<>(uris));
-            mediaPreviewAdapter.addMediaPreviews(Attachment.of(getActivity(), cleanedUris));
+            if (uris.size() == 1 && "geo".equals(uris.get(0).getScheme())) {
+                mediaPreviewAdapter.addMediaPreviews(Attachment.of(getActivity(), uris.get(0), Attachment.Type.LOCATION));
+            } else {
+                final List<Uri> cleanedUris = cleanUris(new ArrayList<>(uris));
+                mediaPreviewAdapter.addMediaPreviews(Attachment.of(getActivity(), cleanedUris));
+            }
             toggleInputMethod();
             return;
         }
@@ -2076,7 +2085,11 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                 }
             }
         } else {
-            if (text != null && asQuote) {
+            if (text != null && GeoHelper.GEO_URI.matcher(text).matches()) {
+                mediaPreviewAdapter.addMediaPreviews(Attachment.of(getActivity(), Uri.parse(text), Attachment.Type.LOCATION));
+                toggleInputMethod();
+                return;
+            } else if (text != null && asQuote) {
                 quoteText(text);
             } else {
                 appendText(text, doNotAppend);
@@ -2315,7 +2328,6 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
 
     public void updateSendButton() {
         boolean hasAttachments = mediaPreviewAdapter != null && mediaPreviewAdapter.hasAttachments();
-        boolean useSendButtonToIndicateStatus = PreferenceManager.getDefaultSharedPreferences(getActivity()).getBoolean("send_button_status", getResources().getBoolean(R.bool.send_button_status));
         final Conversation c = this.conversation;
         final Presence.Status status;
         final String text = this.binding.textinput == null ? "" : this.binding.textinput.getText().toString();
@@ -2325,8 +2337,8 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
         } else {
             action = SendButtonTool.getAction(getActivity(), c, text);
         }
-        if (useSendButtonToIndicateStatus && c.getAccount().getStatus() == Account.State.ONLINE) {
-            if (activity.xmppConnectionService != null && activity.xmppConnectionService.getMessageArchiveService().isCatchingUp(c)) {
+        if (c.getAccount().getStatus() == Account.State.ONLINE) {
+            if (activity != null && activity.xmppConnectionService != null && activity.xmppConnectionService.getMessageArchiveService().isCatchingUp(c)) {
                 status = Presence.Status.OFFLINE;
             } else if (c.getMode() == Conversation.MODE_SINGLE) {
                 status = c.getContact().getShownStatus();
@@ -2337,7 +2349,10 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
             status = Presence.Status.OFFLINE;
         }
         this.binding.textSendButton.setTag(action);
-        this.binding.textSendButton.setImageResource(SendButtonTool.getSendButtonImageResource(getActivity(), action, status));
+        final Activity activity = getActivity();
+        if (activity != null) {
+            this.binding.textSendButton.setImageResource(SendButtonTool.getSendButtonImageResource(activity, action, status));
+        }
 
         updateEmoteButton();
     }
@@ -2519,7 +2534,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                         new UiCallback<Contact>() {
 
                             @Override
-                            public void userInputRequried(PendingIntent pi, Contact contact) {
+                            public void userInputRequired(PendingIntent pi, Contact contact) {
                                 startPendingIntent(pi, REQUEST_ENCRYPT_MESSAGE);
                             }
 
@@ -2575,7 +2590,7 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
                 new UiCallback<Message>() {
 
                     @Override
-                    public void userInputRequried(PendingIntent pi, Message message) {
+                    public void userInputRequired(PendingIntent pi, Message message) {
                         startPendingIntent(pi, REQUEST_SEND_MESSAGE);
                     }
 
@@ -2677,7 +2692,12 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
             service.sendChatState(conversation);
         }
         if (storeNextMessage()) {
-            runOnUiThread(() -> activity.onConversationsListItemUpdated());
+            runOnUiThread(() -> {
+                if (activity == null) {
+                    return;
+                }
+                activity.onConversationsListItemUpdated();
+            });
         }
         runOnUiThread(this::updateSendButton);
     }

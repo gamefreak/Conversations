@@ -86,6 +86,18 @@ public class ServiceDiscoveryResult {
 			}
 		}
 	}
+	
+	private ServiceDiscoveryResult() {
+		this.hash = "sha-1";
+		this.features = Collections.emptyList();
+		this.identities = Collections.emptyList();
+		this.ver = null;
+		this.forms = Collections.emptyList();
+	}
+
+	public static ServiceDiscoveryResult empty() {
+		return new ServiceDiscoveryResult();
+	}
 
 	public ServiceDiscoveryResult(Cursor cursor) throws JSONException {
 		this(
@@ -146,7 +158,7 @@ public class ServiceDiscoveryResult {
 	}
 
 	public String getVer() {
-		return new String(Base64.encode(this.ver, Base64.DEFAULT)).trim();
+		return Base64.encodeToString(this.ver, Base64.NO_WRAP);
 	}
 
 	public List<Identity> getIdentities() {

@@ -28,7 +28,6 @@
   <string name="just_now">току-що</string>
   <string name="minute_ago">преди 1 минута</string>
   <string name="minutes_ago">преди %d минути</string>
-  <string name="unread_conversations">непрочетени разговори</string>
   <string name="sending">изпращане…</string>
   <string name="message_decrypting">Дешифроване на съобщението. Моля, изчакайте…</string>
   <string name="pgp_message">Съобщение, шифр. чрез OpenPGP</string>
@@ -116,7 +115,6 @@
   <string name="pref_sound">Тон на звънене</string>
   <string name="pref_sound_summary">Изпълнение на звук при получаване на ново съобщение</string>
   <string name="pref_notification_grace_period">Период на пренебрегване</string>
-  <string name="pref_notification_grace_period_summary">Времето, през което Conversations няма да прави нищо, след като забележи дейност на друго устройство</string>
   <string name="pref_advanced_options">Разширени</string>
   <string name="pref_never_send_crash">Никога да не се изпращат доклади за сривове</string>
   <string name="pref_never_send_crash_summary">Изпращайки проследявания на стека, Вие помагате за непрекъснатото развитие на Conversations</string>
@@ -269,10 +267,6 @@
   <string name="title_pref_quiet_hours_end_time">Край</string>
   <string name="title_pref_enable_quiet_hours">Включване на тихите часове</string>
   <string name="pref_quiet_hours_summary">Известията ще бъдат заглушени по време на тихите часове</string>
-  <string name="pref_use_send_button_to_indicate_status">Бутонът за изпращане показва състоянието</string>
-  <string name="pref_use_indicate_received">Изискване на отчет за съобщенията</string>
-  <string name="pref_use_indicate_received_summary">Получените съобщения ще бъдат отбелязани със зелена отметка, ако това се поддържа</string>
-  <string name="pref_use_send_button_to_indicate_status_summary">Оцветяване на бутона за изпращане в зависимост от състоянието на контакта</string>
   <string name="pref_expert_options_other">Други</string>
   <string name="pref_autojoin">Синхронизиране с отметките</string>
   <string name="pref_autojoin_summary">Присъединяване и напускане на групови разговори според флага за автоматично присъединяване в отметките.</string>
@@ -475,9 +469,7 @@
   <string name="notify_never">Известията са изключени</string>
   <string name="notify_paused">Известията са спрени временно</string>
   <string name="pref_picture_compression">Компресия на изображенията</string>
-  <string name="pref_picture_compression_summary">Преоразмеряване и компресиране на изображенията</string>
   <string name="always">Винаги</string>
-  <string name="automatically">Автоматично</string>
   <string name="battery_optimizations_enabled">Оптимизациите за използв. на батерията са вкл.</string>
   <string name="battery_optimizations_enabled_explained">Устройството Ви прилага сериозни оптимизации за използването на батерията върху Conversations, а те може да доведат до забавени известия и дори пропуснати съобщения.\nПрепоръчително е до ги изключите.</string>
   <string name="battery_optimizations_enabled_dialog">Устройството Ви прилага сериозни оптимизации за използването на батерията върху Conversations, а те може да доведат до забавени известия и дори пропуснати съобщения.\n\nСега ще Ви бъде предложено да ги изключите.</string>
@@ -776,4 +768,10 @@
   <string name="open_with">Отваряне с…</string>
   <string name="set_profile_picture">Профилна снимка за Conversations</string>
   <string name="choose_account">Изберете профил</string>
+  <string name="restore_backup">Възстановяване от резервно копие</string>
+  <string name="restore">Възстановяване</string>
+  <string name="enter_password_to_restore">Въведете паролата си за профила %s, за да направите възстановяване от резервно копие.</string>
+  <string name="restore_warning">Не използвайте възможността за възстановяване от резервно копие, за да клонирате (да изпълнявате едновременно) инсталацията. Възстановяването от резервно копие е предназначено за мигриране или в случай, че сте загубили устройството си.</string>
+  <string name="unable_to_restore_backup">Не може да се направи възстановяване от резервно копие.</string>
+  <string name="unable_to_decrypt_backup">Резервното копие не може да бъде дешифрирано. Правилна ли е паролата?</string>
 </resources>

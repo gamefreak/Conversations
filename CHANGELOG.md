@@ -1,5 +1,57 @@
 # Changelog
 
+### Version 2.6.1
+* fixes for Jingle IBB file transfer
+* fixes for repeated corrections filling up the database
+* switched to Last Message Correction v1.1
+
+### Version 2.6.0
+* Introduce expert setting to perform channel discovery on local server instead of [search.jabber.network](https://search.jabber.network)
+* Enable delivery check marks by default and remove setting
+* Enable ‘Send button indicates status’ by default and remove setting
+* Move Backup and Foreground Service settings to main screen
+
+### Version 2.5.12
+* Jingle file transfer fixes
+* Fixed OMEMO self healing (after backup restore) on servers w/o MAM
+
+### Version 2.5.11
+* Fixed crash on Android <5.0
+
+### Version 2.5.10
+* Fixed crash on Xiaomi devices running Android 8.0 + 8.1
+
+### Version 2.5.9
+* fixed minor security issues
+* Share XMPP uri from channel search by long pressing a result
+
+### Version 2.5.8
+* fixed connection issues over Tor
+* P2P file transfer (Jingle) now offers direct candidates
+* Support XEP-0396: Jingle Encrypted Transports - OMEMO
+
+### Version 2.5.7
+* fixed crash when scanning QR codes on Android 6 and lower
+* when sharing a message from and to Conversations insert it as quote
+
+### Version 2.5.6
+* fixes for Jingle file transfer
+* fixed some rare crashes
+
+### Version 2.5.5
+* allow backups to be restored from anywhere
+* bug fixes
+
+### Version 2.5.4
+* stability improvements for group chats and channels
+
+### Version 2.5.3
+* bug fixes for peer to peer file transfer (Jingle)
+* fixed server info for unlimited/unknown max file size
+
+### Version 2.5.2
+* bug fixes
+
 ### Version 2.5.1
 * minor bug fixes
 * Set own OMEMO devices to inactive after not seeing them for 14 days. (was 7 days)

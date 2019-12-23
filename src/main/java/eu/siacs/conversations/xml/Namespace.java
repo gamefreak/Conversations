@@ -1,6 +1,8 @@
 package eu.siacs.conversations.xml;
 
 public final class Namespace {
+	public static final String DISCO_ITEMS = "http://jabber.org/protocol/disco#items";
+	public static final String DISCO_INFO = "http://jabber.org/protocol/disco#info";
 	public static final String BLOCKING = "urn:xmpp:blocking";
 	public static final String ROSTER = "jabber:iq:roster";
 	public static final String REGISTER = "jabber:iq:register";
@@ -25,4 +27,14 @@ public final class Namespace {
 	public static final String BOOKMARKS = "storage:bookmarks";
 	public static final String SYNCHRONIZATION = "im.quicksy.synchronization:0";
 	public static final String AVATAR_CONVERSION = "urn:xmpp:pep-vcard-conversion:0";
+	public static final String JINGLE_TRANSPORTS_S5B = "urn:xmpp:jingle:transports:s5b:1";
+	public static final String JINGLE_TRANSPORTS_IBB = "urn:xmpp:jingle:transports:ibb:1";
+	public static final String PING = "urn:xmpp:ping";
+	public static final String PUSH = "urn:xmpp:push:0";
+	public static final String COMMANDS = "http://jabber.org/protocol/commands";
+	public static final String JINGLE_ENCRYPTED_TRANSPORT = "urn:xmpp:jingle:jet:0";
+	public static final String JINGLE_ENCRYPTED_TRANSPORT_OMEMO = "urn:xmpp:jingle:jet-omemo:0";
+	public static final String MUC_USER = "http://jabber.org/protocol/muc#user";
+	public static final String BOOKMARKS2 = "urn:xmpp:bookmarks:0";
+	public static final String BOOKMARKS2_COMPAT = BOOKMARKS2+"#compat";
 }

@@ -26,7 +26,6 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.Drawable;
-import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -144,7 +143,7 @@ public abstract class XmppActivity extends ActionBarActivity {
 		}
 
 		@Override
-		public void userInputRequried(PendingIntent pi, Conversation object) {
+		public void userInputRequired(PendingIntent pi, Conversation object) {
 
 		}
 	};
@@ -398,7 +397,6 @@ public abstract class XmppActivity extends ActionBarActivity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
-		setVolumeControlStream(AudioManager.STREAM_NOTIFICATION);
 		metrics = getResources().getDisplayMetrics();
 		ExceptionHelper.init(getApplicationContext());
 		new EmojiService(this).init();
@@ -589,7 +587,7 @@ public abstract class XmppActivity extends ActionBarActivity {
 			xmppConnectionService.getPgpEngine().generateSignature(intent, account, status, new UiCallback<String>() {
 
 				@Override
-				public void userInputRequried(PendingIntent pi, String signature) {
+				public void userInputRequired(PendingIntent pi, String signature) {
 					try {
 						startIntentSenderForResult(pi.getIntentSender(), REQUEST_ANNOUNCE_PGP, null, 0, 0, 0);
 					} catch (final SendIntentException ignored) {
@@ -649,7 +647,7 @@ public abstract class XmppActivity extends ActionBarActivity {
 			}
 
 			@Override
-			public void userInputRequried(PendingIntent pi, Account object) {
+			public void userInputRequired(PendingIntent pi, Account object) {
 				try {
 					startIntentSenderForResult(pi.getIntentSender(),
 							REQUEST_CHOOSE_PGP_ID, null, 0, 0, 0);

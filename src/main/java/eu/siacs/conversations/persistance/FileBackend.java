@@ -39,6 +39,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URL;
 import java.security.DigestOutputStream;
@@ -55,6 +56,7 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.entities.DownloadableFile;
 import eu.siacs.conversations.entities.Message;
+import eu.siacs.conversations.services.AttachFileToConversationRunnable;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.RecordingActivity;
 import eu.siacs.conversations.ui.util.Attachment;
@@ -110,6 +112,7 @@ public class FileBackend {
     }
 
     public static boolean allFilesUnderSize(Context context, List<Attachment> attachments, long max) {
+        final boolean compressVideo = !AttachFileToConversationRunnable.getVideoCompression(context).equals("uncompressed");
         if (max <= 0) {
             Log.d(Config.LOGTAG, "server did not report max file size for http upload");
             return true; //exception to be compatible with HTTP Upload < v0.2
@@ -119,7 +122,7 @@ public class FileBackend {
                 continue;
             }
             String mime = attachment.getMime();
-            if (mime != null && mime.startsWith("video/")) {
+            if (mime != null && mime.startsWith("video/") && compressVideo) {
                 try {
                     Dimensions dimensions = FileBackend.getVideoDimensions(context, attachment.getUri());
                     if (dimensions.getMin() > 720) {
@@ -188,6 +191,14 @@ public class FileBackend {
 
     private static String getTakePhotoPath() {
         return Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DCIM) + "/Camera/";
+    }
+
+    public static Uri getUriForUri(Context context, Uri uri) {
+        if ("file".equals(uri.getScheme())) {
+            return getUriForFile(context, new File(uri.getPath()));
+        } else {
+            return uri;
+        }
     }
 
     public static Uri getUriForFile(Context context, File file) {
@@ -341,20 +352,32 @@ public class FileBackend {
         }
     }
 
-    public static void close(Closeable stream) {
+    public static void close(final Closeable stream) {
         if (stream != null) {
             try {
                 stream.close();
-            } catch (IOException e) {
+            } catch (Exception e) {
+                Log.d(Config.LOGTAG, "unable to close stream", e);
             }
         }
     }
 
-    public static void close(Socket socket) {
+    public static void close(final Socket socket) {
         if (socket != null) {
             try {
                 socket.close();
             } catch (IOException e) {
+                Log.d(Config.LOGTAG, "unable to close socket", e);
+            }
+        }
+    }
+
+    public static void close(final ServerSocket socket) {
+        if (socket != null) {
+            try {
+                socket.close();
+            } catch (IOException e) {
+                Log.d(Config.LOGTAG, "unable to close server socket", e);
             }
         }
     }

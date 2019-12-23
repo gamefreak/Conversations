@@ -180,7 +180,12 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			}
 
 			if (emoticonService.areAnimationsEnabled() && image instanceof GifDrawable) {
-				((MultiCallback) image.getCallback()).addView(binding.image);
+				MultiCallback callback = (MultiCallback) image.getCallback();
+				if (callback != null)
+				callback.addView(binding.image);
+				else {
+					Log.w(TAG, "GetCallback -> null");
+				}
 			}
 			image = new FitDrawable(image);
 

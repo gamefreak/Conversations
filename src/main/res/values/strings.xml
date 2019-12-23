@@ -17,6 +17,8 @@
     <string name="action_unblock_contact">Unblock contact</string>
     <string name="action_block_domain">Block domain</string>
     <string name="action_unblock_domain">Unblock domain</string>
+    <string name="action_block_participant">Block participant</string>
+    <string name="action_unblock_participant">Unblock participant</string>
     <string name="title_activity_manage_accounts">Manage Accounts</string>
     <string name="title_activity_settings">Settings</string>
     <string name="title_activity_sharewith">Share with Conversation</string>
@@ -28,7 +30,7 @@
     <string name="just_now">just now</string>
     <string name="minute_ago">1 min ago</string>
     <string name="minutes_ago">%d mins ago</string>
-    <string name="unread_conversations">unread Conversations</string>
+    <string name="x_unread_conversations">%d unread conversations</string>
     <string name="sending">sending…</string>
     <string name="message_decrypting">Decrypting message. Please wait…</string>
     <string name="pgp_message">OpenPGP encrypted message</string>
@@ -117,7 +119,7 @@
     <string name="pref_sound">Ringtone</string>
     <string name="pref_sound_summary">Play sound when a new message arrives</string>
     <string name="pref_notification_grace_period">Grace Period</string>
-    <string name="pref_notification_grace_period_summary">The length of time Conversations keeps quiet after seeing activity on another device</string>
+    <string name="pref_notification_grace_period_summary">The length of time notifications are silenced after detecting activity on one of your other devices.</string>
     <string name="pref_advanced_options">Advanced</string>
     <string name="pref_never_send_crash">Never send crash reports</string>
     <string name="pref_never_send_crash_summary">By sending in stack traces you are helping the ongoing development of Conversations</string>
@@ -279,10 +281,6 @@
     <string name="title_pref_quiet_hours_end_time">End time</string>
     <string name="title_pref_enable_quiet_hours">Enable quiet hours</string>
     <string name="pref_quiet_hours_summary">Notifications will be silenced during quiet hours</string>
-    <string name="pref_use_send_button_to_indicate_status">Send button indicates status</string>
-    <string name="pref_use_indicate_received">Request message receipts</string>
-    <string name="pref_use_indicate_received_summary">Received messages will be marked with a green tick if supported</string>
-    <string name="pref_use_send_button_to_indicate_status_summary">Colorize send button to indicate contact status</string>
     <string name="pref_expert_options_other">Other</string>
     <string name="pref_autojoin">Synchronize with bookmarks</string>
     <string name="pref_autojoin_summary">Join and leave group chats according to auto-join flag in your bookmarks.</string>
@@ -335,6 +333,7 @@
     <string name="x_file_offered_for_download">%s offered for download</string>
     <string name="cancel_transmission">Cancel transmission</string>
     <string name="file_transmission_failed">file transmission failed</string>
+    <string name="file_transmission_cancelled">file transmission cancelled</string>
     <string name="file_deleted">The file has been deleted</string>
     <string name="no_application_found_to_open_file">No application found to open file</string>
     <string name="no_application_found_to_open_link">No application found to open link</string>
@@ -509,9 +508,9 @@
     <string name="notify_never">Notifications disabled</string>
     <string name="notify_paused">Notifications paused</string>
     <string name="pref_picture_compression">Image Compression</string>
-    <string name="pref_picture_compression_summary">Resize and compress images</string>
+    <string name="pref_picture_compression_summary">Hint: Use ‘Choose file’ instead of ‘Choose picture’ to send individual images uncompressed regardless of this setting.</string>
     <string name="always">Always</string>
-    <string name="automatically">Automatically</string>
+    <string name="large_images_only">Large images only</string>
     <string name="battery_optimizations_enabled">Battery optimizations enabled</string>
     <string name="battery_optimizations_enabled_explained">Your device is doing some heavy battery optimizations on Conversations that might lead to delayed notifications or even message loss.\nIt is recommended to disable those.</string>
     <string name="battery_optimizations_enabled_dialog">Your device is doing some heavy battery optimizations on Conversations that might lead to delayed notifications or even message loss.\n\nYou will now be asked to disable those.</string>
@@ -860,11 +859,28 @@
     <string name="discover_channels">Discover channels</string>
     <string name="search_channels">Search channels</string>
     <string name="channel_discovery_opt_in_title">Possible privacy violation!</string>
-    <string name="channel_discover_opt_in_message"><![CDATA[Channel discovery uses a third party service called <a href="https://search.jabbercat.org">search.jabbercat.org</a>.<br><br>Using this feature will transmit your IP address and search terms to that service. See their <a href="https://search.jabbercat.org/privacy">Privacy Policy</a> for more information.]]></string>
+    <string name="channel_discover_opt_in_message"><![CDATA[Channel discovery uses a third party service called <a href="https://search.jabber.network">search.jabber.network</a>.<br><br>Using this feature will transmit your IP address and search terms to that service. See their <a href="https://search.jabber.network/privacy">Privacy Policy</a> for more information.]]></string>
     <string name="i_already_have_an_account">I already have an account</string>
     <string name="add_existing_account">Add existing account</string>
     <string name="register_new_account">Register new account</string>
     <string name="this_looks_like_a_domain">This looks like a domain address</string>
     <string name="add_anway">Add anyway</string>
     <string name="this_looks_like_channel">This looks like a channel address</string>
+    <string name="share_backup_files">Share backup files</string>
+    <string name="conversations_backup">Conversations backup</string>
+    <string name="event">Event</string>
+    <string name="open_backup">Open backup</string>
+    <string name="not_a_backup_file">The file you selected is not a Conversations backup file</string>
+    <string name="account_already_setup">This account has already been setup</string>
+    <string name="please_enter_password">Please enter the password for this account</string>
+    <string name="unable_to_perform_this_action">Unable to perform this action</string>
+    <string name="open_join_dialog">Join public channel…</string>
+    <string name="sharing_application_not_grant_permission">The sharing application did not grant permission to access this file.</string>
+    <string name="group_chats_and_channels"><![CDATA[Group Chats & Channels]]></string>
+    <string name="jabber_network">jabber.network</string>
+    <string name="local_server">Local server</string>
+    <string name="pref_channel_discovery_summary">Most users should choose ‘jabber.network’ for better suggestions from the entirety of the public XMPP ecosystem.</string>
+    <string name="pref_channel_discovery">Channel discovery method</string>
+    <string name="backup">Backup</string>
+    <string name="category_about">About</string>
 </resources>

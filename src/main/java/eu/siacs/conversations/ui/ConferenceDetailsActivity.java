@@ -83,7 +83,7 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
         }
 
         @Override
-        public void userInputRequried(PendingIntent pi, Conversation object) {
+        public void userInputRequired(PendingIntent pi, Conversation object) {
 
         }
     };
@@ -257,6 +257,11 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 
     @Override
     public boolean onContextItemSelected(MenuItem item) {
+        final User user = mUserPreviewAdapter.getSelectedUser();
+        if (user == null) {
+            Toast.makeText(this, R.string.unable_to_perform_this_action, Toast.LENGTH_SHORT).show();
+            return true;
+        }
         if (!MucDetailsContextMenuHelper.onContextItemSelected(item, mUserPreviewAdapter.getSelectedUser(), this)) {
             return super.onContextItemSelected(item);
         }
@@ -381,11 +386,10 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
     }
 
     protected void deleteBookmark() {
-        Account account = mConversation.getAccount();
-        Bookmark bookmark = mConversation.getBookmark();
-        account.getBookmarks().remove(bookmark);
+        final Account account = mConversation.getAccount();
+        final Bookmark bookmark = mConversation.getBookmark();
         bookmark.setConversation(null);
-        xmppConnectionService.pushBookmarks(account);
+        xmppConnectionService.deleteBookmark(account, bookmark);
         updateView();
     }
 
@@ -436,6 +440,9 @@ public class ConferenceDetailsActivity extends XmppActivity implements OnConvers
 
     private void updateView() {
         invalidateOptionsMenu();
+        if (mConversation == null) {
+            return;
+        }
         final MucOptions mucOptions = mConversation.getMucOptions();
         final User self = mucOptions.getSelf();
         String account;

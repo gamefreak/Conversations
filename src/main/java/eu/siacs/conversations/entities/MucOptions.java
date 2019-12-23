@@ -17,6 +17,7 @@ import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.services.MessageArchiveService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
+import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.forms.Data;
 import eu.siacs.conversations.xmpp.forms.Field;
@@ -111,6 +112,10 @@ public class MucOptions {
 
     public boolean mamSupport() {
         return MessageArchiveService.Version.has(getFeatures());
+    }
+
+    public boolean push() {
+        return getFeatures().contains(Namespace.PUSH);
     }
 
     public boolean updateConfiguration(ServiceDiscoveryResult serviceDiscoveryResult) {
@@ -330,7 +335,7 @@ public class MucOptions {
     }
 
     public boolean isContactInRoom(Contact contact) {
-        return findUserByRealJid(contact.getJid().asBareJid()) != null;
+        return contact != null && findUserByRealJid(contact.getJid().asBareJid()) != null;
     }
 
     public boolean isUserInRoom(Jid jid) {
@@ -412,7 +417,7 @@ public class MucOptions {
         }
     }
 
-    private String getProposedNick() {
+    public String getProposedNick() {
         final Bookmark bookmark = this.conversation.getBookmark();
         final String bookmarkedNick = normalize(account.getJid(), bookmark == null ? null : bookmark.getNick());
         if (bookmarkedNick != null) {
@@ -421,12 +426,16 @@ public class MucOptions {
         } else if (!conversation.getJid().isBareJid()) {
             return conversation.getJid().getResource();
         } else {
-            final String displayName = normalize(account.getJid(), account.getDisplayName());
-            if (displayName == null) {
-                return JidHelper.localPartOrFallback(account.getJid());
-            } else {
-                return displayName;
-            }
+            return defaultNick(account);
+        }
+    }
+
+    public static String defaultNick(final Account account) {
+        final String displayName = normalize(account.getJid(), account.getDisplayName());
+        if (displayName == null) {
+            return JidHelper.localPartOrFallback(account.getJid());
+        } else {
+            return displayName;
         }
     }
 

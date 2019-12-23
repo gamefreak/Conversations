@@ -23,6 +23,8 @@ import android.widget.TextView;
 
 import java.lang.ref.WeakReference;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
@@ -45,6 +47,8 @@ public class AudioPlayer implements View.OnClickListener, MediaPlayer.OnCompleti
     private final SensorManager sensorManager;
     private final Sensor proximitySensor;
     private final PendingItem<WeakReference<ImageButton>> pendingOnClickView = new PendingItem<>();
+
+    private final ExecutorService executor = Executors.newSingleThreadExecutor();
 
     private final Handler handler = new Handler();
 
@@ -87,7 +91,7 @@ public class AudioPlayer implements View.OnClickListener, MediaPlayer.OnCompleti
             audioPlayer.setTag(message);
             if (init(ViewHolder.get(audioPlayer), message)) {
                 this.audioPlayerLayouts.addWeakReferenceTo(audioPlayer);
-                this.stopRefresher(true);
+                executor.execute(()-> this.stopRefresher(true));
             } else {
                 this.audioPlayerLayouts.removeWeakReferenceTo(audioPlayer);
             }
@@ -342,8 +346,12 @@ public class AudioPlayer implements View.OnClickListener, MediaPlayer.OnCompleti
             return false;
         }
         final ViewHolder viewHolder = ViewHolder.get(audioPlayer);
-        viewHolder.progress.setProgress(current * 100 / duration);
-        viewHolder.runtime.setText(formatTime(current) + " / " + formatTime(duration));
+        if (duration <= 0) {
+            viewHolder.progress.setProgress(100);
+        } else {
+            viewHolder.progress.setProgress(current * 100 / duration);
+        }
+        viewHolder.runtime.setText(String.format("%s / %s", formatTime(current), formatTime(duration)));
         return true;
     }
 

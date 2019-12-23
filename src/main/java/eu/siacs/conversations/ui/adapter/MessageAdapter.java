@@ -40,6 +40,7 @@ import java.lang.ref.WeakReference;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.MatchResult;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -100,7 +101,6 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 	private DisplayMetrics metrics;
 	private OnContactPictureClicked mOnContactPictureClickedListener;
 	private OnContactPictureLongClicked mOnContactPictureLongClickedListener;
-	private boolean mIndicateReceived = false;
 	private boolean mUseGreenBackground = false;
 	private OnQuoteListener onQuoteListener;
 	public MessageAdapter(XmppActivity activity, List<Message> messages) {
@@ -199,7 +199,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		if (message.isFileOrImage() || transferable != null) {
 			FileParams params = message.getFileParams();
 			filesize = params.size > 0 ? UIHelper.filesizeToString(params.size) : null;
-			if (transferable != null && transferable.getStatus() == Transferable.STATUS_FAILED) {
+			if (transferable != null && (transferable.getStatus() == Transferable.STATUS_FAILED || transferable.getStatus() == Transferable.STATUS_CANCELLED)) {
 				error = true;
 			}
 		}
@@ -218,14 +218,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				info = getContext().getString(R.string.offering);
 				break;
 			case Message.STATUS_SEND_RECEIVED:
-				if (mIndicateReceived) {
-					viewHolder.indicatorReceived.setVisibility(View.VISIBLE);
-				}
-				break;
 			case Message.STATUS_SEND_DISPLAYED:
-				if (mIndicateReceived) {
-					viewHolder.indicatorReceived.setVisibility(View.VISIBLE);
-				}
+				viewHolder.indicatorReceived.setVisibility(View.VISIBLE);
 				break;
 			case Message.STATUS_SEND_FAILED:
 				final String errorMessage = message.getErrorMessage();
@@ -295,30 +289,32 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 			viewHolder.indicator.setVisibility(View.VISIBLE);
 		}
 
-		String formatedTime = UIHelper.readableTimeDifferenceFull(getContext(), message.getMergedTimeSent());
-		if (message.getStatus() <= Message.STATUS_RECEIVED) {
+		final String formattedTime = UIHelper.readableTimeDifferenceFull(getContext(), message.getMergedTimeSent());
+		final String bodyLanguage = message.getBodyLanguage();
+		final String bodyLanguageInfo = bodyLanguage == null ? "" : String.format(" \u00B7 %s", bodyLanguage.toUpperCase(Locale.US));
+		if (message.getStatus() <= Message.STATUS_RECEIVED) { ;
 			if ((filesize != null) && (info != null)) {
-				viewHolder.time.setText(formatedTime + " \u00B7 " + filesize + " \u00B7 " + info);
+				viewHolder.time.setText(formattedTime + " \u00B7 " + filesize + " \u00B7 " + info + bodyLanguageInfo);
 			} else if ((filesize == null) && (info != null)) {
-				viewHolder.time.setText(formatedTime + " \u00B7 " + info);
+				viewHolder.time.setText(formattedTime + " \u00B7 " + info + bodyLanguageInfo);
 			} else if ((filesize != null) && (info == null)) {
-				viewHolder.time.setText(formatedTime + " \u00B7 " + filesize);
+				viewHolder.time.setText(formattedTime + " \u00B7 " + filesize + bodyLanguageInfo);
 			} else {
-				viewHolder.time.setText(formatedTime);
+				viewHolder.time.setText(formattedTime+bodyLanguageInfo);
 			}
 		} else {
 			if ((filesize != null) && (info != null)) {
-				viewHolder.time.setText(filesize + " \u00B7 " + info);
+				viewHolder.time.setText(filesize + " \u00B7 " + info + bodyLanguageInfo);
 			} else if ((filesize == null) && (info != null)) {
 				if (error) {
-					viewHolder.time.setText(info + " \u00B7 " + formatedTime);
+					viewHolder.time.setText(info + " \u00B7 " + formattedTime + bodyLanguageInfo);
 				} else {
 					viewHolder.time.setText(info);
 				}
 			} else if ((filesize != null) && (info == null)) {
-				viewHolder.time.setText(filesize + " \u00B7 " + formatedTime);
+				viewHolder.time.setText(filesize + " \u00B7 " + formattedTime + bodyLanguageInfo);
 			} else {
-				viewHolder.time.setText(formatedTime);
+				viewHolder.time.setText(formattedTime+bodyLanguageInfo);
 			}
 		}
 	}
@@ -449,7 +445,9 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 				if (drawable instanceof GifDrawable) {
 					GifDrawable gif = (GifDrawable)drawable;
 					MultiCallback callback = (MultiCallback)gif.getCallback();
-					callback.addView(viewHolder.messageBody);
+					if (callback != null) {
+						callback.addView(viewHolder.messageBody);
+					}
 				}
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
@@ -972,7 +970,6 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 
 	public void updatePreferences() {
 		SharedPreferences p = PreferenceManager.getDefaultSharedPreferences(activity);
-		this.mIndicateReceived = p.getBoolean("indicate_received", activity.getResources().getBoolean(R.bool.indicate_received));
 		this.mUseGreenBackground = p.getBoolean("use_green_background", activity.getResources().getBoolean(R.bool.use_green_background));
 	}
 

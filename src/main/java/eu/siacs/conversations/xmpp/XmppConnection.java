@@ -80,6 +80,7 @@ import eu.siacs.conversations.utils.SSLSocketHelper;
 import eu.siacs.conversations.utils.SocksSocketFactory;
 import eu.siacs.conversations.utils.XmlHelper;
 import eu.siacs.conversations.xml.Element;
+import eu.siacs.conversations.xml.LocalizedContent;
 import eu.siacs.conversations.xml.Namespace;
 import eu.siacs.conversations.xml.Tag;
 import eu.siacs.conversations.xml.TagWriter;
@@ -267,8 +268,18 @@ public class XmppConnection implements Runnable {
                     destination = account.getHostname();
                     this.verifiedHostname = destination;
                 }
-                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": connect to " + destination + " via Tor");
-                localSocket = SocksSocketFactory.createSocketOverTor(destination, account.getPort());
+
+                final int port = account.getPort();
+                final boolean directTls = Resolver.useDirectTls(port);
+
+                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": connect to " + destination + " via Tor. directTls="+directTls);
+                localSocket = SocksSocketFactory.createSocketOverTor(destination, port);
+
+                if (directTls) {
+                    localSocket = upgradeSocketToTls(localSocket);
+                    features.encryptionEnabled = true;
+                }
+
                 try {
                     startXmpp(localSocket);
                 } catch (InterruptedException e) {
@@ -328,29 +339,13 @@ public class XmppConnection implements Runnable {
                                     + result.getHostname().toString() + ":" + result.getPort() + " tls: " + features.encryptionEnabled);
                         }
 
-                        if (!features.encryptionEnabled) {
-                            localSocket = new Socket();
-                            localSocket.connect(addr, Config.SOCKET_TIMEOUT * 1000);
-                        } else {
-                            final TlsFactoryVerifier tlsFactoryVerifier = getTlsFactoryVerifier();
-                            localSocket = tlsFactoryVerifier.factory.createSocket();
+                        localSocket = new Socket();
+                        localSocket.connect(addr, Config.SOCKET_TIMEOUT * 1000);
 
-                            if (localSocket == null) {
-                                throw new IOException("could not initialize ssl socket");
-                            }
-
-                            SSLSocketHelper.setSecurity((SSLSocket) localSocket);
-                            SSLSocketHelper.setHostname((SSLSocket) localSocket, account.getServer());
-                            SSLSocketHelper.setApplicationProtocol((SSLSocket) localSocket, "xmpp-client");
-
-                            localSocket.connect(addr, Config.SOCKET_TIMEOUT * 1000);
-
-                            if (!tlsFactoryVerifier.verifier.verify(account.getServer(), verifiedHostname, ((SSLSocket) localSocket).getSession())) {
-                                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS certificate verification failed");
-                                FileBackend.close(localSocket);
-                                throw new StateChangingException(Account.State.TLS_ERROR);
-                            }
+                        if (features.encryptionEnabled) {
+                            localSocket = upgradeSocketToTls(localSocket);
                         }
+
                         localSocket.setSoTimeout(Config.SOCKET_TIMEOUT * 1000);
                         if (startXmpp(localSocket)) {
                             localSocket.setSoTimeout(0); //reset to 0; once the connection is established we don’t want this
@@ -383,6 +378,8 @@ public class XmppConnection implements Runnable {
         } catch (final StateChangingException e) {
             this.changeStatus(e.state);
         } catch (final UnknownHostException | ConnectException e) {
+            this.changeStatus(Account.State.SERVER_NOT_FOUND);
+        } catch (final SocksSocketFactory.HostNotFoundException e) {
             this.changeStatus(Account.State.SERVER_NOT_FOUND);
         } catch (final SocksSocketFactory.SocksProxyNotFoundException e) {
             this.changeStatus(Account.State.TOR_NOT_AVAILABLE);
@@ -796,46 +793,41 @@ public class XmppConnection implements Runnable {
 
     private void switchOverToTls() throws XmlPullParserException, IOException {
         tagReader.readTag();
+        final Socket socket = this.socket;
+        final SSLSocket sslSocket = upgradeSocketToTls(socket);
+        tagReader.setInputStream(sslSocket.getInputStream());
+        tagWriter.setOutputStream(sslSocket.getOutputStream());
+        sendStartStream();
+        Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS connection established");
+        features.encryptionEnabled = true;
+        final Tag tag = tagReader.readTag();
+        if (tag != null && tag.isStart("stream")) {
+            SSLSocketHelper.log(account, sslSocket);
+            processStream();
+        } else {
+            throw new StateChangingException(Account.State.STREAM_OPENING_ERROR);
+        }
+        sslSocket.close();
+    }
+
+    private SSLSocket upgradeSocketToTls(final Socket socket) throws IOException {
+        final TlsFactoryVerifier tlsFactoryVerifier;
         try {
-            final TlsFactoryVerifier tlsFactoryVerifier = getTlsFactoryVerifier();
-            final InetAddress address = socket == null ? null : socket.getInetAddress();
-
-            if (address == null) {
-                throw new IOException("could not setup ssl");
-            }
-
-            final SSLSocket sslSocket = (SSLSocket) tlsFactoryVerifier.factory.createSocket(socket, address.getHostAddress(), socket.getPort(), true);
-
-
-            if (sslSocket == null) {
-                throw new IOException("could not initialize ssl socket");
-            }
-
-            SSLSocketHelper.setSecurity(sslSocket);
-            SSLSocketHelper.setHostname(sslSocket, account.getServer());
-            SSLSocketHelper.setApplicationProtocol(sslSocket, "xmpp-client");
-
-            if (!tlsFactoryVerifier.verifier.verify(account.getServer(), this.verifiedHostname, sslSocket.getSession())) {
-                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS certificate verification failed");
-                throw new StateChangingException(Account.State.TLS_ERROR);
-            }
-            tagReader.setInputStream(sslSocket.getInputStream());
-            tagWriter.setOutputStream(sslSocket.getOutputStream());
-            sendStartStream();
-            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS connection established");
-            features.encryptionEnabled = true;
-            final Tag tag = tagReader.readTag();
-            if (tag != null && tag.isStart("stream")) {
-                SSLSocketHelper.log(account, sslSocket);
-                processStream();
-            } else {
-                throw new StateChangingException(Account.State.STREAM_OPENING_ERROR);
-            }
-            sslSocket.close();
-        } catch (final NoSuchAlgorithmException | KeyManagementException e1) {
-            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS certificate verification failed");
+            tlsFactoryVerifier = getTlsFactoryVerifier();
+        } catch (final NoSuchAlgorithmException | KeyManagementException e) {
             throw new StateChangingException(Account.State.TLS_ERROR);
         }
+        final InetAddress address = socket.getInetAddress();
+        final SSLSocket sslSocket = (SSLSocket) tlsFactoryVerifier.factory.createSocket(socket, address.getHostAddress(), socket.getPort(), true);
+        SSLSocketHelper.setSecurity(sslSocket);
+        SSLSocketHelper.setHostname(sslSocket, account.getServer());
+        SSLSocketHelper.setApplicationProtocol(sslSocket, "xmpp-client");
+        if (!tlsFactoryVerifier.verifier.verify(account.getServer(), this.verifiedHostname, sslSocket.getSession())) {
+            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": TLS certificate verification failed");
+            FileBackend.close(sslSocket);
+            throw new StateChangingException(Account.State.TLS_ERROR);
+        }
+        return sslSocket;
     }
 
     private void processStreamFeatures(final Tag currentTag) throws XmlPullParserException, IOException {
@@ -1205,8 +1197,21 @@ public class XmppConnection implements Runnable {
                 if (advancedStreamFeaturesLoaded && (jid.equals(Jid.of(account.getServer())) || jid.equals(account.getJid().asBareJid()))) {
                     enableAdvancedStreamFeatures();
                 }
-            } else {
+            } else if (packet.getType() == IqPacket.TYPE.ERROR) {
                 Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": could not query disco info for " + jid.toString());
+                final boolean serverOrAccount = jid.equals(Jid.of(account.getServer())) || jid.equals(account.getJid().asBareJid());
+                final boolean advancedStreamFeaturesLoaded;
+                if (serverOrAccount) {
+                    synchronized (XmppConnection.this.disco) {
+                        disco.put(jid, ServiceDiscoveryResult.empty());
+                        advancedStreamFeaturesLoaded = disco.containsKey(Jid.of(account.getServer())) && disco.containsKey(account.getJid().asBareJid());
+                    }
+                } else {
+                    advancedStreamFeaturesLoaded = false;
+                }
+                if (advancedStreamFeaturesLoaded) {
+                    enableAdvancedStreamFeatures();
+                }
             }
             if (packet.getType() != IqPacket.TYPE.TIMEOUT) {
                 if (mPendingServiceDiscoveries.decrementAndGet() == 0
@@ -1241,15 +1246,15 @@ public class XmppConnection implements Runnable {
     }
 
     private void enableAdvancedStreamFeatures() {
-        if (getFeatures().carbons() && !features.carbonsEnabled) {
-            sendEnableCarbons();
-        }
         if (getFeatures().blocking() && !features.blockListRequested) {
             Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": Requesting block list");
             this.sendIqPacket(getIqGenerator().generateGetBlockList(), mXmppConnectionService.getIqParser());
         }
         for (final OnAdvancedStreamFeaturesLoaded listener : advancedStreamFeaturesLoadedListeners) {
             listener.onAdvancedStreamFeaturesAvailable(account);
+        }
+        if (getFeatures().carbons() && !features.carbonsEnabled) {
+            sendEnableCarbons();
         }
     }
 
@@ -1315,11 +1320,10 @@ public class XmppConnection implements Runnable {
             throw new IOException();
         } else if (streamError.hasChild("host-unknown")) {
             throw new StateChangingException(Account.State.HOST_UNKNOWN);
-        } else if (streamError.hasChild("policy-violation")) { ;
+        } else if (streamError.hasChild("policy-violation")) {
+            this.lastConnect = SystemClock.elapsedRealtime();
             final String text = streamError.findChildContent("text");
-            if (text != null) {
-                Log.d(Config.LOGTAG,account.getJid().asBareJid()+": policy violation. "+text);
-            }
+            Log.d(Config.LOGTAG,account.getJid().asBareJid()+": policy violation. "+text);
             throw new StateChangingException(Account.State.POLICY_VIOLATION);
         } else {
             Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": stream error " + streamError.toString());
@@ -1331,7 +1335,7 @@ public class XmppConnection implements Runnable {
         final Tag stream = Tag.start("stream:stream");
         stream.setAttribute("to", account.getServer());
         stream.setAttribute("version", "1.0");
-        stream.setAttribute("xml:lang", "en");
+        stream.setAttribute("xml:lang", LocalizedContent.STREAM_LANGUAGE);
         stream.setAttribute("xmlns", "jabber:client");
         stream.setAttribute("xmlns:stream", "http://etherx.jabber.org/streams");
         tagWriter.writeTag(stream);
@@ -1417,7 +1421,7 @@ public class XmppConnection implements Runnable {
         if (!r()) {
             final IqPacket iq = new IqPacket(IqPacket.TYPE.GET);
             iq.setFrom(account.getJid());
-            iq.addChild("ping", "urn:xmpp:ping");
+            iq.addChild("ping", Namespace.PING);
             this.sendIqPacket(iq, null);
         }
         this.lastPingSent = SystemClock.elapsedRealtime();
@@ -1460,15 +1464,8 @@ public class XmppConnection implements Runnable {
     }
 
     private void forceCloseSocket() {
-        if (socket != null) {
-            try {
-                socket.close();
-            } catch (IOException e) {
-                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": io exception " + e.getMessage() + " during force close");
-            }
-        } else {
-            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": socket was null during force close");
-        }
+        FileBackend.close(this.socket);
+        FileBackend.close(this.tagReader);
     }
 
     public void interrupt() {
@@ -1479,7 +1476,7 @@ public class XmppConnection implements Runnable {
 
     public void disconnect(final boolean force) {
         interrupt();
-        Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": disconnecting force=" + Boolean.toString(force));
+        Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": disconnecting force=" + force);
         if (force) {
             forceCloseSocket();
         } else {
@@ -1573,7 +1570,8 @@ public class XmppConnection implements Runnable {
     }
 
     public int getTimeToNextAttempt() {
-        final int interval = Math.min((int) (25 * Math.pow(1.3, attempt)), 300);
+        final int additionalTime = account.getLastErrorStatus() == Account.State.POLICY_VIOLATION ? 3 : 0;
+        final int interval = Math.min((int) (25 * Math.pow(1.3, (additionalTime + attempt))), 300);
         final int secondsSinceLast = (int) ((SystemClock.elapsedRealtime() - this.lastConnect) / 1000);
         return interval - secondsSinceLast;
     }
@@ -1819,8 +1817,8 @@ public class XmppConnection implements Runnable {
         }
 
         public boolean push() {
-            return hasDiscoFeature(account.getJid().asBareJid(), "urn:xmpp:push:0")
-                    || hasDiscoFeature(Jid.of(account.getServer()), "urn:xmpp:push:0");
+            return hasDiscoFeature(account.getJid().asBareJid(), Namespace.PUSH)
+                    || hasDiscoFeature(Jid.of(account.getServer()), Namespace.PUSH);
         }
 
         public boolean rosterVersioning() {
@@ -1879,6 +1877,10 @@ public class XmppConnection implements Runnable {
 
         public boolean stanzaIds() {
             return hasDiscoFeature(account.getJid().asBareJid(), Namespace.STANZA_IDS);
+        }
+
+        public boolean bookmarks2() {
+            return Config.USE_BOOKMARKS2 /* || hasDiscoFeature(account.getJid().asBareJid(), Namespace.BOOKMARKS2_COMPAT)*/;
         }
     }
 }

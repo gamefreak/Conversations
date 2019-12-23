@@ -33,6 +33,15 @@ public class ApiDialogHelper {
             case QuickConversationsService.API_ERROR_UNKNOWN_HOST:
                 res = R.string.unable_to_find_server;
                 break;
+            case QuickConversationsService.API_ERROR_SSL_CERTIFICATE:
+                res = R.string.unable_to_verify_server_identity;
+                break;
+            case QuickConversationsService.API_ERROR_SSL_GENERAL:
+                res = R.string.unknown_security_error;
+                break;
+            case QuickConversationsService.API_ERROR_TIMEOUT:
+                res = R.string.timeout_while_connecting_to_server;
+                break;
             case 400:
                 res = R.string.invalid_user_input;
                 break;
@@ -41,6 +50,9 @@ public class ApiDialogHelper {
                 break;
             case 409:
                 res = R.string.logged_in_with_another_device;
+                break;
+            case 451:
+                res = R.string.not_available_in_your_country;
                 break;
             case 500:
                 res = R.string.something_went_wrong_processing_your_request;

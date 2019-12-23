@@ -12,6 +12,7 @@ import android.view.MenuItem;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import eu.siacs.conversations.Config;
@@ -21,6 +22,7 @@ import eu.siacs.conversations.entities.Conversation;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.adapter.ConversationAdapter;
 import eu.siacs.conversations.ui.service.EmojiService;
+import eu.siacs.conversations.utils.GeoHelper;
 import rocks.xmpp.addr.Jid;
 
 public class ShareWithActivity extends XmppActivity implements XmppConnectionService.OnConversationUpdate {
@@ -38,6 +40,7 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
         public String account;
         public String contact;
         public String text;
+        public boolean asQuote = false;
     }
 
     private Share share;
@@ -126,17 +129,25 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
         }
         final String type = intent.getType();
         final String action = intent.getAction();
+        final Uri data = intent.getData();
         if (Intent.ACTION_SEND.equals(action)) {
             final String text = intent.getStringExtra(Intent.EXTRA_TEXT);
             final Uri uri = intent.getParcelableExtra(Intent.EXTRA_STREAM);
-            if (type != null && uri != null && (text == null || !type.equals("text/plain"))) {
+            final boolean asQuote = intent.getBooleanExtra(ConversationsActivity.EXTRA_AS_QUOTE, false);
+
+            if (data != null && "geo".equals(data.getScheme())) {
+                this.share.uris.clear();
+                this.share.uris.add(data);
+            } else if (type != null && uri != null) {
                 this.share.uris.clear();
                 this.share.uris.add(uri);
             } else {
                 this.share.text = text;
+                this.share.asQuote = asQuote;
             }
         } else if (Intent.ACTION_SEND_MULTIPLE.equals(action)) {
-            this.share.uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            final ArrayList<Uri> uris = intent.getParcelableArrayListExtra(Intent.EXTRA_STREAM);
+            this.share.uris = uris == null ? new ArrayList<>() : uris;
         }
         if (xmppConnectionServiceBound) {
             xmppConnectionService.populateWithOrderedConversations(mConversations, this.share.uris.size() == 0, false);
@@ -187,8 +198,14 @@ public class ShareWithActivity extends XmppActivity implements XmppConnectionSer
         } else if (share.text != null) {
             intent.setAction(ConversationsActivity.ACTION_VIEW_CONVERSATION);
             intent.putExtra(Intent.EXTRA_TEXT, share.text);
+            intent.putExtra(ConversationsActivity.EXTRA_AS_QUOTE, share.asQuote);
         }
-        startActivity(intent);
+        try {
+            startActivity(intent);
+        } catch (SecurityException e) {
+            Toast.makeText(this, R.string.sharing_application_not_grant_permission, Toast.LENGTH_SHORT).show();
+            return;
+        }
         finish();
     }
 

@@ -17,6 +17,8 @@
   <string name="action_unblock_contact">Kontaktua desblokeatu</string>
   <string name="action_block_domain">Domeinua blokeatu</string>
   <string name="action_unblock_domain">Domeinua desblokeatu</string>
+  <string name="action_block_participant">Parte-hartzailea blokeatu</string>
+  <string name="action_unblock_participant">Parte-hartzaileari blokeoa kendu</string>
   <string name="title_activity_manage_accounts">Kontuak kudeatu</string>
   <string name="title_activity_settings">Ezarpenak</string>
   <string name="title_activity_sharewith">Elkarrizketa batekin partekatu</string>
@@ -28,7 +30,7 @@
   <string name="just_now">orain</string>
   <string name="minute_ago">min 1 lehenago</string>
   <string name="minutes_ago">%d min lehenago</string>
-  <string name="unread_conversations">irakurri gabeko elkarrizketak</string>
+  <string name="x_unread_conversations">Irakurrik gabeko %d elkarrizketa</string>
   <string name="sending">bidaltzen…</string>
   <string name="message_decrypting">Mezua desenkriptatzen. Mesedez itxaron…</string>
   <string name="pgp_message">OpenPGPz enkriptatutako mezua</string>
@@ -117,7 +119,6 @@
   <string name="pref_sound">Dei-tonua</string>
   <string name="pref_sound_summary">Mezu berri bat heltzerakoan dei-tonua jo</string>
   <string name="pref_notification_grace_period">Grazia epea</string>
-  <string name="pref_notification_grace_period_summary">Beste gailu batean aktibitatea ikusi ostean Conversationsek isilik mantentzen den denbora</string>
   <string name="pref_advanced_options">Aurreratua</string>
   <string name="pref_never_send_crash">Gelditze txostenik ez bidali inoiz</string>
   <string name="pref_never_send_crash_summary">Akats harraskak bidaliz Conversationsen garapenean laguntzen duzu</string>
@@ -279,10 +280,6 @@
   <string name="title_pref_quiet_hours_end_time">Amaiera ordua</string>
   <string name="title_pref_enable_quiet_hours">Ordu lasaiak gaitu</string>
   <string name="pref_quiet_hours_summary">Jakinarazpenak isilaraziko dira ordu lasaiak iraun bitartean </string>
-  <string name="pref_use_send_button_to_indicate_status">Bidaltze botoiak egoera adierazten du</string>
-  <string name="pref_use_indicate_received">Mezuen jasotzea eskatu</string>
-  <string name="pref_use_indicate_received_summary">Jasotako mezuak marka berde batekin markatuko dira. Baliteke kasu guztietan ez funtzionatzea.</string>
-  <string name="pref_use_send_button_to_indicate_status_summary">Bidaltze botoia koloreztatu kontaktu baten egoera adierazteko</string>
   <string name="pref_expert_options_other">Besteak</string>
   <string name="pref_autojoin">Laster-markekin sinkronizatu</string>
   <string name="pref_autojoin_summary">Taldeetan sartu eta taldeak utzi zure laster-marken auto-batu markaren arabera.</string>
@@ -335,6 +332,7 @@
   <string name="x_file_offered_for_download">%s deskargatzeko eskeinita</string>
   <string name="cancel_transmission">Transmisioa utzi</string>
   <string name="file_transmission_failed">fitxategi transmisioak huts egin du</string>
+  <string name="file_transmission_cancelled">fitxategiaren transmisioa utzi egin da</string>
   <string name="file_deleted">Fitxategia ezabatu egin da</string>
   <string name="no_application_found_to_open_file">Fitxategia ireki dezakeen aplikaziorik ez da aurkitu</string>
   <string name="no_application_found_to_open_link">Ez da lotura hau ireki dezakeen aplikaziorik aurkitu</string>
@@ -508,9 +506,7 @@
   <string name="notify_never">Jakinarazpenak ezgaituta</string>
   <string name="notify_paused">Jakinarazpenak gelditu dira</string>
   <string name="pref_picture_compression">Irudiak konprimatu</string>
-  <string name="pref_picture_compression_summary">Irudiak konprimatu eta neurriz aldatu</string>
   <string name="always">Beti</string>
-  <string name="automatically">Automatikoki</string>
   <string name="battery_optimizations_enabled">Bateriaren optimizazioak gaituta</string>
   <string name="battery_optimizations_enabled_explained">Zure gailua jakinarazpen atzeratuak edota mezuen galera ekar lezaketen bateriaren optimizazio handiak egiten ari da Conversationsen.\nHoriek ezgaitzea gomendatzen da.</string>
   <string name="battery_optimizations_enabled_dialog">Zure gailua jakinarazpen atzeratuak edota mezuen galera ekar lezaketen bateriaren optimizazio handiak egiten ari da Conversationsen.\nJarraian hauek ezgaitzea eskatuko zaizu.</string>
@@ -855,11 +851,20 @@
   <string name="discover_channels">Kanalak aurkitu</string>
   <string name="search_channels">Kanalak bilatu</string>
   <string name="channel_discovery_opt_in_title">Balizko pribatutasun urraketa!</string>
-  <string name="channel_discover_opt_in_message"><![CDATA[Kanalak aurkitzeko ezaugarriak <a href="https://search.jabbercat.org">search.jabbercat.org</a> izeneko hirugarren zerbitzu bat erabiltzen du.<br><br>Ezaugarri hau erabiltzeak zure IP helbidea eta bilatutako testua zerbitzu horretara bidaltzea dakar. Ikusi beren <a href="https://search.jabbercat.org/privacy">pribatutasun politika</a> informazio gehiago lortzeko.]]></string>
+  <string name="channel_discover_opt_in_message"><![CDATA[Kanalak aurkitzeko ezaugarriak <a href="https://search.jabber.network">search.jabber.network</a>. izeneko hirugarren zerbitzu bat erabiltzen du.<br><br>Ezaugarri hau erabiltzeak zure IP helbidea eta bilatutako testua zerbitzu horretara bidaltzea dakar. Ikusi beren <a href="https://search.jabber.network/privacy">pribatutasun politika</a> informazio gehiago lortzeko.]]></string>
   <string name="i_already_have_an_account">Badaukat kontu bat dagoeneko</string>
   <string name="add_existing_account">Gehitu existitzen den kontu bat</string>
   <string name="register_new_account">Kontu berria erregistratu</string>
   <string name="this_looks_like_a_domain">Honek domeinu helbide baten itxura dauka</string>
   <string name="add_anway">Gehitu hala ere</string>
   <string name="this_looks_like_channel">Honek kanal helbide baten itxura dauka</string>
+  <string name="share_backup_files">Babes-kopia fitxategiak partekatu</string>
+  <string name="conversations_backup">Conversations babes-kopia</string>
+  <string name="event">Gertaera</string>
+  <string name="open_backup">Babes-kopia ireki</string>
+  <string name="not_a_backup_file">Hautatu duzun fitxategia ez da Conversations babes-kopia bat</string>
+  <string name="account_already_setup">Kontu hau konfiguratuta dago jada</string>
+  <string name="please_enter_password">Mesedez idatzi ezazu kontu honetarako pasahitza</string>
+  <string name="unable_to_perform_this_action">Ezin izan da ekintza hau burutu</string>
+  <string name="open_join_dialog">Kanal publiko batean sartu…</string>
 </resources>

@@ -2,7 +2,6 @@ package eu.siacs.conversations.entities;
 
 import android.content.ContentValues;
 import android.database.Cursor;
-import android.graphics.Color;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -13,23 +12,19 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Locale;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.OmemoSetting;
 import eu.siacs.conversations.crypto.PgpDecryptionService;
-import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.persistance.DatabaseBackend;
 import eu.siacs.conversations.services.AvatarService;
 import eu.siacs.conversations.services.QuickConversationsService;
 import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
-import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
 import eu.siacs.conversations.xmpp.mam.MamReference;
 import rocks.xmpp.addr.Jid;
@@ -54,6 +49,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 
 	public static final String ATTRIBUTE_MUTED_TILL = "muted_till";
 	public static final String ATTRIBUTE_ALWAYS_NOTIFY = "always_notify";
+	public static final String ATTRIBUTE_PUSH_NODE = "push_node";
 	public static final String ATTRIBUTE_LAST_CLEAR_HISTORY = "last_clear_history";
 	static final String ATTRIBUTE_MUC_PASSWORD = "muc_password";
 	private static final String ATTRIBUTE_NEXT_MESSAGE = "next_message";
@@ -284,7 +280,7 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		final ArrayList<Message> results = new ArrayList<>();
 		synchronized (this.messages) {
 			for (Message message : this.messages) {
-				if (message.getType() != Message.TYPE_IMAGE && message.getStatus() == Message.STATUS_UNSEND) {
+				if ((message.getType() == Message.TYPE_TEXT || message.hasFileOnRemoteHost()) && message.getStatus() == Message.STATUS_UNSEND) {
 					results.add(message);
 				}
 			}
@@ -310,11 +306,18 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 	public Message findMessageWithRemoteIdAndCounterpart(String id, Jid counterpart, boolean received, boolean carbon) {
 		synchronized (this.messages) {
 			for (int i = this.messages.size() - 1; i >= 0; --i) {
-				Message message = messages.get(i);
-				if (counterpart.equals(message.getCounterpart())
-						&& ((message.getStatus() == Message.STATUS_RECEIVED) == received)
+				final Message message = messages.get(i);
+				final Jid mcp = message.getCounterpart();
+				if (mcp == null) {
+					continue;
+				}
+				final boolean counterpartMatch = mode == MODE_SINGLE ?
+					counterpart.asBareJid().equals(mcp.asBareJid()) :
+					counterpart.equals(mcp);
+				if (counterpartMatch && ((message.getStatus() == Message.STATUS_RECEIVED) == received)
 						&& (carbon == message.isCarbon() || received)) {
-					if (id.equals(message.getRemoteMsgId()) && !message.isFileOrImage() && !message.treatAsDownloadable()) {
+					final boolean idMatch = id.equals(message.getRemoteMsgId()) || message.remoteMsgIdMatchInEdit(id);
+					if (idMatch && !message.isFileOrImage() && !message.treatAsDownloadable()) {
 						return message;
 					} else {
 						return null;
@@ -576,7 +579,9 @@ public class Conversation extends AbstractEntity implements Blockable, Comparabl
 		values.put(CREATED, created);
 		values.put(STATUS, status);
 		values.put(MODE, mode);
-		values.put(ATTRIBUTES, attributes.toString());
+		synchronized (this.attributes) {
+			values.put(ATTRIBUTES, attributes.toString());
+		}
 		return values;
 	}
 

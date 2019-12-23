@@ -62,6 +62,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	public static final String COUNTERPART = "counterpart";
 	public static final String TRUE_COUNTERPART = "trueCounterpart";
 	public static final String BODY = "body";
+	public static final String BODY_LANGUAGE = "bodyLanguage";
 	public static final String TIME_SENT = "timeSent";
 	public static final String ENCRYPTION = "encryption";
 	public static final String STATUS = "status";
@@ -96,10 +97,11 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	protected boolean deleted = false;
 	protected boolean carbon = false;
 	protected boolean oob = false;
-	protected List<Edited> edits = new ArrayList<>();
+	protected List<Edit> edits = new ArrayList<>();
 	protected String relativeFilePath;
 	protected boolean read = true;
 	protected String remoteMsgId = null;
+	private String bodyLanguage = null;
 	protected String serverMsgId = null;
 	private final Conversational conversation;
 	protected Transferable transferable = null;
@@ -145,7 +147,8 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 				null,
 				null,
 				false,
-				false);
+				false,
+				null);
 	}
 
 	protected Message(final Conversational conversation, final String uuid, final String conversationUUid, final Jid counterpart,
@@ -154,7 +157,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	                final String remoteMsgId, final String relativeFilePath,
 	                final String serverMsgId, final String fingerprint, final boolean read,
 	                final String edited, final boolean oob, final String errorMessage, final Set<ReadByMarker> readByMarkers,
-	                final boolean markable, final boolean deleted) {
+	                final boolean markable, final boolean deleted, final String bodyLanguage) {
 		this.conversation = conversation;
 		this.uuid = uuid;
 		this.conversationUuid = conversationUUid;
@@ -171,12 +174,13 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 		this.serverMsgId = serverMsgId;
 		this.axolotlFingerprint = fingerprint;
 		this.read = read;
-		this.edits = Edited.fromJson(edited);
+		this.edits = Edit.fromJson(edited);
 		this.oob = oob;
 		this.errorMessage = errorMessage;
 		this.readByMarkers = readByMarkers == null ? new HashSet<>() : readByMarkers;
 		this.markable = markable;
 		this.deleted = deleted;
+		this.bodyLanguage = bodyLanguage;
 	}
 
 	public static Message fromCursor(Cursor cursor, Conversation conversation) {
@@ -201,7 +205,9 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 				cursor.getString(cursor.getColumnIndex(ERROR_MESSAGE)),
 				ReadByMarker.fromJsonString(cursor.getString(cursor.getColumnIndex(READ_BY_MARKERS))),
 				cursor.getInt(cursor.getColumnIndex(MARKABLE)) > 0,
-				cursor.getInt(cursor.getColumnIndex(DELETED)) > 0);
+				cursor.getInt(cursor.getColumnIndex(DELETED)) > 0,
+				cursor.getString(cursor.getColumnIndex(BODY_LANGUAGE))
+		);
 	}
 
 	private static Jid fromString(String value) {
@@ -257,7 +263,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 		values.put(FINGERPRINT, axolotlFingerprint);
 		values.put(READ, read ? 1 : 0);
 		try {
-			values.put(EDITED, Edited.toJson(edits));
+			values.put(EDITED, Edit.toJson(edits));
 		} catch (JSONException e) {
 			Log.e(Config.LOGTAG,"error persisting json for edits",e);
 		}
@@ -266,6 +272,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 		values.put(READ_BY_MARKERS, ReadByMarker.toJson(readByMarkers).toString());
 		values.put(MARKABLE, markable ? 1 : 0);
 		values.put(DELETED, deleted ? 1 : 0);
+		values.put(BODY_LANGUAGE, bodyLanguage);
 		return values;
 	}
 
@@ -427,7 +434,27 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	}
 
 	public void putEdited(String edited, String serverMsgId) {
-		this.edits.add(new Edited(edited, serverMsgId));
+		final Edit edit = new Edit(edited, serverMsgId);
+		if (this.edits.size() < 128 && !this.edits.contains(edit)) {
+			this.edits.add(edit);
+		}
+	}
+
+	boolean remoteMsgIdMatchInEdit(String id) {
+		for(Edit edit : this.edits) {
+			if (id.equals(edit.getEditedId())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public String getBodyLanguage() {
+		return this.bodyLanguage;
+	}
+
+	public void setBodyLanguage(String language) {
+		this.bodyLanguage = language;
 	}
 
 	public boolean edited() {
@@ -483,8 +510,8 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 
 	boolean similar(Message message) {
 		if (!isPrivateMessage() && this.serverMsgId != null && message.getServerMsgId() != null) {
-			return this.serverMsgId.equals(message.getServerMsgId()) || Edited.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId());
-		} else if (Edited.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId())) {
+			return this.serverMsgId.equals(message.getServerMsgId()) || Edit.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId());
+		} else if (Edit.wasPreviouslyEditedServerMsgId(edits, message.getServerMsgId())) {
 			return true;
 		} else if (this.body == null || this.counterpart == null) {
 			return false;
@@ -500,7 +527,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 			final boolean matchingCounterpart = this.counterpart.equals(message.getCounterpart());
 			if (message.getRemoteMsgId() != null) {
 				final boolean hasUuid = CryptoHelper.UUID_PATTERN.matcher(message.getRemoteMsgId()).matches();
-				if (hasUuid && matchingCounterpart && Edited.wasPreviouslyEditedRemoteMsgId(edits, message.getRemoteMsgId())) {
+				if (hasUuid && matchingCounterpart && Edit.wasPreviouslyEditedRemoteMsgId(edits, message.getRemoteMsgId())) {
 					return true;
 				}
 				return (message.getRemoteMsgId().equals(this.remoteMsgId) || message.getRemoteMsgId().equals(this.uuid))
@@ -712,6 +739,14 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	public String getEditedId() {
 		if (edits.size() > 0) {
 			return edits.get(edits.size() - 1).getEditedId();
+		} else {
+			throw new IllegalStateException("Attempting to store unedited message");
+		}
+	}
+
+	public String getEditedIdWireFormat() {
+		if (edits.size() > 0) {
+			return edits.get(Config.USE_LMC_VERSION_1_1 ? 0 : edits.size() - 1).getEditedId();
 		} else {
 			throw new IllegalStateException("Attempting to store unedited message");
 		}

@@ -41,7 +41,7 @@ public final class Config {
     public static final String MAGIC_CREATE_DOMAIN = "friendshipismagicsquad.com";
     public static final String QUICKSY_DOMAIN = "quicksy.im";
 
-    public static final String CHANNEL_DISCOVERY = "https://search.jabbercat.org";
+    public static final String CHANNEL_DISCOVERY = "https://search.jabber.network";
 
     public static final boolean DISALLOW_REGISTRATION_IN_UI = false; //hide the register checkbox
 
@@ -92,7 +92,7 @@ public final class Config {
     public static final int MAX_EMOTES_PER_MESSAGE = 32; // this is why we can't have nice things
 	public static final float MAX_EMOTE_WIDTH_FRACTION = 0.75F;
 	public static final int MAX_DISPLAY_MESSAGE_CHARS = 4096;
-	public static final int MAX_STORAGE_MESSAGE_CHARS = 1024 * 1024 * 1024;
+    public static final int MAX_STORAGE_MESSAGE_CHARS = 2 * 1024 * 1024; //2MB
 
     public static final long MILLISECONDS_IN_DAY = 24 * 60 * 60 * 1000;
 
@@ -101,8 +101,10 @@ public final class Config {
     public static final boolean OMEMO_PADDING = false;
     public static final boolean PUT_AUTH_TAG_INTO_KEY = true;
 
+    public static final boolean USE_BOOKMARKS2 = false;
 
     public static final boolean DISABLE_PROXY_LOOKUP = false; //useful to debug ibb
+    public static final boolean USE_DIRECT_JINGLE_CANDIDATES = true;
     public static final boolean DISABLE_HTTP_UPLOAD = false;
     public static final boolean EXTENDED_SM_LOGGING = false; // log stanza counts
     public static final boolean BACKGROUND_STANZA_LOGGING = false; //log all stanzas that were received while the app is in background
@@ -115,6 +117,9 @@ public final class Config {
     public static final boolean ONLY_INTERNAL_STORAGE = false; //use internal storage instead of sdcard to save attachments
 
     public static final boolean IGNORE_ID_REWRITE_IN_MUC = true;
+    public static final boolean MUC_LEAVE_BEFORE_JOIN = true;
+
+    public static final boolean USE_LMC_VERSION_1_1 = true;
 
     public static final long MAM_MAX_CATCHUP = MILLISECONDS_IN_DAY * 5;
     public static final int MAM_MAX_MESSAGES = 750;
@@ -152,7 +157,7 @@ public final class Config {
             "TLS_RSA_WITH_AES_256_CBC_SHA",
     };
 
-    public static final String WEAK_CIPHER_PATTERNS[] = {
+    public static final String[] WEAK_CIPHER_PATTERNS = {
             "_NULL_",
             "_EXPORT_",
             "_anon_",

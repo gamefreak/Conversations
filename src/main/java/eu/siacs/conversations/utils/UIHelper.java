@@ -34,6 +34,7 @@ import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.MucOptions;
 import eu.siacs.conversations.entities.Presence;
 import eu.siacs.conversations.entities.Transferable;
+import eu.siacs.conversations.services.ExportBackupService;
 import rocks.xmpp.addr.Jid;
 
 public class UIHelper {
@@ -280,6 +281,8 @@ public class UIHelper {
 							getFileDescriptionString(context, message)), true);
 				case Transferable.STATUS_FAILED:
 					return new Pair<>(context.getString(R.string.file_transmission_failed), true);
+				case Transferable.STATUS_CANCELLED:
+					return new Pair<>(context.getString(R.string.file_transmission_cancelled), true);
 				case Transferable.STATUS_UPLOADING:
 					if (message.getStatus() == Message.STATUS_OFFERED) {
 						return new Pair<>(context.getString(R.string.offering_x_file,
@@ -490,8 +493,12 @@ public class UIHelper {
 			return context.getString(R.string.pdf_document);
 		} else if (mime.equals("application/vnd.android.package-archive")) {
 			return context.getString(R.string.apk);
+		} else if (mime.equals(ExportBackupService.MIME_TYPE)) {
+			return context.getString(R.string.conversations_backup);
 		} else if (mime.contains("vcard")) {
 			return context.getString(R.string.vcard);
+		} else if (mime.equals("text/x-vcalendar") || mime.equals("text/calendar")) {
+			return context.getString(R.string.event);
 		} else if (mime.equals("application/epub+zip") || mime.equals("application/vnd.amazon.mobi8-ebook")) {
 			return context.getString(R.string.ebook);
 		} else {

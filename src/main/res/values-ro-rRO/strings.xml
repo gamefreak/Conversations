@@ -17,6 +17,8 @@
   <string name="action_unblock_contact">Deblochează contact</string>
   <string name="action_block_domain">Blochează domeniu</string>
   <string name="action_unblock_domain">Deblochează domeniu</string>
+  <string name="action_block_participant">Blochează participant</string>
+  <string name="action_unblock_participant">Deblochează participant</string>
   <string name="title_activity_manage_accounts">Configurează conturile</string>
   <string name="title_activity_settings">Setări</string>
   <string name="title_activity_sharewith">Partajează într-o conversație</string>
@@ -28,7 +30,7 @@
   <string name="just_now">în acest moment</string>
   <string name="minute_ago">acum un minut</string>
   <string name="minutes_ago">acum %d minute</string>
-  <string name="unread_conversations">conversații necitite</string>
+  <string name="x_unread_conversations">%d conversații necitite</string>
   <string name="sending">trimitere...</string>
   <string name="message_decrypting">Decriptez mesaj. Te rog așteaptă...</string>
   <string name="pgp_message">Mesaj criptat cu OpenPGP</string>
@@ -117,7 +119,7 @@
   <string name="pref_sound">Sunet de notificare</string>
   <string name="pref_sound_summary">Notificare sonoră atunci când este primit un mesaj nou</string>
   <string name="pref_notification_grace_period">Perioadă de grație</string>
-  <string name="pref_notification_grace_period_summary">Durata de timp cât Conversations păstrează liniștea după ce a observat activitate pe un alt dispozitiv</string>
+  <string name="pref_notification_grace_period_summary">Durata de timp cât notificările sunt ascunse după ce s-a observat activitate pe un alt dispozitiv al dumneavoastră.</string>
   <string name="pref_advanced_options">Opțiuni avansate</string>
   <string name="pref_never_send_crash">Nu trimite rapoarte de erori</string>
   <string name="pref_never_send_crash_summary">Trimițând datele despre erori ajutați la continuarea dezvoltării aplicației Conversations</string>
@@ -279,10 +281,6 @@
   <string name="title_pref_quiet_hours_end_time">Ora de terminare</string>
   <string name="title_pref_enable_quiet_hours">Activează orar de liniște</string>
   <string name="pref_quiet_hours_summary">Notificările vor fi reduse la tăcere în timpul orelor de liniște</string>
-  <string name="pref_use_send_button_to_indicate_status">Butonul de trimitere indică starea</string>
-  <string name="pref_use_indicate_received">Cere raport de primire</string>
-  <string name="pref_use_indicate_received_summary">Mesajele primite vor fi marcate cu o bifa verde, dacă este suportat</string>
-  <string name="pref_use_send_button_to_indicate_status_summary">Colorează butonul de trimitere pentru a indica starea contactului</string>
   <string name="pref_expert_options_other">Altele</string>
   <string name="pref_autojoin">Sincronizează cu semnele de carte</string>
   <string name="pref_autojoin_summary">Alătură-te sau părăsește discuțiile de grup în mod automat în funcție de setarea din semnele de carte.</string>
@@ -335,6 +333,7 @@
   <string name="x_file_offered_for_download">%s - fișier oferit spre descărcare</string>
   <string name="cancel_transmission">Anulează transmisiunea</string>
   <string name="file_transmission_failed">transmisie fișier eșuată</string>
+  <string name="file_transmission_cancelled">transmisia fișierului a fost anulată</string>
   <string name="file_deleted">Fișierul a fost șters</string>
   <string name="no_application_found_to_open_file">Nu s-a găsit nici o aplicație care să deschidă fișierul</string>
   <string name="no_application_found_to_open_link">Nu s-a găsit nici o aplicație care să deschidă legătura</string>
@@ -411,7 +410,7 @@
   <string name="sending_x_file">Trimit %s</string>
   <string name="offering_x_file">Ofer %s</string>
   <string name="hide_offline">Ascunde deconectat</string>
-  <string name="contact_is_typing">%s tasteaza...</string>
+  <string name="contact_is_typing">%s tastează...</string>
   <string name="contact_has_stopped_typing">%s s-a oprit din scris</string>
   <string name="contacts_are_typing">%s tastează...</string>
   <string name="contacts_have_stopped_typing">%s s-au oprit din scris</string>
@@ -511,9 +510,9 @@
   <string name="notify_never">Notificări dezactivate</string>
   <string name="notify_paused">Notificări suspendate</string>
   <string name="pref_picture_compression">Compresie imagini</string>
-  <string name="pref_picture_compression_summary">Redimensionează și comprimă imaginile</string>
+  <string name="pref_picture_compression_summary">Notă: Folosiți \'Alegeți un fișier\' în loc de \'Alegeți o imagine\' pentru a trimite imaginile necomprimate ignorând această setare.</string>
   <string name="always">Mereu</string>
-  <string name="automatically">Automat</string>
+  <string name="large_images_only">Doar imaginile mari</string>
   <string name="battery_optimizations_enabled">Optimizare baterie activată</string>
   <string name="battery_optimizations_enabled_explained">Dispozitivul dumneavoastră încearcă să optimizeze agresiv consumul bateriei pentru Conversations, asta poate duce la notificări întârziate sau chiar pierderea mesajelor.\nEste recomandat sa dezactivați aceste optimizări.</string>
   <string name="battery_optimizations_enabled_dialog">Dispozitivul dumneavoastră încearcă să optimizeze agresiv consumul 
@@ -867,11 +866,28 @@ sau chiar pierderea mesajelor.\nÎn continuare veți fi rugați să dezactivați
   <string name="discover_channels">Descoperă canale publice</string>
   <string name="search_channels">Caută canale publice</string>
   <string name="channel_discovery_opt_in_title">Posibilă încălcare a intimității!</string>
-  <string name="channel_discover_opt_in_message"><![CDATA[Descoperirea de canale publice folosește un serviciu terț numit <a href="https://search.jabbercat.org">search.jabbercat.org</a>.<br><br>Folosind această funcție se va transmite adresa dumneavoastră IP și cuvintele căutate către acest serviciu. Pentru mai multe informații citiți <a href="https://search.jabbercat.org/privacy">Politica de confidențialitate</a> a serviciului.]]></string>
+  <string name="channel_discover_opt_in_message"><![CDATA[Descoperirea de canale publice folosește un serviciu terț numit <a href="https://search.jabber.network">search.jabber.network</a>.<br><br>Folosind această funcție se va transmite adresa dumneavoastră IP și cuvintele căutate către acest serviciu. Pentru mai multe informații citiți <a href="https://search.jabber.network/privacy">Politica de confidențialitate</a> a serviciului.]]></string>
   <string name="i_already_have_an_account">Eu am deja un cont</string>
   <string name="add_existing_account">Adaugă un cont existent</string>
   <string name="register_new_account">Înregistrează un cont nou</string>
   <string name="this_looks_like_a_domain">Aceasta pare să fie o adresă de domeniu</string>
   <string name="add_anway">Adaugă oricum</string>
   <string name="this_looks_like_channel">Aceasta pare o adresă de canal</string>
+  <string name="share_backup_files">Partajează fișierele copiei de siguranță</string>
+  <string name="conversations_backup">Copie de siguranță Conversations</string>
+  <string name="event">Eveniment</string>
+  <string name="open_backup">Deschide o copie de siguranță</string>
+  <string name="not_a_backup_file">Fișierul selectat nu este o copie de siguranța Conversations</string>
+  <string name="account_already_setup">Acest cont a fost deja configurat</string>
+  <string name="please_enter_password">Va rugăm să introduceți parola pentru acest cont</string>
+  <string name="unable_to_perform_this_action">Nu se poate realiza această acțiune</string>
+  <string name="open_join_dialog">Alătură-te unui canal public...</string>
+  <string name="sharing_application_not_grant_permission">Aplicația care a partajat nu a permis accesul la acest fișier.</string>
+  <string name="group_chats_and_channels"><![CDATA[Discuții de grup & Canale]]></string>
+  <string name="jabber_network">jabber.network</string>
+  <string name="local_server">Server local</string>
+  <string name="pref_channel_discovery_summary">Cei mai mulți utilizatori ar trebui să aleagă \'jabber.network\' pentru a primi sugestii mai bune din întregul ecosistem XMPP.</string>
+  <string name="pref_channel_discovery">Metoda de descoperire a canalelor</string>
+  <string name="backup">Copie de siguranță</string>
+  <string name="category_about">Despre</string>
 </resources>

@@ -18,12 +18,7 @@
 
 <p align="center">
     <a href="https://play.google.com/store/apps/details?id=eu.siacs.conversations&amp;referrer=utm_source%3Dgithub">
-       <img src="https://conversations.im/images/en-play-badge.png"
-            alt="Google Play">
-            </a>
-    <a href="http://www.amazon.com/dp/B00WD35AAC/">
-        <img src="https://images-na.ssl-images-amazon.com/images/G/01/AmazonMobileApps/amazon-apps-store-us-black.png"
-             alt="Amazon App Store">
+       <img src="https://conversations.im/images/en-play-badge.png" alt="Google Play">
     </a>
 </p>
 
@@ -100,10 +95,9 @@ Buying the App from the Play Store will also give you access to our [beta test](
 
 #### I don't have a Google Account but I would still like to make a contribution
 
-I accept donations over PayPal, bank transfer and various crypto currencies. For donations via PayPal you
-can use the email address `donate@siacs.eu` or the button below.
+I accept donations over PayPal, bank transfer and various crypto currencies. For donations via PayPal use the button below:
 
-[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=CW3SYT3KG5PDL)
+[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.me/ConversationsIM)
 
 **Disclaimer:** I'm not a huge fan of PayPal and their business policies. For
 larger contributions please get in touch with me beforehand and we can talk
@@ -111,7 +105,7 @@ about bank transfer (SEPA).
 
 ##### Crypto currencies
 
-Bitcoin: `1AeqNAcg85APAZj9BZfAjdFCC5zesqXp2B`
+Bitcoin: `3KAD8vew6tPZDjiUJNnZ3YUoUxrCEVNwFL`
 
 Bitcoin Cash: `16ABkXzYAwWz8Y5DcWFfbBRqL63g3hzEaU`
 
@@ -126,11 +120,13 @@ Using your own domain not only gives you a more recognizable Jabber ID, it also 
 Learn more about [conversations.im Jabber/XMPP domain hosting](https://account.conversations.im/domain/). 
 
 ##### Running your own
-If you already have a server somewhere and are willing and able to put the necessary work in, one alternative-in the spirit of federation-is to run your own. We recommend either [Prosody](https://prosody.im/) or [ejabberd](https://www.ejabberd.im/). Both of which have their own strengths. Ejabberd is slightly more mature nowadays but Prosody is arguably easier to set up.
+If you already have a server somewhere and are willing and able to put the necessary work in you can run your own XMPP server.
 
-For Prosody you need a couple of so called [community modules](https://modules.prosody.im/) most of which are maintained by the same people that develop Prosody.
+As of 2019 we recommend you use [ejabberd](https://ejabberd.im). The default configuration file already enables everything you need to pass the [Conversations Compliance Suite](https://compliance.conversations.im). Make sure your Linux distribution ships a fairly recent version.
 
-If you pick ejabberd make sure you use the latest version. Linux Distributions might bundle some very old versions of it.
+With a little bit of effort [Prosody](https://prosody.im) can be configured to support all necessary extensions as well. However you will have to rely on so called [Community Modules](https://modules.prosody.im/) of varying quality. Prosody can be interesting to people who like to modify their server and create / prototype own modules.
+
+Performance wise - for small deployments - both ejabberd and Prosody should be fine. 
 
 #### Where can I set up a custom hostname / port
 Conversations will automatically look up the SRV records for your domain name
@@ -197,7 +193,7 @@ You can find a detailed description of how your server, the app server and FCM a
 
 
 #### But why do I need a permanent notification if I use Google Push?
-FCM (Google Push) allows an app to wake up from *Doze* which is (as the name suggests) a hibernation feature of the Android operating system that cuts the network connection and also reduces the number of times the app is allowed to wake up (to ping the server for example). The app can ask to be excluded from doze. Non push variants of the app (from F-Droid or if the server doesn’t support it) will do this on first start up. So if you get exemption from *Doze*, or if you get regular push events sent to you, Doze should not pose a threat to Conversatons working properly. But even with *Doze* the app is still open in the background (kept in memory); it is just limited in the actions it can do. Conversations needs to stay in memory to hold certain session state (online status of concats, join status of group chats, …). However with Android 8 Google changed all of this again and now an App that wants to stay in memory needs to have a foreground service which is visible to the user via the annoying notification. But why does Conversations need to hold that state? XMPP is a stateful protocol that has a lot of per-session information; packets need to be counted, presence information needs to be held, some features like Message Carbons get activated once per session, MAM catchup happens once, service discovery happens only once; the list goes on. When Conversations was created in early 2014 none of this was a problem because apps were just allowed to stay in memory. Basically every XMPP client out there holds that information in memory because it would be a lot more complicated trying to persist it to disk. An entire rewrite of Conversations in the year 2019 would attempt to do that and would probably succeed however it would require exactly that; a complete rewrite which is not feasible right now. That’s by the way also the reason why it is difficult to write an XMPP client on iOS. Or more broadly put this is also the reason why other protocols are designed as or migrated to stateless protocols (often based on HTTP); take for example the migration of IMAP to [JMAP](https://jmap.io/).
+FCM (Google Push) allows an app to wake up from *Doze* which is (as the name suggests) a hibernation feature of the Android operating system that cuts the network connection and also reduces the number of times the app is allowed to wake up (to ping the server for example). The app can ask to be excluded from doze. Non push variants of the app (from F-Droid or if the server doesn’t support it) will do this on first start up. So if you get exemption from *Doze*, or if you get regular push events sent to you, Doze should not pose a threat to Conversatons working properly. But even with *Doze* the app is still open in the background (kept in memory); it is just limited in the actions it can do. Conversations needs to stay in memory to hold certain session state (online status of contacts, join status of group chats, …). However with Android 8 Google changed all of this again and now an App that wants to stay in memory needs to have a foreground service which is visible to the user via the annoying notification. But why does Conversations need to hold that state? XMPP is a stateful protocol that has a lot of per-session information; packets need to be counted, presence information needs to be held, some features like Message Carbons get activated once per session, MAM catchup happens once, service discovery happens only once; the list goes on. When Conversations was created in early 2014 none of this was a problem because apps were just allowed to stay in memory. Basically every XMPP client out there holds that information in memory because it would be a lot more complicated trying to persist it to disk. An entire rewrite of Conversations in the year 2019 would attempt to do that and would probably succeed however it would require exactly that; a complete rewrite which is not feasible right now. That’s by the way also the reason why it is difficult to write an XMPP client on iOS. Or more broadly put this is also the reason why other protocols are designed as or migrated to stateless protocols (often based on HTTP); take for example the migration of IMAP to [JMAP](https://jmap.io/).
 
 #### Conversations doesn’t work for me. Where can I get help?
 
@@ -209,7 +205,7 @@ section of this document.
 
 #### I need professional support with Conversations or setting up my server
 
-I'm available for hire. Contact me at `inputmice@siacs.eu`.
+I'm available for hire. Contact information can be found on [my website](https://gultsch.de).
 
 #### How does the address book integration work?
 
@@ -286,12 +282,20 @@ Conversations is trying to get rid of old behaviours and set an example for
 other clients.
 
 #### Translations
-Translations are managed on [Transifex](https://www.transifex.com/projects/p/conversations/)
+Translations are managed on [Transifex](https://www.transifex.com/projects/p/conversations/).
+If you want to become a translator  Please register on transifex, apply to join
+the translation team and then step by our group chat on
+[conversations@conference.siacs.eu](https://conversations.im/j/conversations@conference.siacs.eu)
+and introduce yourself to `iNPUTmice` so he can approve your join request.
 
 #### How do I backup / move Conversations to a new device?
 On the one hand Conversations supports Message Archive Management to keep a server side history of your messages so when migrating to a new device that device can display your entire history. However that does not work if you enable OMEMO due to its forward secrecy. (Read [The State of Mobile XMPP in 2016](https://gultsch.de/xmpp_2016.html) especially the section on encryption.)
 
 As of version 2.4.0 an integrated Backup & Restore function will help with this, go to Settings &#8594; Expert settings &#8594; Create backup. A notification will pop-up during the creation process that will announce you when it's ready. After the files, one for each account, are created, you can move the **Conversations** folder *(if you want your old media files too)* or only the **Conversations/Backup** folder *(for OMEMO keys and history only)* to your new device (or to a storage place) where a freshly installed Conversations can restore each account. Don't forget to enable the accounts after a succesful restore.
+
+This backup method will include your OMEMO keys. Due to forward secrecy you will not be able to recover messages sent and received between creating the backup and restoring it. If you have a server side archive (MAM) those messages will be retrieved but displayed as *unable to decrypt*. For technical reasons you might also lose the first message you either sent or receive after the restore; for each conversation you have. This message will then also show up as *unable to decrypt*, but this will automatically recover itself as long as both participants are on Conversations 2.3.11+. Note that this doesn’t happen if you just transfer to a new phone and no messages have been exchanged between backup and restore.
+
+In the vast, vast majority of cases you won’t have to manually delete OMEMO keys or do anything like that. Conversations only introduced the offical backup feature in 2.4.0 after making sure the *OMEMO self healing* mechanism introduced in 2.3.11 works fine.
 
 **WARNING**: Be sure to know your accounts passwords or find ways to reset them **before** doing the backup as the files are encrypted using those passwords and the Restore process will ask for them.  
 **WARNING**: Do not use the restore backup feature in an attempt to clone (run simultaneously) an installation. Restoring a backup is only meant for migrations or in case you’ve lost the original device.
@@ -379,8 +383,6 @@ Read more about the concept on https://gultsch.de/trust.html
 
 #### What happened to OTR support?
 OTR was removed because it was highly unreliable. It didn’t work with multiple devices and was never really specified to work with XMPP. The codebase was a mess (There was an HTML parser in there for crying out loud to deal with the garbage some OTR clients would send.) Verification was implemented in a non-blocking way. It would tell you if the current session was using an unknown fingerprint but it didn’t actively stopped you from sending messages until you have confirmed the new fingerprint. (Like Conversations would do now with BTBV after verification or when BTBV is turned off.) Considering the previous points there was little to no desire from my point to fix this potential security issue or clean up the code base. Another reason for the removal was that people would use it *accidentally* even to communicate between two Conversations clients because they read somewhere that OTR is good.
-
-OTR is still available in [Conversations Legacy](https://github.com/siacs/Conversations/tree/legacy).
 
 ### What clients do I use on other platforms
 There are XMPP Clients available for all major platforms.
