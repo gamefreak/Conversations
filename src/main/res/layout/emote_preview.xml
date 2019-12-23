@@ -23,12 +23,15 @@
             android:adjustViewBounds="true"
             />
 
-        <TextView
+        <android.support.v7.widget.AppCompatTextView
             android:id="@+id/label"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_width="64dip"
+            android:layout_height="18dip"
             android:gravity="center_horizontal"
             android:text=":emote:"
+            android:lines="1"
+            app:autoSizeMinTextSize="8dip"
+            app:autoSizeTextType="uniform"
             />
     </LinearLayout>
 </layout>
