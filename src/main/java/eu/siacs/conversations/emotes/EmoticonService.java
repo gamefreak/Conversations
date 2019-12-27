@@ -151,6 +151,11 @@ public class EmoticonService extends Service {
 		if (emote == null) return null;
 		EmoteHolder image = this.images.get(emote.getImageName());
 		if (image == null) image = loadImage(emote);
+		if (image != null && image.drawable instanceof GifDrawable) {
+		    // Some conditions (like the screen rotating) can cause the callback to be set to null
+			image.drawable.setCallback(image.callback);
+		}
+
 		return image.drawable;
 	}
 

@@ -37,6 +37,10 @@ public class FitDrawable extends Drawable {
 		canvas.restore();
 	}
 
+	public Drawable getChildImage() {
+		return this.image;
+	}
+
 	// Mandatory overrides
 	@Override
 	public int getOpacity() {

@@ -6,6 +6,7 @@ import android.app.Activity;
 import android.app.FragmentManager;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.databinding.DataBindingUtil;
 import android.net.Uri;
 import android.os.Build;
@@ -723,6 +724,13 @@ public class ConversationFragment extends XmppFragment implements EditMessage.Ke
         if (prepareFileToast != null && activity != null) {
             activity.runOnUiThread(prepareFileToast::cancel);
         }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        // Prevent issues with animations breaking
+        messageListAdapter.notifyDataSetChanged();
+        super.onConfigurationChanged(newConfig);
     }
 
     private void markEmoteHit(String emote) {

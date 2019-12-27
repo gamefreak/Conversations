@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.databinding.DataBindingUtil;
@@ -12,7 +13,7 @@ import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.widget.AdapterView;
@@ -21,8 +22,6 @@ import android.widget.PopupMenu;
 import android.widget.SearchView;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
-import android.widget.ImageView;
 
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
@@ -60,7 +59,51 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		}
 	}
 
-	class EmoteAdapter extends BaseAdapter {
+	class EmoteViewHolder extends RecyclerView.ViewHolder {
+		private EmotePreviewBinding binding;
+		private Drawable drawable = null;
+
+		public EmoteViewHolder(EmotePreviewBinding binding) {
+			super(binding.getRoot());
+			this.binding = binding;
+		}
+
+		public void setDrawable(Drawable drawable) {
+			if (this.drawable instanceof GifDrawable) {
+				GifDrawable gifDrawable = (GifDrawable)this.drawable;
+				if (gifDrawable.getCallback() instanceof MultiCallback) {
+					((MultiCallback)gifDrawable.getCallback()).removeView(this.binding.image);
+				}
+			}
+
+			this.drawable = drawable;
+
+			if (drawable instanceof GifDrawable) {
+				GifDrawable gifDrawable = (GifDrawable)drawable;
+				if (gifDrawable.getCallback() == null) {
+					gifDrawable.setCallback(new MultiCallback());
+				}
+				if (gifDrawable.getCallback() instanceof MultiCallback) {
+					((MultiCallback)gifDrawable.getCallback()).addView(this.binding.image);
+				}
+			}
+			if (drawable != null) {
+				this.binding.image.setImageDrawable(new FitDrawable(drawable));
+			} else {
+				this.binding.image.setImageDrawable(null);
+			}
+
+		}
+	}
+
+	interface OnEmoteClickListener {
+		void onEmoteClick(EmoteAdapter adapter, View view, int position, Emote emote);
+	}
+	interface OnEmoteLongClickListener {
+		boolean onEmoteLongClick(EmoteAdapter adapter, View view, int position, Emote emote);
+	}
+
+	class EmoteAdapter extends RecyclerView.Adapter<EmoteViewHolder> {
 		private EmoticonService emoticonService = null;
 		private int lastPackVersion = -1;
 		private List<Emote> emotes = new ArrayList<>();
@@ -69,6 +112,9 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		private Context context = null;
 
 		private SQLiteDatabase db;
+
+		private OnEmoteClickListener onEmoteClickListener = null;
+		private OnEmoteLongClickListener onEmoteLongClickListener = null;
 
 		public EmoteAdapter(@NonNull Context context, SQLiteDatabase db) {
 			this.context = context;
@@ -137,63 +183,64 @@ public class EmoticonBrowserActivity extends XmppActivity {
 			}
 		}
 
-		@Override
-		public int getViewTypeCount() {
-			return 1;
-		}
-
-		@Override
-		public int getCount() {
-			return this.emotes.size();
-		}
-
 		public Emote getEmote(int i) {
 			return this.emotes.get(i);
 		}
 
-		@Override
-		public Object getItem(int i) {
-			return getEmote(i);
-		}
-
-		@Override
-		public long getItemId(int i) {
-			return getEmote(i).getImageName().hashCode();
-		}
-
 		@NonNull
 		@Override
-		public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-			EmotePreviewBinding  binding= convertView != null ? DataBindingUtil.getBinding(convertView) : DataBindingUtil.inflate(getLayoutInflater(), R.layout.emote_preview, parent, false);
+		public EmoteViewHolder onCreateViewHolder(@NonNull ViewGroup viewGroup, int i) {
+			EmotePreviewBinding  binding = DataBindingUtil.inflate(getLayoutInflater(), R.layout.emote_preview, viewGroup, false);
+			EmoteViewHolder viewHolder = new EmoteViewHolder(binding);
+			return viewHolder;
+		}
 
-			Emote emoticon = getEmote(position);
+		@Override
+		public void onBindViewHolder(@NonNull EmoteViewHolder viewHolder, int i) {
+			EmotePreviewBinding binding = viewHolder.binding;
+			Emote emoticon = getEmote(i);
+
+			binding.getRoot().setOnClickListener(view -> {
+				if (this.onEmoteLongClickListener != null) this.onEmoteClickListener.onEmoteClick(this, view, i, emoticon);
+			});
+
+			binding.getRoot().setOnLongClickListener(view -> {
+				if (this.onEmoteLongClickListener != null) {
+					return this.onEmoteLongClickListener.onEmoteLongClick(this, view, i, emoticon);
+				} else {
+					return false;
+				}
+			});
+
 			Drawable image = emoticonService.tryGetEmote(emoticon.getAliases().get(0));
 			if (image == null) {
 				if (binding.getLoaderTask() != null) {
 					binding.getLoaderTask().cancel(false);
 				}
-				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, binding.image);
+				AsyncEmoteLoader task = new AsyncEmoteLoader(emoticonService, viewHolder);
 				task.executeOnExecutor(emoticonService().getExecutor(),  emoticon.getAliases().get(0));
 				binding.setLoaderTask(task);
 
 				image = emoticonService.makePlaceholder(emoticon);
 			}
 
-			if (emoticonService.areAnimationsEnabled() && image instanceof GifDrawable) {
-				MultiCallback callback = (MultiCallback) image.getCallback();
-				if (callback != null)
-				callback.addView(binding.image);
-				else {
-					Log.w(TAG, "GetCallback -> null");
-				}
-			}
-			image = new FitDrawable(image);
 
-			binding.image.setImageDrawable(image);
+			viewHolder.setDrawable(image);
+
 			binding.label.setText(emoticon.getAliases().get(0));
-			// tried setting it in the XML but it was crashing for some reason
-//			binding.label.setTextColor(EmoticonBrowserActivity.this.getPrimaryTextColor());
-			return binding.getRoot();
+		}
+
+		@Override
+		public int getItemCount() {
+			return this.emotes.size();
+		}
+
+		public void setOnEmoteClickListener(OnEmoteClickListener onEmoteClickListener) {
+			this.onEmoteClickListener = onEmoteClickListener;
+		}
+
+		public void setOnEmoteLongClickListener(OnEmoteLongClickListener onEmoteLongClickListener) {
+			this.onEmoteLongClickListener = onEmoteLongClickListener;
 		}
 
 		public void setSearchFilter(String newText) {
@@ -213,6 +260,33 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		}
 	}
 
+	/*
+	void doDebug(EmotePreviewBinding binding, Drawable image) {
+		if (emoticonService.areAnimationsEnabled() && image instanceof GifDrawable) {
+			MultiCallback callback = (MultiCallback) image.getCallback();
+
+			if (callback != null) {
+				try {
+
+					Class<MultiCallback> mcl = (Class<MultiCallback>) callback.getClass();
+					java.lang.reflect.Field fld = mcl.getDeclaredField("mCallbacks");
+					fld.setAccessible(true);
+					java.util.concurrent.CopyOnWriteArrayList<?> callbackList = (java.util.concurrent.CopyOnWriteArrayList<?>) fld.get(callback);
+					binding.counter.setText(callbackList.size()+"");
+				} catch (IllegalAccessException e) {
+					e.printStackTrace();
+				} catch (NoSuchFieldException e) {
+					e.printStackTrace();
+				}
+			} else {
+				Log.w(TAG, "GetCallback -> null");
+				binding.counter.setText("X");
+			}
+		} else {
+			binding.counter.setText(" ");
+		}
+	}
+	//*/
 
 	public static final String ACTION_PICK_EMOTE = "pick_emote";
 	static final String TAG = "EmoteBrowserActivity";
@@ -243,6 +317,13 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 
 	@Override
+	public void onConfigurationChanged(Configuration newConfig) {
+		super.onConfigurationChanged(newConfig);
+		// Workaround for animations breaking on rotation
+		emoteAdapter.notifyDataSetChanged();
+	}
+
+	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		this.binding = DataBindingUtil.setContentView(this, R.layout.activity_emoticon_browser);
@@ -253,13 +334,13 @@ public class EmoticonBrowserActivity extends XmppActivity {
 		emoteAdapter = new EmoteAdapter(this, this.dbHelper.getReadableDatabase());
 
 		binding.emoteGrid.setAdapter(emoteAdapter);
-		binding.emoteGrid.setOnItemClickListener((adapterView, view, position, id) -> {
-			Emote emote = emoteAdapter.getEmote(position);
+
+		emoteAdapter.setOnEmoteClickListener((adapter, view, position, emote) -> {
 			emoteClicked(emote);
 		});
-		binding.emoteGrid.setOnItemLongClickListener((parent, view, position, id) -> {
+
+		emoteAdapter.setOnEmoteLongClickListener((adapter, view, position, emote) -> {
 			EmoticonBrowserActivity activity = EmoticonBrowserActivity.this;
-			Emote emote = (Emote) parent.getAdapter().getItem(position);
 			if (emote.getAliases().size() < 2) {
 				return false;
 			}
@@ -364,23 +445,24 @@ public class EmoticonBrowserActivity extends XmppActivity {
 
 	}
 
-}
 
-class AsyncEmoteLoader extends AsyncEmoteLoaderBase {
-	private WeakReference<ImageView> view;
+	class AsyncEmoteLoader extends AsyncEmoteLoaderBase {
+		private WeakReference<EmoticonBrowserActivity.EmoteViewHolder> viewHolder;
 
-	AsyncEmoteLoader(EmoticonService emoticonService, ImageView view) {
-		super(emoticonService);
-		this.view = new WeakReference<>(view);
-	}
+		AsyncEmoteLoader(EmoticonService emoticonService, EmoteViewHolder viewHolder) {
+			super(emoticonService);
+			this.viewHolder = new WeakReference<>(viewHolder);
+		}
 
-	@Override
-	protected void onPostExecute(Drawable[] drawable) {
-		super.onPostExecute(drawable);
-		if (drawable == null || drawable[0] == null) return;
-		ImageView v = this.view.get();
-		if (v != null) {
-			v.setImageDrawable(new FitDrawable(drawable[0]));
+		@Override
+		protected void onPostExecute(Drawable[] drawable) {
+			super.onPostExecute(drawable);
+			if (drawable == null || drawable[0] == null) return;
+			EmoteViewHolder vh = this.viewHolder.get();
+			if (vh != null) {
+				vh.setDrawable(drawable[0]);
+			}
 		}
 	}
 }
+

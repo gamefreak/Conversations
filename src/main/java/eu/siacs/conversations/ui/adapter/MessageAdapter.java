@@ -417,7 +417,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		return startsWithQuote;
 	}
 
-private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, MatchResult match) {
+private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, MatchResult match, ViewHolder viewHolder) {
 	final String text = match.group();
 
 	int maxWidth = activity.emoticonService().getChatEmoteMaxWidth();
@@ -428,6 +428,15 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 	}
 	ImageSpan imageSpan = new EmoticonSpan(drawable, text);
 	body.setSpan(imageSpan, match.start(), match.end(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+
+	if (drawable instanceof GifDrawable) {
+		GifDrawable gif = (GifDrawable)drawable;
+		MultiCallback callback = (MultiCallback)gif.getCallback();
+
+		if (callback != null) {
+			callback.addView(viewHolder.messageBody);
+		}
+	}
 }
 
 	private boolean handleTextEmotes(ViewHolder viewHolder, SpannableStringBuilder body) {
@@ -441,19 +450,12 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 			if (!activity.emoticonService().isEmote(name)) continue;
 			Drawable drawable = activity.emoticonService().tryGetEmote(name);
 			if (drawable != null) {
-				this.applyImageSpan(body, drawable, matcher.toMatchResult());
-				if (drawable instanceof GifDrawable) {
-					GifDrawable gif = (GifDrawable)drawable;
-					MultiCallback callback = (MultiCallback)gif.getCallback();
-					if (callback != null) {
-						callback.addView(viewHolder.messageBody);
-					}
-				}
+				this.applyImageSpan(body, drawable, matcher.toMatchResult(), viewHolder);
 			} else if (!neededEmotes.contains(name)) {
 				neededEmotes.add(name);
 			}
 			if (drawable == null) {
-				this.applyImageSpan(body, activity.emoticonService().makePlaceholder(name), matcher.toMatchResult());
+				this.applyImageSpan(body, activity.emoticonService().makePlaceholder(name), matcher.toMatchResult(), viewHolder);
 			}
 		}
 		if (!neededEmotes.isEmpty()) {

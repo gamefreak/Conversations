@@ -37,11 +37,13 @@
                 android:inputType="text|textNoSuggestions|textFilter" />
         </LinearLayout>
     </android.support.v7.widget.Toolbar>
-    <horse.vinylscratch.conversations.AutoColumnSizingGridView
+    <android.support.v7.widget.RecyclerView
         android:id="@+id/emote_grid"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:numColumns="auto_fit"
+        app:layoutManager="horse.vinylscratch.conversations.AutoColumnSizingGridLayoutManager"
+        app:spanCount="5"
         tools:listitem="@layout/emote_preview"/>
 </LinearLayout>
 </layout>
