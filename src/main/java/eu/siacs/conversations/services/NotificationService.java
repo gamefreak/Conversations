@@ -59,6 +59,7 @@ import eu.siacs.conversations.ui.TimePreference;
 import eu.siacs.conversations.utils.AccountUtils;
 import eu.siacs.conversations.utils.Compatibility;
 import eu.siacs.conversations.utils.GeoHelper;
+import eu.siacs.conversations.utils.ThemeHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.XmppConnection;
 
@@ -371,7 +372,8 @@ public class NotificationService {
     }
 
     private void setNotificationColor(final Builder mBuilder) {
-        mBuilder.setColor(ContextCompat.getColor(mXmppConnectionService, R.color.green600));
+        int color = ThemeHelper.isBlue(ThemeHelper.find(mXmppConnectionService)) ? R.color.blue_a700 : R.color.green600;
+        mBuilder.setColor(ContextCompat.getColor(mXmppConnectionService, color));
     }
 
     public void updateNotification() {

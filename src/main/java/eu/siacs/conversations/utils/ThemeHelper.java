@@ -113,6 +113,27 @@ public class ThemeHelper {
 		}
 	}
 
+	public static boolean isBlue(@StyleRes int id) {
+		switch (id) {
+			case R.style.ConversationsTheme_Moon:
+			case R.style.ConversationsTheme_Moon_Medium:
+			case R.style.ConversationsTheme_Moon_Large:
+			case R.style.ConversationsTheme_Moon_Dialog:
+			case R.style.ConversationsTheme_Moon_Dialog_Medium:
+			case R.style.ConversationsTheme_Moon_Dialog_Large:
+
+			case R.style.ConversationsTheme_Moon_Dark:
+			case R.style.ConversationsTheme_Moon_Dark_Medium:
+			case R.style.ConversationsTheme_Moon_Dark_Large:
+			case R.style.ConversationsTheme_Moon_Dark_Dialog:
+			case R.style.ConversationsTheme_Moon_Dark_Dialog_Medium:
+			case R.style.ConversationsTheme_Moon_Dark_Dialog_Large:
+				return true;
+			default:
+				return false;
+		}
+	}
+
 	public static void fix(Snackbar snackbar) {
 		final Context context = snackbar.getContext();
 		TypedArray typedArray = context.obtainStyledAttributes(new int[]{R.attr.TextSizeBody1});
