@@ -19,6 +19,7 @@ import eu.siacs.conversations.R;
 import eu.siacs.conversations.crypto.axolotl.AxolotlService;
 import eu.siacs.conversations.crypto.axolotl.BrokenSessionException;
 import eu.siacs.conversations.crypto.axolotl.NotEncryptedForThisDeviceException;
+import eu.siacs.conversations.crypto.axolotl.OutdatedSenderException;
 import eu.siacs.conversations.crypto.axolotl.XmppAxolotlMessage;
 import eu.siacs.conversations.entities.Account;
 import eu.siacs.conversations.entities.Bookmark;
@@ -140,6 +141,8 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                 }
             } catch (NotEncryptedForThisDeviceException e) {
                 return new Message(conversation, "", Message.ENCRYPTION_AXOLOTL_NOT_FOR_THIS_DEVICE, status);
+            } catch (OutdatedSenderException e) {
+                return new Message(conversation, "", Message.ENCRYPTION_AXOLOTL_FAILED, status);
             }
             if (plaintextMessage != null) {
                 Message finishedMessage = new Message(conversation, plaintextMessage.getPlaintext(), Message.ENCRYPTION_AXOLOTL, status);
@@ -449,6 +452,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                 if (conversation.getMucOptions().isSelf(counterpart)) {
                     status = Message.STATUS_SEND_RECEIVED;
                     isCarbon = true; //not really carbon but received from another resource
+                    //TODO this would be the place to change the body after something like mod_pastebin
                     if (mXmppConnectionService.markMessage(conversation, remoteMsgId, status, serverMsgId)) {
                         return;
                     } else if (remoteMsgId == null || Config.IGNORE_ID_REWRITE_IN_MUC) {

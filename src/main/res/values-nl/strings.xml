@@ -234,7 +234,6 @@
   <string name="destroy_channel_dialog">Weet je zeker dat je dit openbare kanaal wilt vernietigen?\n\n<b>Waarschuwing:</b> Dit kanaal wordt volledig verwijderd van de server.</string>
   <string name="could_not_destroy_room">Kan groepsgesprek niet vernietigen</string>
   <string name="could_not_destroy_channel">Kan kanaal niet vernietigen</string>
-  <string name="bookmark_already_exists">Deze bladwijzer bestaat al</string>
   <string name="action_edit_subject">Gespreksonderwerp bewerken</string>
   <string name="topic">Onderwerp</string>
   <string name="joining_conference">Deelnemen aan groepsgesprek…</string>
@@ -748,7 +747,6 @@
   <string name="pref_more_notification_settings_summary">Belang, geluid, trillen</string>
   <string name="video_compression_channel_name">Videocompressie</string>
   <string name="view_media">Media bekijken</string>
-  <string name="view_users">Deelnemers bekijken</string>
   <string name="group_chat_members">Deelnemers</string>
   <string name="media_browser">Mediabrowser</string>
   <string name="security_violation_not_attaching_file">Bestand weggelaten wegens beveiligingsovertreding.</string>

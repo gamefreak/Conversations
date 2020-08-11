@@ -499,7 +499,7 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 				getString(R.string.add_contact),
 				getString(R.string.add),
 				prefilledJid,
-				null,
+				invite == null ? null : invite.account,
 				invite == null || !invite.hasFingerprints(),
 				true
 		);
@@ -821,8 +821,9 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 	protected boolean processViewIntent(@NonNull Intent intent) {
 		final String inviteUri = intent.getStringExtra(EXTRA_INVITE_URI);
 		if (inviteUri != null) {
-			Invite invite = new Invite(inviteUri);
-			if (invite.isJidValid()) {
+			final Invite invite = new Invite(inviteUri);
+			invite.account = intent.getStringExtra(EXTRA_ACCOUNT);
+			if (invite.isValidJid()) {
 				return invite.invite();
 			}
 		}
@@ -836,7 +837,7 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 				Uri uri = intent.getData();
 				if (uri != null) {
 					Invite invite = new Invite(intent.getData(), intent.getBooleanExtra("scanned", false));
-					invite.account = intent.getStringExtra("account");
+					invite.account = intent.getStringExtra(EXTRA_ACCOUNT);
 					invite.forceDialog = intent.getBooleanExtra("force_dialog", false);
 					return invite.invite();
 				} else {
@@ -1019,7 +1020,7 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 			conferenceJid = Jid.of(input);
 		} catch (final IllegalArgumentException e) {
 			final XmppUri xmppUri = new XmppUri(input);
-			if (xmppUri.isJidValid() && xmppUri.isAction(XmppUri.ACTION_JOIN)) {
+			if (xmppUri.isValidJid() && xmppUri.isAction(XmppUri.ACTION_JOIN)) {
 				final Editable editable = jid.getEditableText();
 				editable.clear();
 				editable.append(xmppUri.getJid().toEscapedString());
@@ -1031,10 +1032,12 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 		}
 
 		if (isBookmarkChecked) {
-			if (account.hasBookmarkFor(conferenceJid)) {
-				layout.setError(getString(R.string.bookmark_already_exists));
+			Bookmark bookmark = account.getBookmark(conferenceJid);
+			if (bookmark != null) {
+				dialog.dismiss();
+				openConversationsForBookmark(bookmark);
 			} else {
-				final Bookmark bookmark = new Bookmark(account, conferenceJid.asBareJid());
+				bookmark = new Bookmark(account, conferenceJid.asBareJid());
 				bookmark.setAutojoin(getBooleanPreference("autojoin", R.bool.autojoin));
 				final String nick = conferenceJid.getResource();
 				if (nick != null && !nick.isEmpty() && !nick.equals(MucOptions.defaultNick(account))) {
@@ -1144,6 +1147,10 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 			final AdapterView.AdapterContextMenuInfo acmi = (AdapterContextMenuInfo) menuInfo;
 			if (mResContextMenu == R.menu.conference_context) {
 				activity.conference_context_id = acmi.position;
+				final Bookmark bookmark = (Bookmark) activity.conferences.get(acmi.position);
+				final Conversation conversation = bookmark.getConversation();
+				final MenuItem share = menu.findItem(R.id.context_share_uri);
+				share.setVisible(conversation == null || !conversation.isPrivateAndNonAnonymous());
 			} else if (mResContextMenu == R.menu.contact_context) {
 				activity.contact_context_id = acmi.position;
 				final Contact contact = (Contact) activity.contacts.get(acmi.position);
@@ -1154,7 +1161,7 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 					showContactDetailsItem.setVisible(false);
 				}
 				deleteContactMenuItem.setVisible(contact.showInRoster() && !contact.getOption(Contact.Options.SYNCED_VIA_OTHER));
-				XmppConnection xmpp = contact.getAccount().getXmppConnection();
+				final XmppConnection xmpp = contact.getAccount().getXmppConnection();
 				if (xmpp != null && xmpp.getFeatures().blocking() && !contact.isSelf()) {
 					if (contact.isBlocked()) {
 						blockUnblockItem.setTitle(R.string.unblock_contact);
@@ -1279,7 +1286,8 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 
 	public static void addInviteUri(Intent to, Intent from) {
 		if (from != null && from.hasExtra(EXTRA_INVITE_URI)) {
-			to.putExtra(EXTRA_INVITE_URI, from.getStringExtra(EXTRA_INVITE_URI));
+			final String invite = from.getStringExtra(EXTRA_INVITE_URI);
+			to.putExtra(EXTRA_INVITE_URI, invite);
 		}
 	}
 
@@ -1287,22 +1295,19 @@ public class StartConversationActivity extends XmppActivity implements XmppConne
 
 		public String account;
 
-		public boolean forceDialog = false;
+		boolean forceDialog = false;
 
-		public Invite(final Uri uri) {
+
+		Invite(final String uri) {
 			super(uri);
 		}
 
-		public Invite(final String uri) {
-			super(uri);
-		}
-
-		public Invite(Uri uri, boolean safeSource) {
+		Invite(Uri uri, boolean safeSource) {
 			super(uri, safeSource);
 		}
 
 		boolean invite() {
-			if (!isJidValid()) {
+			if (!isValidJid()) {
 				Toast.makeText(StartConversationActivity.this, R.string.invalid_jid, Toast.LENGTH_SHORT).show();
 				return false;
 			}

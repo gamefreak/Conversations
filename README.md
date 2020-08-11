@@ -189,7 +189,7 @@ If you don’t want this simply pick a server which does not offer Push Notifica
 
 You can find a detailed description of how your server, the app server and FCM are interacting with each other in the [README](https://github.com/iNPUTmice/p2/blob/master/README.md) of the Conversations App Server.
 
- ¹ Your server only needs to support the server side of [XEP-0357: Push Notifications](http://xmpp.org/extensions/xep-0357.html). If you use the Play Store version you do **not** need to run your own app server. The server modules are called *mod_cloud_notify* on Prosody and *mod_push* on ejabberd.
+ ¹ If you use the Play Store version you do **not** need to run your own app server. Your server only needs to support the server side of [XEP-0357: Push Notifications](http://xmpp.org/extensions/xep-0357.html) and [XEP-0198: Stream Management](https://xmpp.org/extensions/xep-0198.html). The prosody server modules are called *mod_cloud_notify* and *mod_smacks*. The ejabberd server modules are called *mod_push* and *mod_stream_mgmt*.
 
 
 #### But why do I need a permanent notification if I use Google Push?
@@ -197,7 +197,7 @@ FCM (Google Push) allows an app to wake up from *Doze* which is (as the name sug
 
 #### Conversations doesn’t work for me. Where can I get help?
 
-You can join our conference room on `conversations@conference.siacs.eu`.
+You can join our conference room on [`conversations@conference.siacs.eu`](https://conversations.im/j/conversations@conference.siacs.eu).
 A lot of people in there are able to answer basic questions about the usage of
 Conversations or can provide you with tips on running your own XMPP server. If
 you found a bug or your app crashes please read the Developer / Report Bugs
@@ -291,7 +291,7 @@ and introduce yourself to `iNPUTmice` so he can approve your join request.
 #### How do I backup / move Conversations to a new device?
 On the one hand Conversations supports Message Archive Management to keep a server side history of your messages so when migrating to a new device that device can display your entire history. However that does not work if you enable OMEMO due to its forward secrecy. (Read [The State of Mobile XMPP in 2016](https://gultsch.de/xmpp_2016.html) especially the section on encryption.)
 
-As of version 2.4.0 an integrated Backup & Restore function will help with this, go to Settings &#8594; Expert settings &#8594; Create backup. A notification will pop-up during the creation process that will announce you when it's ready. After the files, one for each account, are created, you can move the **Conversations** folder *(if you want your old media files too)* or only the **Conversations/Backup** folder *(for OMEMO keys and history only)* to your new device (or to a storage place) where a freshly installed Conversations can restore each account. Don't forget to enable the accounts after a succesful restore.
+As of version 2.4.0 an integrated Backup & Restore function will help with this, go to Settings and you’ll find a setting called Create backup. A notification will pop-up during the creation process that will announce you when it's ready. After the files, one for each account, are created, you can move the **Conversations** folder *(if you want your old media files too)* or only the **Conversations/Backup** folder *(for OMEMO keys and history only)* to your new device (or to a storage place) where a freshly installed Conversations can restore each account. Don't forget to enable the accounts after a succesful restore.
 
 This backup method will include your OMEMO keys. Due to forward secrecy you will not be able to recover messages sent and received between creating the backup and restoring it. If you have a server side archive (MAM) those messages will be retrieved but displayed as *unable to decrypt*. For technical reasons you might also lose the first message you either sent or receive after the restore; for each conversation you have. This message will then also show up as *unable to decrypt*, but this will automatically recover itself as long as both participants are on Conversations 2.3.11+. Note that this doesn’t happen if you just transfer to a new phone and no messages have been exchanged between backup and restore.
 

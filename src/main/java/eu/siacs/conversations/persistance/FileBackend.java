@@ -3,7 +3,6 @@ package eu.siacs.conversations.persistance;
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -12,6 +11,7 @@ import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
+import android.graphics.pdf.PdfRenderer;
 import android.media.MediaMetadataRetriever;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
@@ -26,6 +26,7 @@ import android.system.Os;
 import android.system.StructStat;
 import android.util.Base64;
 import android.util.Base64OutputStream;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.util.LruCache;
 
@@ -60,6 +61,7 @@ import eu.siacs.conversations.services.AttachFileToConversationRunnable;
 import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.ui.RecordingActivity;
 import eu.siacs.conversations.ui.util.Attachment;
+import eu.siacs.conversations.utils.Compatibility;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.ExifHelper;
 import eu.siacs.conversations.utils.FileUtils;
@@ -74,10 +76,8 @@ public class FileBackend {
     private static final SimpleDateFormat IMAGE_DATE_FORMAT = new SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US);
 
     private static final String FILE_PROVIDER = ".files";
-
-    private XmppConnectionService mXmppConnectionService;
-
     private static final float IGNORE_PADDING = 0.15f;
+    private XmppConnectionService mXmppConnectionService;
 
     public FileBackend(XmppConnectionService service) {
         this.mXmppConnectionService = service;
@@ -158,7 +158,7 @@ public class FileBackend {
     }
 
     public static String getBackupDirectory(String app) {
-        return Environment.getExternalStorageDirectory().getAbsolutePath() + "/"+app+"/Backup/";
+        return Environment.getExternalStorageDirectory().getAbsolutePath() + "/" + app + "/Backup/";
     }
 
     private static Bitmap rotate(Bitmap bitmap, int degree) {
@@ -255,31 +255,6 @@ public class FileBackend {
             }
         }
         return inSampleSize;
-    }
-
-    public Bitmap getPreviewForUri(Attachment attachment, int size, boolean cacheOnly) {
-        final String key = "attachment_"+attachment.getUuid().toString()+"_"+String.valueOf(size);
-        final LruCache<String, Bitmap> cache = mXmppConnectionService.getBitmapCache();
-        Bitmap bitmap = cache.get(key);
-        if (bitmap != null || cacheOnly) {
-            return bitmap;
-        }
-        if (attachment.getMime() != null && attachment.getMime().startsWith("video/")) {
-            bitmap = cropCenterSquareVideo(attachment.getUri(), size);
-            drawOverlay(bitmap, paintOverlayBlack(bitmap) ? R.drawable.play_video_black : R.drawable.play_video_white, 0.75f);
-        } else {
-            bitmap = cropCenterSquare(attachment.getUri(), size);
-            if (bitmap != null && "image/gif".equals(attachment.getMime())) {
-                Bitmap withGifOverlay = bitmap.copy(Bitmap.Config.ARGB_8888, true);
-                drawOverlay(withGifOverlay, paintOverlayBlack(withGifOverlay) ? R.drawable.play_gif_black : R.drawable.play_gif_white, 1.0f);
-                bitmap.recycle();
-                bitmap = withGifOverlay;
-            }
-        }
-        if (bitmap != null) {
-            cache.put(key, bitmap);
-        }
-        return bitmap;
     }
 
     private static Dimensions getVideoDimensions(Context context, Uri uri) throws NotAVideoFile {
@@ -421,19 +396,6 @@ public class FileBackend {
         }
     }
 
-    private void createNoMedia(File diretory) {
-        final File noMedia = new File(diretory, ".nomedia");
-        if (!noMedia.exists()) {
-            try {
-                if (!noMedia.createNewFile()) {
-                    Log.d(Config.LOGTAG, "created nomedia file " + noMedia.getAbsolutePath());
-                }
-            } catch (Exception e) {
-                Log.d(Config.LOGTAG, "could not create nomedia file");
-            }
-        }
-    }
-
     public static Uri getMediaUri(Context context, File file) {
         final String filePath = file.getAbsolutePath();
         final Cursor cursor;
@@ -455,6 +417,54 @@ public class FileBackend {
         }
     }
 
+    public static void updateFileParams(Message message, URL url, long size) {
+        final StringBuilder body = new StringBuilder();
+        body.append(url.toString()).append('|').append(size);
+        message.setBody(body.toString());
+    }
+
+    public Bitmap getPreviewForUri(Attachment attachment, int size, boolean cacheOnly) {
+        final String key = "attachment_" + attachment.getUuid().toString() + "_" + size;
+        final LruCache<String, Bitmap> cache = mXmppConnectionService.getBitmapCache();
+        Bitmap bitmap = cache.get(key);
+        if (bitmap != null || cacheOnly) {
+            return bitmap;
+        }
+        final String mime = attachment.getMime();
+        if ("application/pdf".equals(mime) && Compatibility.runsTwentyOne()) {
+            bitmap = cropCenterSquarePdf(attachment.getUri(), size);
+            drawOverlay(bitmap, paintOverlayBlackPdf(bitmap) ? R.drawable.open_pdf_black : R.drawable.open_pdf_white, 0.75f);
+        } else if (mime != null && mime.startsWith("video/")) {
+            bitmap = cropCenterSquareVideo(attachment.getUri(), size);
+            drawOverlay(bitmap, paintOverlayBlack(bitmap) ? R.drawable.play_video_black : R.drawable.play_video_white, 0.75f);
+        } else {
+            bitmap = cropCenterSquare(attachment.getUri(), size);
+            if (bitmap != null && "image/gif".equals(mime)) {
+                Bitmap withGifOverlay = bitmap.copy(Bitmap.Config.ARGB_8888, true);
+                drawOverlay(withGifOverlay, paintOverlayBlack(withGifOverlay) ? R.drawable.play_gif_black : R.drawable.play_gif_white, 1.0f);
+                bitmap.recycle();
+                bitmap = withGifOverlay;
+            }
+        }
+        if (bitmap != null) {
+            cache.put(key, bitmap);
+        }
+        return bitmap;
+    }
+
+    private void createNoMedia(File diretory) {
+        final File noMedia = new File(diretory, ".nomedia");
+        if (!noMedia.exists()) {
+            try {
+                if (!noMedia.createNewFile()) {
+                    Log.d(Config.LOGTAG, "created nomedia file " + noMedia.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                Log.d(Config.LOGTAG, "could not create nomedia file");
+            }
+        }
+    }
+
     public void updateMediaScanner(File file) {
         updateMediaScanner(file, null);
     }
@@ -472,7 +482,7 @@ public class FileBackend {
                     if (callback != null && file.getAbsolutePath().equals(path)) {
                         callback.run();
                     } else {
-                        Log.d(Config.LOGTAG,"media scanner scanned wrong file");
+                        Log.d(Config.LOGTAG, "media scanner scanned wrong file");
                         if (callback != null) {
                             callback.run();
                         }
@@ -505,8 +515,9 @@ public class FileBackend {
         return getFile(message, true);
     }
 
+
     public DownloadableFile getFileForPath(String path) {
-        return getFileForPath(path,MimeUtils.guessMimeTypeFromExtension(MimeUtils.extractRelevantExtension(path)));
+        return getFileForPath(path, MimeUtils.guessMimeTypeFromExtension(MimeUtils.extractRelevantExtension(path)));
     }
 
     public DownloadableFile getFileForPath(String path, String mime) {
@@ -548,7 +559,7 @@ public class FileBackend {
 
     public List<Attachment> convertToAttachments(List<DatabaseBackend.FilePath> relativeFilePaths) {
         List<Attachment> attachments = new ArrayList<>();
-        for(DatabaseBackend.FilePath relativeFilePath : relativeFilePaths) {
+        for (DatabaseBackend.FilePath relativeFilePath : relativeFilePaths) {
             final String mime = MimeUtils.guessMimeTypeFromExtension(MimeUtils.extractRelevantExtension(relativeFilePath.path));
             final File file = getFileForPath(relativeFilePath.path, mime);
             attachments.add(Attachment.of(relativeFilePath.uuid, file, mime));
@@ -813,10 +824,12 @@ public class FileBackend {
                 }
                 DownloadableFile file = getFile(message);
                 final String mime = file.getMimeType();
-                if (mime.startsWith("video/")) {
+                if ("application/pdf".equals(mime) && Compatibility.runsTwentyOne()) {
+                    thumbnail = getPdfDocumentPreview(file, size);
+                } else if (mime.startsWith("video/")) {
                     thumbnail = getVideoPreview(file, size);
                 } else {
-                    Bitmap fullsize = getFullsizeImagePreview(file, size);
+                    Bitmap fullsize = getFullSizeImagePreview(file, size);
                     if (fullsize == null) {
                         throw new FileNotFoundException();
                     }
@@ -835,7 +848,7 @@ public class FileBackend {
         return thumbnail;
     }
 
-    private Bitmap getFullsizeImagePreview(File file, int size) {
+    private Bitmap getFullSizeImagePreview(File file, int size) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inSampleSize = calcSampleSize(file, size);
         try {
@@ -877,6 +890,21 @@ public class FileBackend {
         return record < 0;
     }
 
+    private boolean paintOverlayBlackPdf(final Bitmap bitmap) {
+        final int h = bitmap.getHeight();
+        final int w = bitmap.getWidth();
+        int white = 0;
+        for (int y = 0; y < h; ++y) {
+            for (int x = 0; x < w; ++x) {
+                int pixel = bitmap.getPixel(x, y);
+                if ((Color.red(pixel) * 0.299 + Color.green(pixel) * 0.587 + Color.blue(pixel) * 0.114) > 186) {
+                    white++;
+                }
+            }
+        }
+        return white > (h * w * 0.4f);
+    }
+
     private Bitmap cropCenterSquareVideo(Uri uri, int size) {
         MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
         Bitmap frame;
@@ -892,8 +920,8 @@ public class FileBackend {
         }
     }
 
-    private Bitmap getVideoPreview(File file, int size) {
-        MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
+    private Bitmap getVideoPreview(final File file, final int size) {
+        final MediaMetadataRetriever metadataRetriever = new MediaMetadataRetriever();
         Bitmap frame;
         try {
             metadataRetriever.setDataSource(file.getAbsolutePath());
@@ -906,6 +934,49 @@ public class FileBackend {
         }
         drawOverlay(frame, paintOverlayBlack(frame) ? R.drawable.play_video_black : R.drawable.play_video_white, 0.75f);
         return frame;
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private Bitmap getPdfDocumentPreview(final File file, final int size) {
+        try {
+            final ParcelFileDescriptor fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+            final Bitmap rendered = renderPdfDocument(fileDescriptor, size, true);
+            drawOverlay(rendered, paintOverlayBlackPdf(rendered) ? R.drawable.open_pdf_black : R.drawable.open_pdf_white, 0.75f);
+            return rendered;
+        } catch (IOException e) {
+            Log.d(Config.LOGTAG, "unable to render PDF document preview", e);
+            final Bitmap placeholder = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            placeholder.eraseColor(0xff000000);
+            return placeholder;
+        }
+    }
+
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private Bitmap cropCenterSquarePdf(final Uri uri, final int size) {
+        try {
+            ParcelFileDescriptor fileDescriptor = mXmppConnectionService.getContentResolver().openFileDescriptor(uri, "r");
+            final Bitmap bitmap = renderPdfDocument(fileDescriptor, size, false);
+            return cropCenterSquare(bitmap, size);
+        } catch (Exception e) {
+            final Bitmap placeholder = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+            placeholder.eraseColor(0xff000000);
+            return placeholder;
+        }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private Bitmap renderPdfDocument(ParcelFileDescriptor fileDescriptor, int targetSize, boolean fit) throws IOException {
+        final PdfRenderer pdfRenderer = new PdfRenderer(fileDescriptor);
+        final PdfRenderer.Page page = pdfRenderer.openPage(0);
+        final Dimensions dimensions = scalePdfDimensions(new Dimensions(page.getHeight(), page.getWidth()), targetSize, fit);
+        final Bitmap rendered = Bitmap.createBitmap(dimensions.width, dimensions.height, Bitmap.Config.ARGB_8888);
+        rendered.eraseColor(0xffffffff);
+        page.render(rendered, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+        page.close();
+        pdfRenderer.close();
+        fileDescriptor.close();
+        return rendered;
     }
 
     public Uri getTakePhotoUri() {
@@ -988,7 +1059,7 @@ public class FileBackend {
             avatar.height = bitmap.getHeight();
             return avatar;
         } catch (OutOfMemoryError e) {
-            Log.d(Config.LOGTAG,"unable to convert avatar to base64 due to low memory");
+            Log.d(Config.LOGTAG, "unable to convert avatar to base64 due to low memory");
             return null;
         } catch (Exception e) {
             return null;
@@ -1116,7 +1187,7 @@ public class FileBackend {
                 return cropCenterSquare(input, size);
             }
         } catch (FileNotFoundException | SecurityException e) {
-            Log.d(Config.LOGTAG,"unable to open file "+image.toString(), e);
+            Log.d(Config.LOGTAG, "unable to open file " + image.toString(), e);
             return null;
         } finally {
             close(is);
@@ -1205,14 +1276,22 @@ public class FileBackend {
         final boolean image = message.getType() == Message.TYPE_IMAGE || (mime != null && mime.startsWith("image/"));
         final boolean video = mime != null && mime.startsWith("video/");
         final boolean audio = mime != null && mime.startsWith("audio/");
+        final boolean pdf = "application/pdf".equals(mime);
         final StringBuilder body = new StringBuilder();
         if (url != null) {
             body.append(url.toString());
         }
         body.append('|').append(file.getSize());
-        if (image || video) {
+        if (image || video || (pdf && Compatibility.runsTwentyOne())) {
             try {
-                Dimensions dimensions = image ? getImageDimensions(file) : getVideoDimensions(file);
+                final Dimensions dimensions;
+                if (video) {
+                    dimensions = getVideoDimensions(file);
+                } else if (pdf && Compatibility.runsTwentyOne()) {
+                    dimensions = getPdfDocumentDimensions(file);
+                } else {
+                    dimensions = getImageDimensions(file);
+                }
                 if (dimensions.valid()) {
                     body.append('|').append(dimensions.width).append('|').append(dimensions.height);
                 }
@@ -1227,7 +1306,6 @@ public class FileBackend {
         message.setDeleted(false);
         message.setType(privateMessage ? Message.TYPE_PRIVATE_FILE : (image ? Message.TYPE_IMAGE : Message.TYPE_FILE));
     }
-
 
     private int getMediaRuntime(File file) {
         try {
@@ -1260,6 +1338,49 @@ public class FileBackend {
         return getVideoDimensions(metadataRetriever);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.LOLLIPOP)
+    private Dimensions getPdfDocumentDimensions(final File file) {
+        final ParcelFileDescriptor fileDescriptor;
+        try {
+            fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY);
+            if (fileDescriptor == null) {
+                return new Dimensions(0, 0);
+            }
+        } catch (FileNotFoundException e) {
+            return new Dimensions(0, 0);
+        }
+        try {
+            final PdfRenderer pdfRenderer = new PdfRenderer(fileDescriptor);
+            final PdfRenderer.Page page = pdfRenderer.openPage(0);
+            final int height = page.getHeight();
+            final int width = page.getWidth();
+            page.close();
+            pdfRenderer.close();
+            return scalePdfDimensions(new Dimensions(height, width));
+        } catch (IOException e) {
+            Log.d(Config.LOGTAG, "unable to get dimensions for pdf document", e);
+            return new Dimensions(0, 0);
+        }
+    }
+
+    private Dimensions scalePdfDimensions(Dimensions in) {
+        final DisplayMetrics displayMetrics = mXmppConnectionService.getResources().getDisplayMetrics();
+        final int target = (int) (displayMetrics.density * 288);
+        return scalePdfDimensions(in, target, true);
+    }
+
+    private static Dimensions scalePdfDimensions(final Dimensions in, final int target, final boolean fit) {
+        final int w, h;
+        if (fit == (in.width <= in.height)) {
+            w = Math.max((int) (in.width / ((double) in.height / target)), 1);
+            h = target;
+        } else {
+            w = target;
+            h = Math.max((int) (in.height / ((double) in.width / target)), 1);
+        }
+        return new Dimensions(h, w);
+    }
+
     public Bitmap getAvatar(String avatar, int size) {
         if (avatar == null) {
             return null;
@@ -1269,10 +1390,6 @@ public class FileBackend {
             return null;
         }
         return bm;
-    }
-
-    public boolean isFileAvailable(Message message) {
-        return getFile(message).exists();
     }
 
     private static class Dimensions {

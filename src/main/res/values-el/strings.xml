@@ -234,7 +234,6 @@
   <string name="destroy_channel_dialog">Είστε βέβαιοι ότι θέλετε να καταστρέψετε αυτό το δημόσιο κανάλι;\n\n<b>Προσοχή:</b>Το κανάλι θα διαγραφεί πλήρως από τον διακομιστή.</string>
   <string name="could_not_destroy_room">Δεν ήταν δυνατή η καταστροφή της ομαδικής συζήτησης</string>
   <string name="could_not_destroy_channel">Δεν ήταν δυνατή η καταστροφή του καναλιού</string>
-  <string name="bookmark_already_exists">Αυτός ο σελιδοδείκτης υπάρχει ήδη</string>
   <string name="action_edit_subject">Επεξεργασία θέματος ομαδικής συζήτησης</string>
   <string name="topic">Θέμα</string>
   <string name="joining_conference">Συμμετοχή σε ομαδική συζήτηση...</string>
@@ -747,7 +746,6 @@
   <string name="pref_more_notification_settings_summary">Σημασία, Ήχος, Δόνηση</string>
   <string name="video_compression_channel_name">Συμπίεση βίντεο</string>
   <string name="view_media">Εμφάνιση μέσου</string>
-  <string name="view_users">Εμφάνιση συμμετεχόντων</string>
   <string name="group_chat_members">Συμμετέχοντες</string>
   <string name="media_browser">Περιηγητης μέσων</string>
   <string name="security_violation_not_attaching_file">Το αρχείο παραλείπεται λόγω παραβίασης ασφάλειας.</string>

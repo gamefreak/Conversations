@@ -613,6 +613,8 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 						this.getBody().length() + message.getBody().length() <= Config.MAX_DISPLAY_MESSAGE_CHARS &&
 						!message.isGeoUri() &&
 						!this.isGeoUri() &&
+						!message.isOOb() &&
+						!this.isOOb() &&
 						!message.treatAsDownloadable() &&
 						!this.treatAsDownloadable() &&
 						!message.getBody().startsWith(ME_COMMAND) &&
@@ -651,6 +653,10 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 		} else {
 			return UIHelper.getColorForName(UIHelper.getMessageDisplayName(this));
 		}
+	}
+
+	public boolean isOOb() {
+		return oob;
 	}
 
 	public static class MergeSeparator {
@@ -802,7 +808,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 			if (this.transferable != null) {
 				fileParams.size = this.transferable.getFileSize();
 			}
-			String parts[] = body == null ? new String[0] : body.split("\\|");
+			final String[] parts = body == null ? new String[0] : body.split("\\|");
 			switch (parts.length) {
 				case 1:
 					try {

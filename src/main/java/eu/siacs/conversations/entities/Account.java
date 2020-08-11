@@ -50,6 +50,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
     public static final String RESOURCE = "resource";
 
     public static final String PINNED_MECHANISM_KEY = "pinned_mechanism";
+    public static final String PRE_AUTH_REGISTRATION_TOKEN = "pre_auth_registration";
 
     public static final int OPTION_USETLS = 0;
     public static final int OPTION_DISABLED = 1;
@@ -60,6 +61,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
     public static final int OPTION_LOGGED_IN_SUCCESSFULLY = 6;
     public static final int OPTION_HTTP_UPLOAD_AVAILABLE = 7;
     public static final int OPTION_UNVERIFIED = 8;
+    public static final int OPTION_FIXED_USERNAME = 9;
     private static final String KEY_PGP_SIGNATURE = "pgp_signature";
     private static final String KEY_PGP_ID = "pgp_id";
     public final HashSet<Pair<String, String>> inProgressDiscoFetches = new HashSet<>();
@@ -506,13 +508,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
         }
     }
 
-    public boolean hasBookmarkFor(final Jid jid) {
-        synchronized (this.bookmarks) {
-            return this.bookmarks.containsKey(jid.asBareJid());
-        }
-    }
-
-    Bookmark getBookmark(final Jid jid) {
+    public Bookmark getBookmark(final Jid jid) {
         synchronized (this.bookmarks) {
             return this.bookmarks.get(jid.asBareJid());
         }
@@ -619,6 +615,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
         REGISTRATION_CONFLICT(true, false),
         REGISTRATION_NOT_SUPPORTED(true, false),
         REGISTRATION_PLEASE_WAIT(true, false),
+        REGISTRATION_INVALID_TOKEN(true,false),
         REGISTRATION_PASSWORD_TOO_WEAK(true, false),
         TLS_ERROR,
         INCOMPATIBLE_SERVER,
@@ -683,6 +680,8 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
                     return R.string.account_status_regis_success;
                 case REGISTRATION_NOT_SUPPORTED:
                     return R.string.account_status_regis_not_sup;
+                case REGISTRATION_INVALID_TOKEN:
+                    return R.string.account_status_regis_invalid_token;
                 case TLS_ERROR:
                     return R.string.account_status_tls_error;
                 case INCOMPATIBLE_SERVER:

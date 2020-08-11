@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="theme">light</string>
+    <string-array name="themes">
+        <item>@string/pref_theme_light</item>
+        <item>@string/pref_theme_dark</item>
+        <item>@string/pref_theme_moon</item>
+        <item>@string/pref_theme_moon_dark</item>
+    </string-array>
+    <string-array name="themes_values">
+		<item>light</item>
+		<item>dark</item>
+        <item>moon</item>
+        <item>moon_dark</item>
+	</string-array>
+
+</resources>

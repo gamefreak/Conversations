@@ -155,6 +155,7 @@
   <string name="account_status_regis_conflict">Nazwa jest już w użyciu</string>
   <string name="account_status_regis_success">Zarejestrowano pomyślnie</string>
   <string name="account_status_regis_not_sup">Serwer nie umożliwia rejestracji</string>
+  <string name="account_status_regis_invalid_token">Nieprawidłowy żeton rejestracji</string>
   <string name="account_status_tls_error">Nie powiodła się negocjacja TLS</string>
   <string name="account_status_policy_violation">Naruszenie zasad</string>
   <string name="account_status_incompatible_server">Serwer niekompatybilny</string>
@@ -235,7 +236,6 @@
   <string name="destroy_channel_dialog">Czy na pewno chcesz usunąć ten kanał publiczny?\n\n<b>Ostrzeżenie:</b> Ten kanał zostanie całkowicie usunięty z serwera.</string>
   <string name="could_not_destroy_room">Usuwanie konferencji nieudane</string>
   <string name="could_not_destroy_channel">Nie można usunąć kanału</string>
-  <string name="bookmark_already_exists">Zakładka już istnieje</string>
   <string name="action_edit_subject">Edytuj tytuł konferencji</string>
   <string name="topic">Temat</string>
   <string name="joining_conference">Dołączanie do konferencji</string>
@@ -292,6 +292,7 @@
   <string name="conference_shutdown">Konferencja została zamknięta</string>
   <string name="conference_unknown_error">Nie uczestniczysz już w tej konferencji</string>
   <string name="using_account">używając konta %s</string>
+  <string name="hosted_on">udostępnione na %s</string>
   <string name="checking_x">Sprawdzanie %s na hoście HTTP</string>
   <string name="not_connected_try_again">Brak połączenia. Spróbuj ponownie później</string>
   <string name="check_x_filesize">Sprawdź rozmiar %s</string>
@@ -560,6 +561,7 @@
   <string name="pref_privacy">Prywatność</string>
   <string name="pref_theme_options">Skórka</string>
   <string name="pref_theme_options_summary">Wybierz paletę kolorów</string>
+  <string name="pref_theme_automatic">Automatycznie</string>
   <string name="pref_theme_light">Jasna skórka</string>
   <string name="pref_theme_dark">Ciemna skórka</string>
   <string name="pref_use_green_background">Zielone tło</string>
@@ -769,7 +771,6 @@ Administrator twojego serwera będzie mógł czytać twoje wiadomości, ale moż
   <string name="pref_more_notification_settings_summary">Ważność, Dźwięk, Wibracja</string>
   <string name="video_compression_channel_name">Kompresja wideo</string>
   <string name="view_media">Pokaż media</string>
-  <string name="view_users">Pokaż członków</string>
   <string name="group_chat_members">Uczestnicy</string>
   <string name="media_browser">Przeglądarka mediów</string>
   <string name="security_violation_not_attaching_file">Plik pominięty w związku z naruszeniem bezpieczeństwa.</string>
@@ -898,4 +899,10 @@ Administrator twojego serwera będzie mógł czytać twoje wiadomości, ale moż
   <string name="pref_channel_discovery">Metoda odkrywania kanałów</string>
   <string name="backup">Kopia zapasowa</string>
   <string name="category_about">O aplikacji</string>
+  <plurals name="view_users">
+    <item quantity="one">Pokaż %1$d uczestnika</item>
+    <item quantity="few">Pokaż %1$d uczestników</item>
+    <item quantity="many">Pokaż %1$d uczestników</item>
+    <item quantity="other">Pokaż %1$d uczestników</item>
+  </plurals>
 </resources>

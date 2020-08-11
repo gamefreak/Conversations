@@ -36,7 +36,6 @@ import android.provider.ContactsContract;
 import android.security.KeyChain;
 import android.support.annotation.BoolRes;
 import android.support.annotation.IntegerRes;
-import android.support.annotation.NonNull;
 import android.support.v4.app.RemoteInput;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
@@ -1543,7 +1542,7 @@ public class XmppConnectionService extends Service {
             if (delay) {
                 mMessageGenerator.addDelay(packet, message.getTimeSent());
             }
-            if (conversation.setOutgoingChatState(Config.DEFAULT_CHATSTATE)) {
+            if (conversation.setOutgoingChatState(Config.DEFAULT_CHAT_STATE)) {
                 if (this.sendChatStates()) {
                     packet.addChild(ChatState.toElement(conversation.getOutgoingChatState()));
                 }
@@ -1867,7 +1866,7 @@ public class XmppConnectionService extends Service {
     private void markFileDeleted(final String path) {
         synchronized (FILENAMES_TO_IGNORE_DELETION) {
             if (FILENAMES_TO_IGNORE_DELETION.remove(path)) {
-                Log.d(Config.LOGTAG,"ignored deletion of "+path);
+                Log.d(Config.LOGTAG, "ignored deletion of " + path);
                 return;
             }
         }
@@ -1882,6 +1881,9 @@ public class XmppConnectionService extends Service {
         boolean deleted = false;
         for (Conversation conversation : getConversations()) {
             deleted |= conversation.markAsDeleted(uuids);
+        }
+        for (final String uuid : uuids) {
+            evictPreview(uuid);
         }
         if (deleted) {
             updateConversationUi();
@@ -2542,7 +2544,7 @@ public class XmppConnectionService extends Service {
             if (conversation.getMode() == Conversation.MODE_MULTI) {
                 conversation.getMucOptions().resetChatState();
             } else {
-                conversation.setIncomingChatState(Config.DEFAULT_CHATSTATE);
+                conversation.setIncomingChatState(Config.DEFAULT_CHAT_STATE);
             }
         }
         for (Account account : getAccounts()) {
@@ -3198,16 +3200,20 @@ public class XmppConnectionService extends Service {
             conversation.setAttribute("accept_non_anonymous", true);
             updateConversation(conversation);
         }
-        IqPacket request = new IqPacket(IqPacket.TYPE.GET);
+        if (options.containsKey("muc#roomconfig_moderatedroom")) {
+            final boolean moderated = "1".equals(options.getString("muc#roomconfig_moderatedroom"));
+            options.putString("members_by_default", moderated ? "0" : "1");
+        }
+        final IqPacket request = new IqPacket(IqPacket.TYPE.GET);
         request.setTo(conversation.getJid().asBareJid());
         request.query("http://jabber.org/protocol/muc#owner");
         sendIqPacket(conversation.getAccount(), request, new OnIqPacketReceived() {
             @Override
             public void onIqPacketReceived(Account account, IqPacket packet) {
                 if (packet.getType() == IqPacket.TYPE.RESULT) {
-                    Data data = Data.parse(packet.query().findChild("x", Namespace.DATA));
+                    final Data data = Data.parse(packet.query().findChild("x", Namespace.DATA));
                     data.submit(options);
-                    IqPacket set = new IqPacket(IqPacket.TYPE.SET);
+                    final IqPacket set = new IqPacket(IqPacket.TYPE.SET);
                     set.setTo(conversation.getJid().asBareJid());
                     set.query("http://jabber.org/protocol/muc#owner").addChild(data);
                     sendIqPacket(account, set, new OnIqPacketReceived() {
@@ -4616,6 +4622,12 @@ public class XmppConnectionService extends Service {
         IqPacket set = new IqPacket(IqPacket.TYPE.SET);
         set.addChild(prefs);
         sendIqPacket(account, set, null);
+    }
+
+    public void evictPreview(String uuid) {
+        if (mBitmapCache.remove(uuid) != null) {
+            Log.d(Config.LOGTAG, "deleted cached preview");
+        }
     }
 
     public interface OnMamPreferencesFetched {

@@ -77,6 +77,7 @@ import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.EmojiWrapper;
 import eu.siacs.conversations.utils.Emoticons;
 import eu.siacs.conversations.utils.GeoHelper;
+import eu.siacs.conversations.utils.MessageUtils;
 import eu.siacs.conversations.utils.StylingHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xmpp.mam.MamReference;
@@ -196,7 +197,7 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 		final Transferable transferable = message.getTransferable();
 		boolean multiReceived = message.getConversation().getMode() == Conversation.MODE_MULTI
 				&& message.getMergedStatus() <= Message.STATUS_RECEIVED;
-		if (message.isFileOrImage() || transferable != null) {
+		if (message.isFileOrImage() || transferable != null || MessageUtils.unInitiatedButKnownSize(message)) {
 			FileParams params = message.getFileParams();
 			filesize = params.size > 0 ? UIHelper.filesizeToString(params.size) : null;
 			if (transferable != null && (transferable.getStatus() == Transferable.STATUS_FAILED || transferable.getStatus() == Transferable.STATUS_CANCELLED)) {
@@ -219,6 +220,8 @@ public class MessageAdapter extends ArrayAdapter<Message> implements CopyTextVie
 				break;
 			case Message.STATUS_SEND_RECEIVED:
 			case Message.STATUS_SEND_DISPLAYED:
+				viewHolder.indicatorReceived.setImageResource(darkBackground ? R.drawable.ic_done_white_18dp : R.drawable.ic_done_black_18dp);
+				viewHolder.indicatorReceived.setAlpha(darkBackground ? 0.7f : 0.57f);
 				viewHolder.indicatorReceived.setVisibility(View.VISIBLE);
 				break;
 			case Message.STATUS_SEND_FAILED:
@@ -602,15 +605,15 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 		this.audioPlayer.init(audioPlayer, message);
 	}
 
-	private void displayImageMessage(ViewHolder viewHolder, final Message message, final boolean darkBackground) {
+	private void displayMediaPreviewMessage(ViewHolder viewHolder, final Message message, final boolean darkBackground) {
 		toggleWhisperInfo(viewHolder, message, darkBackground);
 		viewHolder.download_button.setVisibility(View.GONE);
 		viewHolder.audioPlayer.setVisibility(View.GONE);
 		viewHolder.image.setVisibility(View.VISIBLE);
-		FileParams params = message.getFileParams();
-		double target = metrics.density * 288;
-		int scaledW;
-		int scaledH;
+		final FileParams params = message.getFileParams();
+		final double target = metrics.density * 288;
+		final int scaledW;
+		final int scaledH;
 		if (Math.max(params.height, params.width) * metrics.density <= target) {
 			scaledW = (int) (params.width * metrics.density);
 			scaledH = (int) (params.height * metrics.density);
@@ -798,8 +801,9 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 		});
 
 		final Transferable transferable = message.getTransferable();
-		if (message.isDeleted() || (transferable != null && transferable.getStatus() != Transferable.STATUS_UPLOADING)) {
-			if (transferable != null && transferable.getStatus() == Transferable.STATUS_OFFER) {
+		final boolean unInitiatedButKnownSize = MessageUtils.unInitiatedButKnownSize(message);
+		if (unInitiatedButKnownSize || message.isDeleted() || (transferable != null && transferable.getStatus() != Transferable.STATUS_UPLOADING)) {
+			if (unInitiatedButKnownSize || transferable != null && transferable.getStatus() == Transferable.STATUS_OFFER) {
 				displayDownloadableMessage(viewHolder, message, activity.getString(R.string.download_x_file, UIHelper.getFileDescriptionString(activity, message)), darkBackground);
 			} else if (transferable != null && transferable.getStatus() == Transferable.STATUS_OFFER_CHECK_FILESIZE) {
 				displayDownloadableMessage(viewHolder, message, activity.getString(R.string.check_x_filesize, UIHelper.getFileDescriptionString(activity, message)), darkBackground);
@@ -808,7 +812,7 @@ private void applyImageSpan(SpannableStringBuilder body, Drawable drawable, Matc
 			}
 		} else if (message.isFileOrImage() && message.getEncryption() != Message.ENCRYPTION_PGP && message.getEncryption() != Message.ENCRYPTION_DECRYPTION_FAILED) {
 			if (message.getFileParams().width > 0 && message.getFileParams().height > 0) {
-				displayImageMessage(viewHolder, message, darkBackground);
+				displayMediaPreviewMessage(viewHolder, message, darkBackground);
 			} else if (message.getFileParams().runtime > 0) {
 				displayAudioMessage(viewHolder, message, darkBackground);
 			} else {
