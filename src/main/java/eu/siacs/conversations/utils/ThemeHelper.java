@@ -106,7 +106,7 @@ public class ThemeHelper {
 		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && "automatic".equals(setting)) {
 			return (resources.getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
 		} else {
-			return "dark".equals(setting);
+			return "dark".equals(setting) || "moon_dark".equals(setting);
 		}
 	}
 
