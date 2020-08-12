@@ -1,5 +1,64 @@
 # Changelog
 
+### Version 2.8.10
+
+* Handle GPX files
+* Improve performance for backup restore
+* bug fixes
+
+### Version 2.8.9
+
+* add 'Return to chat' to audio call screen
+* Improve keyboard shortcuts
+* bug fixes
+
+### Version 2.8.8
+
+* Fixed notifications not showing up under certain conditions
+* Fixed compatibility issues and crashes related to A/V calls
+
+### Version 2.8.7
+
+* Show help button if A/V call fails
+* Fixed some annoying crashes
+* Fixed Jingle connections (file transfer + calls) with bare JIDs
+
+### Version 2.8.6
+
+* Offer to record voice message when callee is busy
+
+### Version 2.8.5
+
+* Reduce echo during calls on some devices
+* Fix login when passwords contains special characters
+* Play dial and busy tones on speaker during video calls
+
+### Version 2.8.4
+
+* Rework Login with certificate UI
+* Add ability to pin chats on top (add to favorites)
+
+### Version 2.8.3
+
+* Move call icon to the left in order to keep other toolbar icons in a consistent place
+* Show call duration during audio calls
+* Tie breaking for A/V calls (the same two people calling each other at the same time)
+
+### Version 2.8.2
+
+* Add button to switch camera during video call
+* Fixed voice calls on tablets
+
+### Version 2.8.1
+
+* Audible feedback (dialing, call started, call ended) for voice calls.
+* Fixed issue with retrying failed video call
+
+### Version 2.8.0
+
+* Audio/Video calls (Requires server support in form of STUN and TURN servers discoverable via XEP-0215)
+
+
 ### Version 2.7.1
 
 * Fix avatar selection on some Android 10 devices

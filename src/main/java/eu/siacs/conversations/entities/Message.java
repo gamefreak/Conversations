@@ -6,13 +6,15 @@ import android.graphics.Color;
 import android.text.SpannableStringBuilder;
 import android.util.Log;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
+
 import org.json.JSONException;
 
 import java.lang.ref.WeakReference;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -21,13 +23,14 @@ import java.util.Set;
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.crypto.axolotl.FingerprintStatus;
 import eu.siacs.conversations.services.AvatarService;
+import eu.siacs.conversations.ui.util.PresenceSelector;
 import eu.siacs.conversations.utils.CryptoHelper;
 import eu.siacs.conversations.utils.Emoticons;
 import eu.siacs.conversations.utils.GeoHelper;
 import eu.siacs.conversations.utils.MessageUtils;
 import eu.siacs.conversations.utils.MimeUtils;
 import eu.siacs.conversations.utils.UIHelper;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class Message extends AbstractEntity implements AvatarService.Avatarable  {
 
@@ -57,6 +60,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	public static final int TYPE_STATUS = 3;
 	public static final int TYPE_PRIVATE = 4;
 	public static final int TYPE_PRIVATE_FILE = 5;
+	public static final int TYPE_RTP_SESSION = 6;
 
 	public static final String CONVERSATION = "conversationUuid";
 	public static final String COUNTERPART = "counterpart";
@@ -138,6 +142,31 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 				TYPE_TEXT,
 				false,
 				null,
+				null,
+				null,
+				null,
+				true,
+				null,
+				false,
+				null,
+				null,
+				false,
+				false,
+				null);
+	}
+
+	public Message(Conversation conversation, int status, int type, final String remoteMsgId) {
+		this(conversation, java.util.UUID.randomUUID().toString(),
+				conversation.getUuid(),
+				conversation.getJid() == null ? null : conversation.getJid().asBareJid(),
+				null,
+				null,
+				System.currentTimeMillis(),
+				Message.ENCRYPTION_NONE,
+				status,
+				type,
+				false,
+				remoteMsgId,
 				null,
 				null,
 				null,
@@ -505,7 +534,7 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	}
 
 	public Set<ReadByMarker> getReadByMarkers() {
-		return Collections.unmodifiableSet(this.readByMarkers);
+		return ImmutableSet.copyOf(this.readByMarkers);
 	}
 
 	boolean similar(Message message) {
@@ -583,16 +612,16 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	public boolean isLastCorrectableMessage() {
 		Message next = next();
 		while (next != null) {
-			if (next.isCorrectable()) {
+			if (next.isEditable()) {
 				return false;
 			}
 			next = next.next();
 		}
-		return isCorrectable();
+		return isEditable();
 	}
 
-	private boolean isCorrectable() {
-		return getStatus() != STATUS_RECEIVED && !isCarbon();
+	public boolean isEditable() {
+		return status != STATUS_RECEIVED && !isCarbon() && type != Message.TYPE_RTP_SESSION;
 	}
 
 	public boolean mergeable(final Message message) {
@@ -617,8 +646,8 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 						!this.isOOb() &&
 						!message.treatAsDownloadable() &&
 						!this.treatAsDownloadable() &&
-						!message.getBody().startsWith(ME_COMMAND) &&
-						!this.getBody().startsWith(ME_COMMAND) &&
+						!message.hasMeCommand() &&
+						!this.hasMeCommand() &&
 						!this.bodyIsOnlyEmojis() &&
 						!message.bodyIsOnlyEmojis() &&
 						((this.axolotlFingerprint == null && message.axolotlFingerprint == null) || this.axolotlFingerprint.equals(message.getFingerprint())) &&
@@ -719,19 +748,12 @@ public class Message extends AbstractEntity implements AvatarService.Avatarable 
 	}
 
 	public boolean fixCounterpart() {
-		Presences presences = conversation.getContact().getPresences();
-		if (counterpart != null && presences.has(counterpart.getResource())) {
+		final Presences presences = conversation.getContact().getPresences();
+		if (counterpart != null && presences.has(Strings.nullToEmpty(counterpart.getResource()))) {
 			return true;
 		} else if (presences.size() >= 1) {
-			try {
-				counterpart = Jid.of(conversation.getJid().getLocal(),
-						conversation.getJid().getDomain(),
-						presences.toResourceArray()[0]);
-				return true;
-			} catch (IllegalArgumentException e) {
-				counterpart = null;
-				return false;
-			}
+			counterpart = PresenceSelector.getNextCounterpart(getContact(),presences.toResourceArray()[0]);
+			return true;
 		} else {
 			counterpart = null;
 			return false;

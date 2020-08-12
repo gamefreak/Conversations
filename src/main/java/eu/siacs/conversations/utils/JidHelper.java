@@ -34,8 +34,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 
+import eu.siacs.conversations.Config;
 import eu.siacs.conversations.xmpp.InvalidJid;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class JidHelper {
 
@@ -43,7 +44,7 @@ public class JidHelper {
 
     public static String localPartOrFallback(Jid jid) {
         if (LOCAL_PART_BLACKLIST.contains(jid.getLocal().toLowerCase(Locale.ENGLISH))) {
-            final String domain = jid.getDomain();
+            final String domain = jid.getDomain().toEscapedString();
             final int index = domain.indexOf('.');
             return index > 1 ? domain.substring(0, index) : domain;
         } else {
@@ -57,6 +58,10 @@ public class JidHelper {
         } catch (IllegalArgumentException e) {
             return InvalidJid.of(jid, true);
         }
+    }
+
+    public static boolean isQuicksyDomain(final Jid jid) {
+        return Config.QUICKSY_DOMAIN != null && Config.QUICKSY_DOMAIN.equals(jid.getDomain());
     }
 
 }

@@ -704,7 +704,7 @@ public class FileBackend {
         return pos > 0 ? filename.substring(pos + 1) : null;
     }
 
-    private void copyImageToPrivateStorage(File file, Uri image, int sampleSize) throws FileCopyException {
+    private void copyImageToPrivateStorage(File file, Uri image, int sampleSize) throws FileCopyException, NotAnImageFileException {
         file.getParentFile().mkdirs();
         InputStream is = null;
         OutputStream os = null;
@@ -724,7 +724,7 @@ public class FileBackend {
             originalBitmap = BitmapFactory.decodeStream(is, null, options);
             is.close();
             if (originalBitmap == null) {
-                throw new FileCopyException(R.string.error_not_an_image_file);
+                throw new NotAnImageFileException();
             }
             Bitmap scaledBitmap = resize(originalBitmap, Config.IMAGE_SIZE);
             int rotation = getRotation(image);
@@ -763,12 +763,12 @@ public class FileBackend {
         }
     }
 
-    public void copyImageToPrivateStorage(File file, Uri image) throws FileCopyException {
+    public void copyImageToPrivateStorage(File file, Uri image) throws FileCopyException, NotAnImageFileException {
         Log.d(Config.LOGTAG, "copy image (" + image.toString() + ") to private storage " + file.getAbsolutePath());
         copyImageToPrivateStorage(file, image, 0);
     }
 
-    public void copyImageToPrivateStorage(Message message, Uri image) throws FileCopyException {
+    public void copyImageToPrivateStorage(Message message, Uri image) throws FileCopyException, NotAnImageFileException {
         switch (Config.IMAGE_FORMAT) {
             case JPEG:
                 message.setRelativeFilePath(message.getUuid() + ".jpg");
@@ -943,7 +943,7 @@ public class FileBackend {
             final Bitmap rendered = renderPdfDocument(fileDescriptor, size, true);
             drawOverlay(rendered, paintOverlayBlackPdf(rendered) ? R.drawable.open_pdf_black : R.drawable.open_pdf_white, 0.75f);
             return rendered;
-        } catch (IOException e) {
+        } catch (final IOException | SecurityException e) {
             Log.d(Config.LOGTAG, "unable to render PDF document preview", e);
             final Bitmap placeholder = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
             placeholder.eraseColor(0xff000000);
@@ -1357,7 +1357,7 @@ public class FileBackend {
             page.close();
             pdfRenderer.close();
             return scalePdfDimensions(new Dimensions(height, width));
-        } catch (IOException e) {
+        } catch (IOException | SecurityException e) {
             Log.d(Config.LOGTAG, "unable to get dimensions for pdf document", e);
             return new Dimensions(0, 0);
         }
@@ -1420,11 +1420,14 @@ public class FileBackend {
         }
     }
 
-    public class FileCopyException extends Exception {
-        private static final long serialVersionUID = -1010013599132881427L;
+    public static class NotAnImageFileException extends Exception {
+
+    }
+
+    public static class FileCopyException extends Exception {
         private int resId;
 
-        public FileCopyException(int resId) {
+        private FileCopyException(int resId) {
             this.resId = resId;
         }
 

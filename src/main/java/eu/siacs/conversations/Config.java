@@ -1,12 +1,13 @@
 package eu.siacs.conversations;
 
 import android.graphics.Bitmap;
+import android.net.Uri;
 
 import java.util.Collections;
 import java.util.List;
 
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public final class Config {
     private static final int UNENCRYPTED = 1;
@@ -35,11 +36,12 @@ public final class Config {
     public static final String LOGTAG = BuildConfig.LOGTAG;
 
     public static final Jid BUG_REPORTS = Jid.of("bugs@conversations.im");
+    public static final Uri HELP = Uri.parse("https://help.conversations.im");
 
 
     public static final String DOMAIN_LOCK = null; //only allow account creation for this domain
     public static final String MAGIC_CREATE_DOMAIN = "friendshipismagicsquad.com";
-    public static final String QUICKSY_DOMAIN = "quicksy.im";
+    public static final Jid QUICKSY_DOMAIN = Jid.of("quicksy.im");
 
     public static final String CHANNEL_DISCOVERY = "https://search.jabber.network";
 

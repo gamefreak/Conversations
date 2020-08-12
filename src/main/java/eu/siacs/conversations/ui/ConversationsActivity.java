@@ -52,6 +52,7 @@ import android.support.v7.app.ActionBar;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
@@ -84,9 +85,9 @@ import eu.siacs.conversations.utils.ExceptionHelper;
 import eu.siacs.conversations.utils.SignupUtils;
 import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.OnUpdateBlocklist;
+import eu.siacs.conversations.xmpp.Jid;
 import horse.vinylscratch.conversations.UpdateCheckReceiver;
 import horse.vinylscratch.conversations.VersionCheckTask;
-import rocks.xmpp.addr.Jid;
 
 import static eu.siacs.conversations.ui.ConversationFragment.REQUEST_DECRYPT_PGP;
 
@@ -99,6 +100,8 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
     public static final String EXTRA_NICK = "nick";
     public static final String EXTRA_IS_PRIVATE_MESSAGE = "pm";
     public static final String EXTRA_DO_NOT_APPEND = "do_not_append";
+    public static final String EXTRA_POST_INIT_ACTION = "post_init_action";
+    public static final String POST_ACTION_RECORD_VOICE = "record_voice";
 
     private static List<String> VIEW_AND_SHARE_ACTIONS = Arrays.asList(
             ACTION_VIEW_CONVERSATION,
@@ -395,7 +398,6 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
             if (isCameraFeatureAvailable()) {
                 Fragment fragment = getFragmentManager().findFragmentById(R.id.main_fragment);
                 boolean visible = getResources().getBoolean(R.bool.show_qr_code_scan)
-                        && fragment != null
                         && fragment instanceof ConversationsOverviewFragment;
                 qrCodeScanMenuItem.setVisible(visible);
             } else {
@@ -504,8 +506,19 @@ public class ConversationsActivity extends XmppActivity implements OnConversatio
     }
 
     @Override
-    public void onSaveInstanceState(Bundle savedInstanceState) {
-        Intent pendingIntent = pendingViewIntent.peek();
+    public boolean onKeyDown(final int keyCode, final KeyEvent keyEvent) {
+        if (keyCode == KeyEvent.KEYCODE_DPAD_UP && keyEvent.isCtrlPressed()) {
+            final ConversationFragment conversationFragment = ConversationFragment.get(this);
+            if (conversationFragment != null && conversationFragment.onArrowUpCtrlPressed()) {
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, keyEvent);
+    }
+
+    @Override
+    public void onSaveInstanceState(final Bundle savedInstanceState) {
+        final Intent pendingIntent = pendingViewIntent.peek();
         savedInstanceState.putParcelable("intent", pendingIntent != null ? pendingIntent : getIntent());
         super.onSaveInstanceState(savedInstanceState);
     }

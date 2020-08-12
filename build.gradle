@@ -1,3 +1,5 @@
+import com.android.build.OutputFile
+
 // Top-level build file where you can add configuration options common to all
 // sub-projects/modules.
 buildscript {
@@ -6,7 +8,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.5.3'
+        classpath 'com.android.tools.build:gradle:4.0.1'
     }
 }
 
@@ -33,13 +35,14 @@ ext {
 }
 
 dependencies {
+    //should remain that low because later versions introduce dependency to androidx (not sure exactly from what version)
     playstoreImplementation('com.google.firebase:firebase-messaging:17.3.4') {
         exclude group: 'com.google.firebase', module: 'firebase-core'
         exclude group: 'com.google.firebase', module: 'firebase-analytics'
         exclude group: 'com.google.firebase', module: 'firebase-measurement-connector'
     }
-    conversationsPlaystoreCompatImplementation("com.android.installreferrer:installreferrer:1.1")
-    conversationsPlaystoreSystemImplementation("com.android.installreferrer:installreferrer:1.1")
+    conversationsPlaystoreCompatImplementation("com.android.installreferrer:installreferrer:1.1.2")
+    conversationsPlaystoreSystemImplementation("com.android.installreferrer:installreferrer:1.1.2")
     implementation 'org.sufficientlysecure:openpgp-api:10.0'
     implementation('com.theartofdev.edmodo:android-image-cropper:2.7.+') {
         exclude group: 'com.android.support', module: 'appcompat-v7'
@@ -65,7 +68,7 @@ dependencies {
     implementation 'com.makeramen:roundedimageview:2.3.0'
     implementation "com.wefika:flowlayout:0.4.1"
     implementation 'net.ypresto.androidtranscoder:android-transcoder:0.3.0'
-    implementation project(':libs:xmpp-addr')
+    implementation 'org.jxmpp:jxmpp-jid:0.6.4'
     implementation 'pl.droidsonroids.gif:android-gif-drawable:1.2.19'
     implementation 'org.osmdroid:osmdroid-android:6.1.5'
     implementation 'org.hsluv:hsluv:0.2'
@@ -76,14 +79,16 @@ dependencies {
     implementation "com.squareup.retrofit2:retrofit:2.6.4"
     implementation "com.squareup.retrofit2:converter-gson:2.6.4"
     //okhttp needs to stick with 3.12.x
-    implementation 'com.squareup.okhttp3:okhttp:3.12.7'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.12'
     implementation 'com.google.guava:guava:27.1-android'
     quicksyImplementation 'io.michaelrocks:libphonenumber-android:8.11.1'
+    implementation fileTree(include: ['libwebrtc-m84.aar'], dir: 'libs')
 }
 
 ext {
     travisBuild = System.getenv("TRAVIS") == "true"
     preDexEnabled = System.getProperty("pre-dex", "true")
+    abiCodes = ['armeabi-v7a': 1, 'x86': 2, 'x86_64': 3, 'arm64-v8a': 4]
 }
 
 android {
@@ -92,13 +97,20 @@ android {
     defaultConfig {
         minSdkVersion 18
         targetSdkVersion 28
-        versionCode 367
-        versionName "2.7.1.0"
+        versionCode 397
+        versionName "2.8.10.0"
         archivesBaseName += "-$versionName"
         applicationId "horse.vinylscratch.conversations"
         resValue "string", "applicationId", applicationId
         resValue "string", "app_name", "Ponversations"
         buildConfigField "String", "LOGTAG", "\"ponversations\""
+    }
+
+    splits {
+        abi {
+            universalApk true
+            enable true
+        }
     }
 
     dataBinding {
@@ -233,7 +245,7 @@ android {
     }
 
     lintOptions {
-        disable 'ExtraTranslation', 'MissingTranslation', 'InvalidPackage', 'MissingQuantity', 'AppCompatResource'
+        disable 'MissingTranslation', 'InvalidPackage','AppCompatResource'
     }
 
     subprojects {
@@ -253,5 +265,17 @@ android {
     packagingOptions {
         exclude 'META-INF/BCKEY.DSA'
         exclude 'META-INF/BCKEY.SF'
+    }
+
+    android.applicationVariants.all { variant ->
+        variant.outputs.each { output ->
+            def baseAbiVersionCode = project.ext.abiCodes.get(output.getFilter(OutputFile.ABI))
+            if (baseAbiVersionCode != null) {
+                output.versionCodeOverride = (100 * variant.versionCode) + baseAbiVersionCode
+            } else {
+                output.versionCodeOverride = (100 * variant.versionCode)
+            }
+        }
+
     }
 }

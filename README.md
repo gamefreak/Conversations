@@ -7,12 +7,9 @@
         <img src="https://inverse.chat/badge.svg?room=conversations@conference.siacs.eu"
              alt="chat on our conference room">
     </a>
-    <a href="https://travis-ci.org/siacs/Conversations">
-        <img src="https://travis-ci.org/siacs/Conversations.svg?branch=master"
+    <a href="https://travis-ci.org/inputmice/Conversations">
+        <img src="https://travis-ci.org/inputmice/Conversations.svg?branch=master"
              alt="build status">
-    </a>
-    <a href="https://bountysource.com/teams/siacs">
-        <img src="https://api.bountysource.com/badge/tracker?tracker_id=519483" alt="Bountysource">
     </a>
 </p>
 
@@ -22,7 +19,7 @@
     </a>
 </p>
 
-![screenshots](https://raw.githubusercontent.com/siacs/Conversations/master/screenshots.png)
+![screenshots](https://raw.githubusercontent.com/inputmice/Conversations/master/screenshots.png)
 
 ## Design principles
 
@@ -35,6 +32,7 @@
 
 * End-to-end encryption with [OMEMO](http://conversations.im/omemo/) or [OpenPGP](http://openpgp.org/about/)
 * Send and receive images as well as other kind of files
+* Encrypted audio and video calls (DTLS-SRTP)
 * Share your location
 * Send voice messages
 * Indication when your contact has read your message
@@ -93,23 +91,9 @@ Google [Play Store](https://play.google.com/store/apps/details?id=eu.siacs.conve
 
 Buying the App from the Play Store will also give you access to our [beta test](#beta).
 
-#### I don't have a Google Account but I would still like to make a contribution
+#### I don't have a Google Account but I would still like to make a donation
 
-I accept donations over PayPal, bank transfer and various crypto currencies. For donations via PayPal use the button below:
-
-[![Donate with PayPal](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.me/ConversationsIM)
-
-**Disclaimer:** I'm not a huge fan of PayPal and their business policies. For
-larger contributions please get in touch with me beforehand and we can talk
-about bank transfer (SEPA).
-
-##### Crypto currencies
-
-Bitcoin: `3KAD8vew6tPZDjiUJNnZ3YUoUxrCEVNwFL`
-
-Bitcoin Cash: `16ABkXzYAwWz8Y5DcWFfbBRqL63g3hzEaU`
-
-Ether: `0x5c4e5239cd9c6f4a909e4e8361526e2e3c8ba9fa`
+I’m listing several options to support me financially on [my website](https://gultsch.de/donate.html). Among other things [Liberapay](https://liberapay.com/iNPUTmice/donate), [GitHub Sponsors](https://github.com/sponsors/inputmice) and bank transfer.
 
 #### How do I create an account?
 XMPP, like email, is a federated protocol, which means that there is not one company you can create an *official XMPP account* with. Instead there are hundreds, or even thousands, of providers out there. One of those providers is our very own [conversations.im](https://account.conversations.im). If you don’t like to use *conversations.im* use a web search engine of your choice to find another provider. Or maybe your university has one. Or you can run your own. Or ask a friend to run one. Once you've found one, you can use Conversations to create an account. Just select *register new account* on server within the create account dialog.
@@ -171,7 +155,7 @@ However you can disable the notification via settings of the operating system. (
 
 **The battery consumption and the entire behaviour of Conversations will remain the same (as good or as bad as it was before). Why is Google doing this to you? We have no idea.**
 
-##### Android &lt;= 7.1
+##### Android &lt;= 7.1 or Conversations from F-Droid (all Android versions)
 The foreground notification is still controlled over the expert settings within Conversations as it always has been. Whether or not you need to enable it depends on how aggressive the non-standard 'power saving' features are that your phone vendor has built into the operating system.
 
 ##### Android 8.x
@@ -318,7 +302,7 @@ merge it if I don't at least you and like minded people get to enjoy it.
 
 #### I need a feature and I need it now!
 
-I am available for hire. Contact me via XMPP: `inputmice@siacs.eu`
+I am available for hire. Find contact information on [my website](https://gultsch.de).
 
 ### Security
 
@@ -389,7 +373,7 @@ There are XMPP Clients available for all major platforms.
 #### Windows / Linux
 For your desktop computer we recommend that you use [Gajim](https://gajim.org). You need to install the plugins `OMEMO`, `HTTP Upload` and `URL image preview` to get the best compatibility with Conversations. Plugins can be installed from within the app.
 #### iOS
-Unfortunately we don‘t have a recommendation for iPhones right now. There are two clients available [ChatSecure](https://chatsecure.org/) and [Monal](https://monal.im/). Both with their own pros and cons.
+Unfortunately we don‘t have a recommendation for iPhones right now. There are three clients available [Siskin](https://siskin.im/), [ChatSecure](https://chatsecure.org/) and [Monal](https://monal.im/). Each with their own pros and cons.
 
 
 ### Development
@@ -401,35 +385,22 @@ you can get access to the the latest beta version by signing up using [this link
 
 #### How do I build Conversations
 
+**Note:** Starting with version 2.8.0 you will need to compile libwebrtc.
+[Instructions](https://webrtc.github.io/webrtc-org/native-code/android/) can be found on the WebRTC
+website. Place the resulting libwebrtc.aar in the `libs/` directory. The PlayStore release currently
+uses the stable M81 release and renamed the file name to `libwebrtc-m81.aar` put potentially you can
+reference any file name by modifying `build.gradle`.
+
 Make sure to have ANDROID_HOME point to your Android SDK. Use the Android SDK Manager to install missing dependencies.
 
-    git clone https://github.com/siacs/Conversations.git
+    git clone https://github.com/inputmice/Conversations.git
     cd Conversations
     ./gradlew assembleConversationsFreeSystemDebug
 
 There are two build flavors available. *free* and *playstore*. Unless you know what you are doing you only need *free*.
 
 
-[![Build Status](https://travis-ci.org/siacs/Conversations.svg?branch=development)](https://travis-ci.org/siacs/Conversations)
-
-#### How do I update/add external libraries?
-
-If the library you want to update is in Maven Central or JCenter (or has its own
-Maven repo), add it or update its version in `build.gradle`. If the library is
-in the `libs/` directory, you can update it using a subtree merge by doing the
-following (using `minidns` as an example):
-
-    git remote add minidns https://github.com/rtreffer/minidns.git
-    git fetch minidns
-    git merge -s subtree minidns master
-
-To add a new dependency to the `libs/` directory (replacing "name", "branch" and
-"url" as necessary):
-
-    git remote add name url
-    git merge -s ours --no-commit name/branch
-    git read-tree --prefix=libs/name -u name/branch
-    git commit -m "Subtree merged in name"
+[![Build Status](https://travis-ci.org/inputmice/Conversations.svg?branch=development)](https://travis-ci.org/inputmice/Conversations)
 
 #### How do I debug Conversations
 
@@ -461,4 +432,4 @@ Play Store version or the current HEAD. If you are having problems connecting to
 your XMPP server your file transfer doesn’t work as expected please always
 include a logcat debug output with your issue (see above).
 
-[issues]: https://github.com/siacs/Conversations/issues
+[issues]: https://github.com/inputmice/Conversations/issues

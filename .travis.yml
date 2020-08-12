@@ -9,6 +9,9 @@ android:
     - extra-google-google_play_services
   licenses:
     - '.+'
+before_script:
+    - mkdir libs
+    - wget -O libs/libwebrtc-m84.aar http://gultsch.de/files/libwebrtc-m84.aar
 script:
     - ./gradlew assembleConversationsFreeSystemRelease
     - ./gradlew assembleQuicksyFreeCompatRelease

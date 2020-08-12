@@ -16,7 +16,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import eu.siacs.conversations.Config;
@@ -29,7 +28,8 @@ import eu.siacs.conversations.services.XmppConnectionService;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.utils.XmppUri;
 import eu.siacs.conversations.xmpp.XmppConnection;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.jingle.RtpCapability;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class Account extends AbstractEntity implements AvatarService.Avatarable {
 
@@ -232,8 +232,12 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
         return next != null && !next.equals(previousFull);
     }
 
-    public String getServer() {
+    public Jid getDomain() {
         return jid.getDomain();
+    }
+
+    public String getServer() {
+        return jid.getDomain().toEscapedString();
     }
 
     public String getPassword() {
@@ -369,7 +373,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
         final ContentValues values = new ContentValues();
         values.put(UUID, uuid);
         values.put(USERNAME, jid.getLocal());
-        values.put(SERVER, jid.getDomain());
+        values.put(SERVER, jid.getDomain().toEscapedString());
         values.put(PASSWORD, password);
         values.put(OPTIONS, options);
         synchronized (this.keys) {
@@ -424,6 +428,16 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
 
     public int countPresences() {
         return this.getSelfContact().getPresences().size();
+    }
+
+    public int activeDevicesWithRtpCapability() {
+        int i = 0;
+        for(Presence presence : getSelfContact().getPresences().getPresences()) {
+            if (RtpCapability.check(presence) != RtpCapability.Capability.NONE) {
+                i++;
+            }
+        }
+        return i;
     }
 
     public String getPgpSignature() {
@@ -577,7 +591,7 @@ public class Account extends AbstractEntity implements AvatarService.Avatarable 
 
     public boolean isBlocked(final ListItem contact) {
         final Jid jid = contact.getJid();
-        return jid != null && (blocklist.contains(jid.asBareJid()) || blocklist.contains(Jid.ofDomain(jid.getDomain())));
+        return jid != null && (blocklist.contains(jid.asBareJid()) || blocklist.contains(jid.getDomain()));
     }
 
     public boolean isBlocked(final Jid jid) {

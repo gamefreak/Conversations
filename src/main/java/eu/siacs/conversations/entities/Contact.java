@@ -26,7 +26,7 @@ import eu.siacs.conversations.utils.JidHelper;
 import eu.siacs.conversations.utils.UIHelper;
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xmpp.pep.Avatar;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class Contact implements ListItem, Blockable {
 	public static final String TABLENAME = "contacts";
@@ -147,12 +147,22 @@ public class Contact implements ListItem, Blockable {
 			return this.systemName;
 		} else if (!TextUtils.isEmpty(this.serverName)) {
 			return this.serverName;
-		} else if (!TextUtils.isEmpty(this.presenceName) && ((QuickConversationsService.isQuicksy() && Config.QUICKSY_DOMAIN.equals(jid.getDomain())) ||mutualPresenceSubscription())) {
+		} else if (!TextUtils.isEmpty(this.presenceName) && ((QuickConversationsService.isQuicksy() && JidHelper.isQuicksyDomain(jid.getDomain())) ||mutualPresenceSubscription())) {
 			return this.presenceName;
 		} else if (jid.getLocal() != null) {
 			return JidHelper.localPartOrFallback(jid);
 		} else {
-			return jid.getDomain();
+			return jid.getDomain().toEscapedString();
+		}
+	}
+
+	public String getPublicDisplayName() {
+		if (!TextUtils.isEmpty(this.presenceName)) {
+			return this.presenceName;
+		} else if (jid.getLocal() != null) {
+			return JidHelper.localPartOrFallback(jid);
+		} else {
+			return jid.getDomain().toEscapedString();
 		}
 	}
 
@@ -409,7 +419,7 @@ public class Contact implements ListItem, Blockable {
 
 	public Element asElement() {
 		final Element item = new Element("item");
-		item.setAttribute("jid", this.jid.toString());
+		item.setAttribute("jid", this.jid);
 		if (this.serverName != null) {
 			item.setAttribute("name", this.serverName);
 		}
@@ -426,7 +436,7 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	public String getServer() {
-		return getJid().getDomain();
+		return getJid().getDomain().toEscapedString();
 	}
 
 	public boolean setAvatar(Avatar avatar) {
@@ -464,13 +474,13 @@ public class Contact implements ListItem, Blockable {
 
 	@Override
 	public boolean isDomainBlocked() {
-		return getAccount().isBlocked(Jid.ofDomain(this.getJid().getDomain()));
+		return getAccount().isBlocked(this.getJid().getDomain());
 	}
 
 	@Override
 	public Jid getBlockedJid() {
 		if (isDomainBlocked()) {
-			return Jid.ofDomain(getJid().getDomain());
+			return getJid().getDomain();
 		} else {
 			return getJid();
 		}
@@ -481,7 +491,7 @@ public class Contact implements ListItem, Blockable {
 	}
 
 	boolean isOwnServer() {
-		return account.getJid().getDomain().equals(jid.asBareJid().toString());
+		return account.getJid().getDomain().equals(jid.asBareJid());
 	}
 
 	public void setCommonName(String cn) {

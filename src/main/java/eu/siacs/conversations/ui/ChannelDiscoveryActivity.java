@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.Collections;
 import java.util.List;
@@ -37,7 +38,7 @@ import eu.siacs.conversations.ui.util.PendingItem;
 import eu.siacs.conversations.ui.util.SoftKeyboardUtils;
 import eu.siacs.conversations.ui.util.StyledAttributes;
 import eu.siacs.conversations.utils.AccountUtils;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class ChannelDiscoveryActivity extends XmppActivity implements MenuItem.OnActionExpandListener, TextView.OnEditorActionListener, ChannelDiscoveryService.OnChannelSearchResultsFound, ChannelSearchResultAdapter.OnChannelSearchResultSelected {
 
@@ -224,10 +225,12 @@ public class ChannelDiscoveryActivity extends XmppActivity implements MenuItem.O
 
     @Override
     public void onChannelSearchResult(final Room result) {
-        List<String> accounts = AccountUtils.getEnabledAccounts(xmppConnectionService);
+        final List<String> accounts = AccountUtils.getEnabledAccounts(xmppConnectionService);
         if (accounts.size() == 1) {
             joinChannelSearchResult(accounts.get(0), result);
-        } else if (accounts.size() > 0) {
+        } else if (accounts.size() == 0) {
+            Toast.makeText(this, R.string.please_enable_an_account, Toast.LENGTH_LONG).show();
+        } else {
             final AtomicReference<String> account = new AtomicReference<>(accounts.get(0));
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
             builder.setTitle(R.string.choose_account);
@@ -260,7 +263,7 @@ public class ChannelDiscoveryActivity extends XmppActivity implements MenuItem.O
     }
 
     public void joinChannelSearchResult(String selectedAccount, Room result) {
-        final Jid jid = Config.DOMAIN_LOCK == null ? Jid.of(selectedAccount) : Jid.of(selectedAccount, Config.DOMAIN_LOCK, null);
+        final Jid jid = Config.DOMAIN_LOCK == null ? Jid.ofEscaped(selectedAccount) : Jid.ofLocalAndDomainEscaped(selectedAccount, Config.DOMAIN_LOCK);
         final boolean syncAutoJoin = getBooleanPreference("autojoin", R.bool.autojoin);
         final Account account = xmppConnectionService.findAccountByJid(jid);
         final Conversation conversation = xmppConnectionService.findOrCreateConversation(account, result.getRoom(), true, true, true);

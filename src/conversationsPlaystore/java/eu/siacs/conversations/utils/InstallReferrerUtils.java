@@ -2,6 +2,7 @@ package eu.siacs.conversations.utils;
 
 import android.app.Activity;
 import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.RemoteException;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -9,6 +10,7 @@ import android.util.Log;
 import com.android.installreferrer.api.InstallReferrerClient;
 import com.android.installreferrer.api.InstallReferrerStateListener;
 import com.android.installreferrer.api.ReferrerDetails;
+import com.google.common.base.Strings;
 
 import eu.siacs.conversations.Config;
 import eu.siacs.conversations.ui.WelcomeActivity;
@@ -31,7 +33,11 @@ public class InstallReferrerUtils implements InstallReferrerStateListener {
             return;
         }
         this.installReferrerClient = InstallReferrerClient.newBuilder(welcomeActivity).build();
-        this.installReferrerClient.startConnection(this);
+        try {
+            this.installReferrerClient.startConnection(this);
+        } catch (SecurityException e) {
+            Log.e(Config.LOGTAG, "unable to start connection to InstallReferrerClient", e);
+        }
     }
 
     public static void markInstallReferrerExecuted(final Activity context) {
@@ -41,18 +47,19 @@ public class InstallReferrerUtils implements InstallReferrerStateListener {
 
     @Override
     public void onInstallReferrerSetupFinished(int responseCode) {
-        switch (responseCode) {
-            case InstallReferrerClient.InstallReferrerResponse.OK:
-                try {
-                    final ReferrerDetails referrerDetails = installReferrerClient.getInstallReferrer();
-                    final String referrer = referrerDetails.getInstallReferrer();
-                    welcomeActivity.onInstallReferrerDiscovered(referrer);
-                } catch (RemoteException e) {
-                    Log.d(Config.LOGTAG, "unable to get install referrer", e);
+        if (responseCode == InstallReferrerClient.InstallReferrerResponse.OK) {
+            try {
+                final ReferrerDetails referrerDetails = installReferrerClient.getInstallReferrer();
+                final String referrer = referrerDetails.getInstallReferrer();
+                if (Strings.isNullOrEmpty(referrer)) {
+                    return;
                 }
-                break;
-            default:
-                Log.d(Config.LOGTAG, "unable to setup install referrer client. code=" + responseCode);
+                welcomeActivity.onInstallReferrerDiscovered(Uri.parse(referrer));
+            } catch (final RemoteException | IllegalArgumentException e) {
+                Log.d(Config.LOGTAG, "unable to get install referrer", e);
+            }
+        } else {
+            Log.d(Config.LOGTAG, "unable to setup install referrer client. code=" + responseCode);
         }
     }
 

@@ -2,7 +2,6 @@ package eu.siacs.conversations.xmpp.stanzas;
 
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xmpp.InvalidJid;
-import rocks.xmpp.addr.Jid;
 
 abstract public class AbstractAcknowledgeableStanza extends AbstractStanza {
 
@@ -25,6 +24,18 @@ abstract public class AbstractAcknowledgeableStanza extends AbstractStanza {
 			for(Element element : error.getChildren()) {
 				if (!element.getName().equals("text")) {
 					return element;
+				}
+			}
+		}
+		return null;
+	}
+
+	public String getErrorCondition() {
+		Element error = findChild("error");
+		if (error != null) {
+			for(Element element : error.getChildren()) {
+				if (!element.getName().equals("text")) {
+					return element.getName();
 				}
 			}
 		}

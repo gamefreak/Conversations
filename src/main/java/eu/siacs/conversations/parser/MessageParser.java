@@ -6,6 +6,7 @@ import android.util.Pair;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -30,6 +31,7 @@ import eu.siacs.conversations.entities.Message;
 import eu.siacs.conversations.entities.MucOptions;
 import eu.siacs.conversations.entities.ReadByMarker;
 import eu.siacs.conversations.entities.ReceiptRequest;
+import eu.siacs.conversations.entities.RtpSessionStatus;
 import eu.siacs.conversations.http.HttpConnectionManager;
 import eu.siacs.conversations.http.P1S3UrlStreamHandler;
 import eu.siacs.conversations.services.MessageArchiveService;
@@ -42,13 +44,17 @@ import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xmpp.InvalidJid;
 import eu.siacs.conversations.xmpp.OnMessagePacketReceived;
 import eu.siacs.conversations.xmpp.chatstate.ChatState;
+import eu.siacs.conversations.xmpp.jingle.JingleConnectionManager;
+import eu.siacs.conversations.xmpp.jingle.JingleRtpConnection;
 import eu.siacs.conversations.xmpp.pep.Avatar;
 import eu.siacs.conversations.xmpp.stanzas.MessagePacket;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class MessageParser extends AbstractParser implements OnMessagePacketReceived {
 
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
+
+    private static final List<String> JINGLE_MESSAGE_ELEMENT_NAMES = Arrays.asList("accept", "propose", "proceed", "reject", "retract");
 
     public MessageParser(XmppConnectionService service) {
         super(service);
@@ -66,6 +72,11 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
             safeToExtract = account.getXmppConnection().getFeatures().stanzaIds();
         }
         return safeToExtract ? extractStanzaId(packet, by) : null;
+    }
+
+    private static String extractStanzaId(Account account, Element packet) {
+        final boolean safeToExtract = account.getXmppConnection().getFeatures().stanzaIds();
+        return safeToExtract ? extractStanzaId(packet, account.getJid().asBareJid()) : null;
     }
 
     private static String extractStanzaId(Element packet, Jid by) {
@@ -136,7 +147,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                         return new Message(conversation, "", Message.ENCRYPTION_AXOLOTL_FAILED, status);
                     }
                 } else {
-                    Log.d(Config.LOGTAG,"ignoring broken session exception because checkForDuplicates failed");
+                    Log.d(Config.LOGTAG, "ignoring broken session exception because checkForDuplicates failed");
                     return null;
                 }
             } catch (NotEncryptedForThisDeviceException e) {
@@ -249,13 +260,13 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                 final Jid id = InvalidJid.getNullForInvalid(retract.getAttributeAsJid("id"));
                 if (id != null) {
                     account.removeBookmark(id);
-                    Log.d(Config.LOGTAG,account.getJid().asBareJid()+": deleted bookmark for "+id);
+                    Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": deleted bookmark for " + id);
                     mXmppConnectionService.processDeletedBookmark(account, id);
                     mXmppConnectionService.updateConversationUi();
                 }
             }
         } else {
-            Log.d(Config.LOGTAG,account.getJid().asBareJid()+" received pubsub notification for node="+node);
+            Log.d(Config.LOGTAG, account.getJid().asBareJid() + " received pubsub notification for node=" + node);
         }
     }
 
@@ -267,7 +278,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
             setNick(account, from, null);
         } else if (Namespace.BOOKMARKS2.equals(node) && account.getJid().asBareJid().equals(from)) {
             account.setBookmarks(Collections.emptyMap());
-            Log.d(Config.LOGTAG,account.getJid().asBareJid()+": deleted bookmarks node");
+            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": deleted bookmarks node");
         }
     }
 
@@ -276,7 +287,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
         final String node = purge == null ? null : purge.getAttribute("node");
         if (Namespace.BOOKMARKS2.equals(node) && account.getJid().asBareJid().equals(from)) {
             account.setBookmarks(Collections.emptyMap());
-            Log.d(Config.LOGTAG,account.getJid().asBareJid()+": purged bookmarks");
+            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": purged bookmarks");
         }
     }
 
@@ -298,20 +309,32 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
 
     private boolean handleErrorMessage(Account account, MessagePacket packet) {
         if (packet.getType() == MessagePacket.TYPE_ERROR) {
-            Jid from = packet.getFrom();
-            if (from != null) {
+            final Jid from = packet.getFrom();
+            final String id = packet.getId();
+            if (from != null && id != null) {
+                if (id.startsWith(JingleRtpConnection.JINGLE_MESSAGE_PROPOSE_ID_PREFIX)) {
+                    final String sessionId = id.substring(JingleRtpConnection.JINGLE_MESSAGE_PROPOSE_ID_PREFIX.length());
+                    mXmppConnectionService.getJingleConnectionManager()
+                            .updateProposedSessionDiscovered(account, from, sessionId, JingleConnectionManager.DeviceDiscoveryState.FAILED);
+                    return true;
+                }
+                if (id.startsWith(JingleRtpConnection.JINGLE_MESSAGE_PROCEED_ID_PREFIX)) {
+                    final String sessionId = id.substring(JingleRtpConnection.JINGLE_MESSAGE_PROCEED_ID_PREFIX.length());
+                    mXmppConnectionService.getJingleConnectionManager().failProceed(account, from, sessionId);
+                    return true;
+                }
                 mXmppConnectionService.markMessage(account,
                         from.asBareJid(),
-                        packet.getId(),
+                        id,
                         Message.STATUS_SEND_FAILED,
                         extractErrorMessage(packet));
                 final Element error = packet.findChild("error");
                 final boolean pingWorthyError = error != null && (error.hasChild("not-acceptable") || error.hasChild("remote-server-timeout") || error.hasChild("remote-server-not-found"));
                 if (pingWorthyError) {
-                    Conversation conversation = mXmppConnectionService.find(account,from);
+                    Conversation conversation = mXmppConnectionService.find(account, from);
                     if (conversation != null && conversation.getMode() == Conversational.MODE_MULTI) {
                         if (conversation.getMucOptions().online()) {
-                            Log.d(Config.LOGTAG,account.getJid().asBareJid()+": received ping worthy error for seemingly online muc at "+from);
+                            Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": received ping worthy error for seemingly online muc at " + from);
                             mXmppConnectionService.mucSelfPingAndRejoin(conversation);
                         }
                     }
@@ -419,9 +442,9 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
         final Invite invite = extractInvite(packet);
         if (invite != null) {
             if (isTypeGroupChat) {
-                Log.d(Config.LOGTAG,account.getJid().asBareJid()+": ignoring invite to "+invite.jid+" because type=groupchat");
+                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": ignoring invite to " + invite.jid + " because type=groupchat");
             } else if (invite.direct && (mucUserElement != null || invite.inviter == null || mXmppConnectionService.isMuc(account, invite.inviter))) {
-                Log.d(Config.LOGTAG, account.getJid().asBareJid()+": ignoring direct invite to "+invite.jid+" because it was received in MUC");
+                Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": ignoring direct invite to " + invite.jid + " because it was received in MUC");
             } else {
                 invite.execute(account);
                 return;
@@ -429,7 +452,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
         }
 
         if ((body != null || pgpEncrypted != null || (axolotlEncrypted != null && axolotlEncrypted.hasChild("payload")) || oobUrl != null || xP1S3 != null) && !isMucStatusMessage) {
-            final boolean conversationIsProbablyMuc = isTypeGroupChat || mucUserElement != null || account.getXmppConnection().getMucServersWithholdAccount().contains(counterpart.getDomain());
+            final boolean conversationIsProbablyMuc = isTypeGroupChat || mucUserElement != null || account.getXmppConnection().getMucServersWithholdAccount().contains(counterpart.getDomain().toEscapedString());
             final Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), conversationIsProbablyMuc, false, query, false);
             final boolean conversationMultiMode = conversation.getMode() == Conversation.MODE_MULTI;
 
@@ -504,7 +527,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                 final boolean checkedForDuplicates = liveMessage || (serverMsgId != null && remoteMsgId != null && !conversation.possibleDuplicate(serverMsgId, remoteMsgId));
 
                 if (origin != null) {
-                    message = parseAxolotlChat(axolotlEncrypted, origin, conversation, status,  checkedForDuplicates,query != null);
+                    message = parseAxolotlChat(axolotlEncrypted, origin, conversation, status, checkedForDuplicates, query != null);
                 } else {
                     Message trial = null;
                     for (Jid fallback : fallbacksBySourceId) {
@@ -809,6 +832,99 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                     }
                 }
             }
+            if (!isTypeGroupChat) {
+                for (Element child : packet.getChildren()) {
+                    if (Namespace.JINGLE_MESSAGE.equals(child.getNamespace()) && JINGLE_MESSAGE_ELEMENT_NAMES.contains(child.getName())) {
+                        final String action = child.getName();
+                        final String sessionId = child.getAttribute("id");
+                        if (sessionId == null) {
+                            break;
+                        }
+                        if (query == null) {
+                            if (serverMsgId == null) {
+                                serverMsgId = extractStanzaId(account, packet);
+                            }
+                            mXmppConnectionService.getJingleConnectionManager().deliverMessage(account, packet.getTo(), packet.getFrom(), child, remoteMsgId, serverMsgId, timestamp);
+                            if (!account.getJid().asBareJid().equals(from.asBareJid())) {
+                                processMessageReceipts(account, packet, query);
+                            }
+                        } else if (query.isCatchup()) {
+                            if ("propose".equals(action)) {
+                                final Element description = child.findChild("description");
+                                final String namespace = description == null ? null : description.getNamespace();
+                                if (Namespace.JINGLE_APPS_RTP.equals(namespace)) {
+                                    final Conversation c = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), false, false);
+                                    final Message preExistingMessage = c.findRtpSession(sessionId, status);
+                                    if (preExistingMessage != null) {
+                                        preExistingMessage.setServerMsgId(serverMsgId);
+                                        mXmppConnectionService.updateMessage(preExistingMessage);
+                                        break;
+                                    }
+                                    final Message message = new Message(
+                                            c,
+                                            status,
+                                            Message.TYPE_RTP_SESSION,
+                                            sessionId
+                                    );
+                                    message.setServerMsgId(serverMsgId);
+                                    message.setTime(timestamp);
+                                    message.setBody(new RtpSessionStatus(false, 0).toString());
+                                    c.add(message);
+                                    mXmppConnectionService.databaseBackend.createMessage(message);
+                                }
+                            } else if ("proceed".equals(action)) {
+                                //status needs to be flipped to find the original propose
+                                final Conversation c = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), false, false);
+                                final int s = packet.fromAccount(account) ? Message.STATUS_RECEIVED : Message.STATUS_SEND;
+                                final Message message = c.findRtpSession(sessionId, s);
+                                if (message != null) {
+                                    message.setBody(new RtpSessionStatus(true, 0).toString());
+                                    if (serverMsgId != null) {
+                                        message.setServerMsgId(serverMsgId);
+                                    }
+                                    message.setTime(timestamp);
+                                    mXmppConnectionService.updateMessage(message, true);
+                                } else {
+                                    Log.d(Config.LOGTAG, "unable to find original rtp session message for received propose");
+                                }
+
+                            }
+                        } else {
+                            //MAM reloads (non catchups
+                            if ("propose".equals(action)) {
+                                final Element description = child.findChild("description");
+                                final String namespace = description == null ? null : description.getNamespace();
+                                if (Namespace.JINGLE_APPS_RTP.equals(namespace)) {
+                                    final Conversation c = mXmppConnectionService.findOrCreateConversation(account, counterpart.asBareJid(), false, false);
+                                    final Message preExistingMessage = c.findRtpSession(sessionId, status);
+                                    if (preExistingMessage != null) {
+                                        preExistingMessage.setServerMsgId(serverMsgId);
+                                        mXmppConnectionService.updateMessage(preExistingMessage);
+                                        break;
+                                    }
+                                    final Message message = new Message(
+                                            c,
+                                            status,
+                                            Message.TYPE_RTP_SESSION,
+                                            sessionId
+                                    );
+                                    message.setServerMsgId(serverMsgId);
+                                    message.setTime(timestamp);
+                                    message.setBody(new RtpSessionStatus(true, 0).toString());
+                                    if (query.getPagingOrder() == MessageArchiveService.PagingOrder.REVERSE) {
+                                        c.prepend(query.getActualInThisQuery(), message);
+                                    } else {
+                                        c.add(message);
+                                    }
+                                    query.incrementActualMessageCount();
+                                    mXmppConnectionService.databaseBackend.createMessage(message);
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
         }
 
         Element received = packet.findChild("received", "urn:xmpp:chat-markers:0");
@@ -821,8 +937,14 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                 if (query != null && id != null && packet.getTo() != null) {
                     query.removePendingReceiptRequest(new ReceiptRequest(packet.getTo(), id));
                 }
-            } else {
-                mXmppConnectionService.markMessage(account, from.asBareJid(), received.getAttribute("id"), Message.STATUS_SEND_RECEIVED);
+            } else if (id != null) {
+                if (id.startsWith(JingleRtpConnection.JINGLE_MESSAGE_PROPOSE_ID_PREFIX)) {
+                    final String sessionId = id.substring(JingleRtpConnection.JINGLE_MESSAGE_PROPOSE_ID_PREFIX.length());
+                    mXmppConnectionService.getJingleConnectionManager()
+                            .updateProposedSessionDiscovered(account, from, sessionId, JingleConnectionManager.DeviceDiscoveryState.DISCOVERED);
+                } else {
+                    mXmppConnectionService.markMessage(account, from.asBareJid(), id, Message.STATUS_SEND_RECEIVED);
+                }
             }
         }
         Element displayed = packet.findChild("displayed", "urn:xmpp:chat-markers:0");
@@ -830,27 +952,34 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
             final String id = displayed.getAttribute("id");
             final Jid sender = InvalidJid.getNullForInvalid(displayed.getAttributeAsJid("sender"));
             if (packet.fromAccount(account) && !selfAddressed) {
-                dismissNotification(account, counterpart, query);
+                dismissNotification(account, counterpart, query, id);
                 if (query == null) {
                     activateGracePeriod(account);
                 }
             } else if (isTypeGroupChat) {
-                Conversation conversation = mXmppConnectionService.find(account, counterpart.asBareJid());
-                if (conversation != null && id != null && sender != null) {
-                    Message message = conversation.findMessageWithRemoteId(id, sender);
-                    if (message != null) {
-                        final Jid fallback = conversation.getMucOptions().getTrueCounterpart(counterpart);
-                        final Jid trueJid = getTrueCounterpart((query != null && query.safeToExtractTrueCounterpart()) ? mucUserElement : null, fallback);
-                        final boolean trueJidMatchesAccount = account.getJid().asBareJid().equals(trueJid == null ? null : trueJid.asBareJid());
-                        if (trueJidMatchesAccount || conversation.getMucOptions().isSelf(counterpart)) {
-                            if (!message.isRead() && (query == null || query.isCatchup())) { //checking if message is unread fixes race conditions with reflections
-                                mXmppConnectionService.markRead(conversation);
-                            }
-                        } else if (!counterpart.isBareJid() && trueJid != null) {
-                            final ReadByMarker readByMarker = ReadByMarker.from(counterpart, trueJid);
-                            if (message.addReadByMarker(readByMarker)) {
-                                mXmppConnectionService.updateMessage(message, false);
-                            }
+                final Conversation conversation = mXmppConnectionService.find(account, counterpart.asBareJid());
+                final Message message;
+                if (conversation != null && id != null) {
+                    if (sender != null) {
+                        message = conversation.findMessageWithRemoteId(id, sender);
+                    } else {
+                        message = conversation.findMessageWithServerMsgId(id);
+                    }
+                } else {
+                    message = null;
+                }
+                if (message != null) {
+                    final Jid fallback = conversation.getMucOptions().getTrueCounterpart(counterpart);
+                    final Jid trueJid = getTrueCounterpart((query != null && query.safeToExtractTrueCounterpart()) ? mucUserElement : null, fallback);
+                    final boolean trueJidMatchesAccount = account.getJid().asBareJid().equals(trueJid == null ? null : trueJid.asBareJid());
+                    if (trueJidMatchesAccount || conversation.getMucOptions().isSelf(counterpart)) {
+                        if (!message.isRead() && (query == null || query.isCatchup())) { //checking if message is unread fixes race conditions with reflections
+                            mXmppConnectionService.markRead(conversation);
+                        }
+                    } else if (!counterpart.isBareJid() && trueJid != null) {
+                        final ReadByMarker readByMarker = ReadByMarker.from(counterpart, trueJid);
+                        if (message.addReadByMarker(readByMarker)) {
+                            mXmppConnectionService.updateMessage(message, false);
                         }
                     }
                 }
@@ -864,7 +993,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
                     message = message.prev();
                 }
                 if (displayedMessage != null && selfAddressed) {
-                    dismissNotification(account, counterpart, query);
+                    dismissNotification(account, counterpart, query, id);
                 }
             }
         }
@@ -889,10 +1018,15 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
         }
     }
 
-    private void dismissNotification(Account account, Jid counterpart, MessageArchiveService.Query query) {
-        Conversation conversation = mXmppConnectionService.find(account, counterpart.asBareJid());
+    private void dismissNotification(Account account, Jid counterpart, MessageArchiveService.Query query, final String id) {
+        final Conversation conversation = mXmppConnectionService.find(account, counterpart.asBareJid());
         if (conversation != null && (query == null || query.isCatchup())) {
-            mXmppConnectionService.markRead(conversation); //TODO only mark messages read that are older than timestamp
+            final String displayableId = conversation.findMostRecentRemoteDisplayableId();
+            if (displayableId != null && displayableId.equals(id)) {
+                mXmppConnectionService.markRead(conversation);
+            } else {
+                Log.w(Config.LOGTAG, account.getJid().asBareJid() + ": received dismissing display marker that did not match our last id in that conversation");
+            }
         }
     }
 
@@ -944,7 +1078,7 @@ public class MessageParser extends AbstractParser implements OnMessagePacketRece
             if (jid != null) {
                 Conversation conversation = mXmppConnectionService.findOrCreateConversation(account, jid, true, false);
                 if (conversation.getMucOptions().online()) {
-                    Log.d(Config.LOGTAG,account.getJid().asBareJid()+": received invite to "+jid+" but muc is considered to be online");
+                    Log.d(Config.LOGTAG, account.getJid().asBareJid() + ": received invite to " + jid + " but muc is considered to be online");
                     mXmppConnectionService.mucSelfPingAndRejoin(conversation);
                 } else {
                     conversation.getMucOptions().setPassword(password);

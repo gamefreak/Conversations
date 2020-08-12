@@ -5,7 +5,7 @@ import java.util.List;
 
 import eu.siacs.conversations.xml.Element;
 import eu.siacs.conversations.xmpp.InvalidJid;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 public class JingleCandidate {
 
@@ -101,22 +101,24 @@ public class JingleCandidate {
 		return this.type;
 	}
 
-	public static List<JingleCandidate> parse(List<Element> canditates) {
-		List<JingleCandidate> parsedCandidates = new ArrayList<>();
-		for (Element c : canditates) {
-			parsedCandidates.add(JingleCandidate.parse(c));
+	public static List<JingleCandidate> parse(final List<Element> elements) {
+		final List<JingleCandidate> candidates = new ArrayList<>();
+		for (final Element element : elements) {
+			if ("candidate".equals(element.getName())) {
+				candidates.add(JingleCandidate.parse(element));
+			}
 		}
-		return parsedCandidates;
+		return candidates;
 	}
 
-	public static JingleCandidate parse(Element candidate) {
-		JingleCandidate parsedCandidate = new JingleCandidate(candidate.getAttribute("cid"), false);
-		parsedCandidate.setHost(candidate.getAttribute("host"));
-		parsedCandidate.setJid(InvalidJid.getNullForInvalid(candidate.getAttributeAsJid("jid")));
-		parsedCandidate.setType(candidate.getAttribute("type"));
-		parsedCandidate.setPriority(Integer.parseInt(candidate.getAttribute("priority")));
-		parsedCandidate.setPort(Integer.parseInt(candidate.getAttribute("port")));
-		return parsedCandidate;
+	public static JingleCandidate parse(Element element) {
+		final JingleCandidate candidate = new JingleCandidate(element.getAttribute("cid"), false);
+		candidate.setHost(element.getAttribute("host"));
+		candidate.setJid(InvalidJid.getNullForInvalid(element.getAttributeAsJid("jid")));
+		candidate.setType(element.getAttribute("type"));
+		candidate.setPriority(Integer.parseInt(element.getAttribute("priority")));
+		candidate.setPort(Integer.parseInt(element.getAttribute("port")));
+		return candidate;
 	}
 
 	public Element toElement() {
@@ -125,7 +127,7 @@ public class JingleCandidate {
 		element.setAttribute("host", this.getHost());
 		element.setAttribute("port", Integer.toString(this.getPort()));
 		if (jid != null) {
-			element.setAttribute("jid", jid.toEscapedString());
+			element.setAttribute("jid", jid);
 		}
 		element.setAttribute("priority", Integer.toString(this.getPriority()));
 		if (this.getType() == TYPE_DIRECT) {
@@ -145,7 +147,6 @@ public class JingleCandidate {
 	}
 
 	public String toString() {
-		return this.getHost() + ":" + this.getPort() + " (prio="
-				+ this.getPriority() + ")";
+		return String.format("%s:%s (priority=%s,ours=%s)", getHost(), getPort(), getPriority(), isOurs());
 	}
 }

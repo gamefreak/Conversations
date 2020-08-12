@@ -1,11 +1,15 @@
 package eu.siacs.conversations.ui;
 
 import android.Manifest;
+import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.databinding.DataBindingUtil;
+import android.net.Uri;
 import android.os.Bundle;
+import android.security.KeyChain;
+import android.security.KeyChainAliasCallback;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -21,15 +25,17 @@ import eu.siacs.conversations.Config;
 import eu.siacs.conversations.R;
 import eu.siacs.conversations.databinding.ActivityWelcomeBinding;
 import eu.siacs.conversations.entities.Account;
+import eu.siacs.conversations.services.XmppConnectionService;
+import eu.siacs.conversations.utils.Compatibility;
 import eu.siacs.conversations.utils.InstallReferrerUtils;
 import eu.siacs.conversations.utils.SignupUtils;
 import eu.siacs.conversations.utils.XmppUri;
-import rocks.xmpp.addr.Jid;
+import eu.siacs.conversations.xmpp.Jid;
 
 import static eu.siacs.conversations.utils.PermissionUtils.allGranted;
 import static eu.siacs.conversations.utils.PermissionUtils.writeGranted;
 
-public class WelcomeActivity extends XmppActivity {
+public class WelcomeActivity extends XmppActivity implements XmppConnectionService.OnAccountCreated, KeyChainAliasCallback {
 
     private static final int REQUEST_IMPORT_BACKUP = 0x63fb;
 
@@ -42,35 +48,37 @@ public class WelcomeActivity extends XmppActivity {
         activity.overridePendingTransition(0, 0);
     }
 
-    public void onInstallReferrerDiscovered(final String referrer) {
+    public void onInstallReferrerDiscovered(final Uri referrer) {
         Log.d(Config.LOGTAG, "welcome activity: on install referrer discovered " + referrer);
-        if (referrer != null) {
+        if ("xmpp".equalsIgnoreCase(referrer.getScheme())) {
             final XmppUri xmppUri = new XmppUri(referrer);
             runOnUiThread(() -> processXmppUri(xmppUri));
+        } else {
+            Log.i(Config.LOGTAG, "install referrer was not an XMPP uri");
         }
     }
 
-    private boolean processXmppUri(final XmppUri xmppUri) {
-        if (xmppUri.isValidJid()) {
-            final String preauth = xmppUri.getParameter("preauth");
-            final Jid jid = xmppUri.getJid();
-            final Intent intent;
-            if (xmppUri.isAction(XmppUri.ACTION_REGISTER)) {
-                intent = SignupUtils.getTokenRegistrationIntent(this, jid, preauth);
-            } else if (xmppUri.isAction(XmppUri.ACTION_ROSTER) && "y".equals(xmppUri.getParameter("ibr"))) {
-                intent = SignupUtils.getTokenRegistrationIntent(this, Jid.ofDomain(jid.getDomain()), preauth);
-                intent.putExtra(StartConversationActivity.EXTRA_INVITE_URI, xmppUri.toString());
-            } else {
-                intent = null;
-            }
-            if (intent != null) {
-                startActivity(intent);
-                finish();
-                return true;
-            }
-            this.inviteUri = xmppUri;
+    private void processXmppUri(final XmppUri xmppUri) {
+        if (!xmppUri.isValidJid()) {
+            return;
         }
-        return false;
+        final String preAuth = xmppUri.getParameter(XmppUri.PARAMETER_PRE_AUTH);
+        final Jid jid = xmppUri.getJid();
+        final Intent intent;
+        if (xmppUri.isAction(XmppUri.ACTION_REGISTER)) {
+            intent = SignupUtils.getTokenRegistrationIntent(this, jid, preAuth);
+        } else if (xmppUri.isAction(XmppUri.ACTION_ROSTER) && "y".equals(xmppUri.getParameter(XmppUri.PARAMETER_IBR))) {
+            intent = SignupUtils.getTokenRegistrationIntent(this, jid.getDomain(), preAuth);
+            intent.putExtra(StartConversationActivity.EXTRA_INVITE_URI, xmppUri.toString());
+        } else {
+            intent = null;
+        }
+        if (intent != null) {
+            startActivity(intent);
+            finish();
+            return;
+        }
+        this.inviteUri = xmppUri;
     }
 
     @Override
@@ -139,9 +147,11 @@ public class WelcomeActivity extends XmppActivity {
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.welcome_menu, menu);
         final MenuItem scan = menu.findItem(R.id.action_scan_qr_code);
-        scan.setVisible(getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA));
+        scan.setVisible(Compatibility.hasFeatureCamera(this));
         return super.onCreateOptionsMenu(menu);
     }
+
+
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -152,10 +162,42 @@ public class WelcomeActivity extends XmppActivity {
                 }
                 break;
             case R.id.action_scan_qr_code:
-                UriHandlerActivity.scan(this);
+                UriHandlerActivity.scan(this, true);
+                break;
+            case R.id.action_add_account_with_cert:
+                addAccountFromKey();
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void addAccountFromKey() {
+        try {
+            KeyChain.choosePrivateKeyAlias(this, this, null, null, null, -1, null);
+        } catch (ActivityNotFoundException e) {
+            Toast.makeText(this, R.string.device_does_not_support_certificates, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void alias(final String alias) {
+        if (alias != null) {
+            xmppConnectionService.createAccountFromKey(alias, this);
+        }
+    }
+
+    @Override
+    public void onAccountCreated(final Account account) {
+        final Intent intent = new Intent(this, EditAccountActivity.class);
+        intent.putExtra("jid", account.getJid().asBareJid().toEscapedString());
+        intent.putExtra("init", true);
+        addInviteUri(intent);
+        startActivity(intent);
+    }
+
+    @Override
+    public void informUser(final int r) {
+        runOnUiThread(() -> Toast.makeText(this, r, Toast.LENGTH_LONG).show());
     }
 
     @Override
